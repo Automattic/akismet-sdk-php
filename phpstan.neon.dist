@@ -1,0 +1,6 @@
+parameters:
+    level: max
+    paths:
+        - src
+    tmpDir: .phpunit.cache/phpstan
+    checkGenericClassInNonGenericObjectType: false
