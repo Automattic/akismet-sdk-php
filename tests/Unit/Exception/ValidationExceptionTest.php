@@ -11,11 +11,10 @@ namespace Automattic\Akismet\Tests\Unit\Exception;
 
 use Automattic\Akismet\Exception\AkismetException;
 use Automattic\Akismet\Exception\ValidationException;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Automattic\Akismet\Exception\ValidationException
- */
+#[CoversClass(ValidationException::class)]
 final class ValidationExceptionTest extends TestCase
 {
     public function testImplementsAkismetException(): void

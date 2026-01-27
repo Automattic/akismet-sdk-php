@@ -10,11 +10,10 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\UsageLimit;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Automattic\Akismet\DTO\UsageLimit
- */
+#[CoversClass(UsageLimit::class)]
 final class UsageLimitTest extends TestCase
 {
     public function testCreatesWithLimitedPlan(): void

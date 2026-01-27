@@ -12,11 +12,10 @@ namespace Automattic\Akismet\Tests\Unit\Exception;
 use Automattic\Akismet\Exception\AkismetException;
 use Automattic\Akismet\Exception\NetworkException;
 use Exception;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Automattic\Akismet\Exception\NetworkException
- */
+#[CoversClass(NetworkException::class)]
 final class NetworkExceptionTest extends TestCase
 {
     public function testImplementsAkismetException(): void

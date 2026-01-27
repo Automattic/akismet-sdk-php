@@ -11,11 +11,10 @@ namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\Enum\SpamVerdict;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Automattic\Akismet\DTO\CheckResult
- */
+#[CoversClass(CheckResult::class)]
 final class CheckResultTest extends TestCase
 {
     public function testIsSpamReturnsTrueForSpamVerdict(): void

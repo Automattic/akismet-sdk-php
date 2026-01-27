@@ -11,11 +11,10 @@ namespace Automattic\Akismet\Tests\Unit\Exception;
 
 use Automattic\Akismet\Exception\AkismetException;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Automattic\Akismet\Exception\InvalidApiKeyException
- */
+#[CoversClass(InvalidApiKeyException::class)]
 final class InvalidApiKeyExceptionTest extends TestCase
 {
     public function testImplementsAkismetException(): void
