@@ -10,11 +10,11 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Tests\Unit\Enum;
 
 use Automattic\Akismet\Enum\SpamVerdict;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Automattic\Akismet\Enum\SpamVerdict
- */
+#[CoversClass(SpamVerdict::class)]
 final class SpamVerdictTest extends TestCase
 {
     public function testHamIsNotSpam(): void
@@ -47,9 +47,7 @@ final class SpamVerdictTest extends TestCase
         $this->assertTrue(SpamVerdict::Discard->shouldDiscard());
     }
 
-    /**
-     * @dataProvider verdictValueProvider
-     */
+    #[DataProvider('verdictValueProvider')]
     public function testVerdictValues(SpamVerdict $verdict, string $expected): void
     {
         $this->assertSame($expected, $verdict->value);

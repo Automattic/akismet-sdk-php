@@ -10,11 +10,10 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\SiteStats;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Automattic\Akismet\DTO\SiteStats
- */
+#[CoversClass(SiteStats::class)]
 final class SiteStatsTest extends TestCase
 {
     public function testCreatesWithAllFields(): void

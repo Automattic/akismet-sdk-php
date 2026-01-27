@@ -11,11 +11,10 @@ namespace Automattic\Akismet\Tests\Unit\Config;
 
 use Automattic\Akismet\Config\Configuration;
 use Automattic\Akismet\Exception\ValidationException;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Automattic\Akismet\Config\Configuration
- */
+#[CoversClass(Configuration::class)]
 final class ConfigurationTest extends TestCase
 {
     public function testCreatesWithRequiredParameters(): void

@@ -12,12 +12,11 @@ namespace Automattic\Akismet\Tests\Unit\Factory;
 use Automattic\Akismet\Enum\CommentType;
 use Automattic\Akismet\Factory\CommentFactory;
 use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 
-/**
- * @covers \Automattic\Akismet\Factory\CommentFactory
- */
+#[CoversClass(CommentFactory::class)]
 final class CommentFactoryTest extends TestCase
 {
     public function testFromRequestExtractsBasicInfo(): void

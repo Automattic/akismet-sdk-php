@@ -11,11 +11,10 @@ namespace Automattic\Akismet\Tests\Unit\Exception;
 
 use Automattic\Akismet\Exception\AkismetException;
 use Automattic\Akismet\Exception\RateLimitException;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Automattic\Akismet\Exception\RateLimitException
- */
+#[CoversClass(RateLimitException::class)]
 final class RateLimitExceptionTest extends TestCase
 {
     public function testImplementsAkismetException(): void

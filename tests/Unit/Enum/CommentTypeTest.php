@@ -10,16 +10,14 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Tests\Unit\Enum;
 
 use Automattic\Akismet\Enum\CommentType;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Automattic\Akismet\Enum\CommentType
- */
+#[CoversClass(CommentType::class)]
 final class CommentTypeTest extends TestCase
 {
-    /**
-     * @dataProvider commentTypeProvider
-     */
+    #[DataProvider('commentTypeProvider')]
     public function testCommentTypeValues(CommentType $type, string $expected): void
     {
         $this->assertSame($expected, $type->value);
