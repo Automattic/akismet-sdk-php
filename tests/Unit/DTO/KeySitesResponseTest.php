@@ -14,106 +14,100 @@ use Automattic\Akismet\DTO\SiteStats;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(KeySitesResponse::class)]
-final class KeySitesResponseTest extends TestCase
-{
-    public function testCreatesWithSites(): void
-    {
-        $sites = [
-            new SiteStats('site1.com', 1000, 400, 590, 5, 5, false),
-            new SiteStats('site2.com', 500, 200, 295, 3, 2, false),
-        ];
+#[CoversClass( KeySitesResponse::class )]
+final class KeySitesResponseTest extends TestCase {
 
-        $response = new KeySitesResponse($sites, 500, 0, 2);
+	public function testCreatesWithSites(): void {
+		$sites = [
+			new SiteStats( 'site1.com', 1000, 400, 590, 5, 5, false ),
+			new SiteStats( 'site2.com', 500, 200, 295, 3, 2, false ),
+		];
 
-        $this->assertCount(2, $response->sites);
-        $this->assertSame(500, $response->limit);
-        $this->assertSame(0, $response->offset);
-        $this->assertSame(2, $response->total);
-    }
+		$response = new KeySitesResponse( $sites, 500, 0, 2 );
 
-    public function testHasMoreReturnsFalseWhenAllResultsReturned(): void
-    {
-        $sites = [
-            new SiteStats('site1.com', 1000, 400, 590, 5, 5, false),
-        ];
+		$this->assertCount( 2, $response->sites );
+		$this->assertSame( 500, $response->limit );
+		$this->assertSame( 0, $response->offset );
+		$this->assertSame( 2, $response->total );
+	}
 
-        $response = new KeySitesResponse($sites, 500, 0, 1);
-        $this->assertFalse($response->hasMore());
-    }
+	public function testHasMoreReturnsFalseWhenAllResultsReturned(): void {
+		$sites = [
+			new SiteStats( 'site1.com', 1000, 400, 590, 5, 5, false ),
+		];
 
-    public function testHasMoreReturnsTrueWhenMoreResultsExist(): void
-    {
-        $sites = array_fill(0, 500, new SiteStats('site.com', 100, 50, 50, 0, 0, false));
+		$response = new KeySitesResponse( $sites, 500, 0, 1 );
+		$this->assertFalse( $response->hasMore() );
+	}
 
-        $response = new KeySitesResponse($sites, 500, 0, 1000);
-        $this->assertTrue($response->hasMore());
-    }
+	public function testHasMoreReturnsTrueWhenMoreResultsExist(): void {
+		$sites = array_fill( 0, 500, new SiteStats( 'site.com', 100, 50, 50, 0, 0, false ) );
 
-    public function testGetNextOffset(): void
-    {
-        $response = new KeySitesResponse([], 500, 0, 1500);
-        $this->assertSame(500, $response->getNextOffset());
+		$response = new KeySitesResponse( $sites, 500, 0, 1000 );
+		$this->assertTrue( $response->hasMore() );
+	}
 
-        $response2 = new KeySitesResponse([], 500, 500, 1500);
-        $this->assertSame(1000, $response2->getNextOffset());
-    }
+	public function testGetNextOffset(): void {
+		$response = new KeySitesResponse( [], 500, 0, 1500 );
+		$this->assertSame( 500, $response->getNextOffset() );
 
-    public function testFromResponseParsesCorrectly(): void
-    {
-        $data = [
-            '2024-01' => [
-                'site' => 'example1.com',
-                'api_calls' => 1000,
-                'spam' => 400,
-                'ham' => 590,
-                'missed_spam' => 5,
-                'false_positives' => 5,
-                'is_revoked' => false,
-            ],
-            '2024-02' => [
-                'site' => 'example2.com',
-                'api_calls' => 2000,
-                'spam' => 800,
-                'ham' => 1180,
-                'missed_spam' => 10,
-                'false_positives' => 10,
-                'is_revoked' => false,
-            ],
-            'limit' => 500,
-            'offset' => 0,
-            'total' => 2,
-        ];
+		$response2 = new KeySitesResponse( [], 500, 500, 1500 );
+		$this->assertSame( 1000, $response2->getNextOffset() );
+	}
 
-        $response = KeySitesResponse::fromResponse($data);
+	public function testFromResponseParsesCorrectly(): void {
+		$data = [
+			'2024-01' => [
+				'site'            => 'example1.com',
+				'api_calls'       => 1000,
+				'spam'            => 400,
+				'ham'             => 590,
+				'missed_spam'     => 5,
+				'false_positives' => 5,
+				'is_revoked'      => false,
+			],
+			'2024-02' => [
+				'site'            => 'example2.com',
+				'api_calls'       => 2000,
+				'spam'            => 800,
+				'ham'             => 1180,
+				'missed_spam'     => 10,
+				'false_positives' => 10,
+				'is_revoked'      => false,
+			],
+			'limit'   => 500,
+			'offset'  => 0,
+			'total'   => 2,
+		];
 
-        $this->assertCount(2, $response->sites);
-        $this->assertSame(500, $response->limit);
-        $this->assertSame(0, $response->offset);
-        $this->assertSame(2, $response->total);
+		$response = KeySitesResponse::fromResponse( $data );
 
-        $this->assertSame('example1.com', $response->sites[0]->site);
-        $this->assertSame('example2.com', $response->sites[1]->site);
-    }
+		$this->assertCount( 2, $response->sites );
+		$this->assertSame( 500, $response->limit );
+		$this->assertSame( 0, $response->offset );
+		$this->assertSame( 2, $response->total );
 
-    public function testFromResponseWithDefaultPagination(): void
-    {
-        $data = [
-            'site-key' => [
-                'site' => 'example.com',
-                'api_calls' => 100,
-                'spam' => 50,
-                'ham' => 50,
-                'missed_spam' => 0,
-                'false_positives' => 0,
-                'is_revoked' => false,
-            ],
-        ];
+		$this->assertSame( 'example1.com', $response->sites[0]->site );
+		$this->assertSame( 'example2.com', $response->sites[1]->site );
+	}
 
-        $response = KeySitesResponse::fromResponse($data);
+	public function testFromResponseWithDefaultPagination(): void {
+		$data = [
+			'site-key' => [
+				'site'            => 'example.com',
+				'api_calls'       => 100,
+				'spam'            => 50,
+				'ham'             => 50,
+				'missed_spam'     => 0,
+				'false_positives' => 0,
+				'is_revoked'      => false,
+			],
+		];
 
-        $this->assertSame(500, $response->limit);
-        $this->assertSame(0, $response->offset);
-        $this->assertSame(0, $response->total);
-    }
+		$response = KeySitesResponse::fromResponse( $data );
+
+		$this->assertSame( 500, $response->limit );
+		$this->assertSame( 0, $response->offset );
+		$this->assertSame( 0, $response->total );
+	}
 }

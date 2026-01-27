@@ -14,33 +14,29 @@ use Automattic\Akismet\Exception\RateLimitException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(RateLimitException::class)]
-final class RateLimitExceptionTest extends TestCase
-{
-    public function testImplementsAkismetException(): void
-    {
-        $exception = RateLimitException::fromResponse();
-        $this->assertInstanceOf(AkismetException::class, $exception);
-    }
+#[CoversClass( RateLimitException::class )]
+final class RateLimitExceptionTest extends TestCase {
 
-    public function testFromResponseStoresRetryAfterSeconds(): void
-    {
-        // retryAfter is just stored metadata, not an actual delay
-        $exception = RateLimitException::fromResponse(60);
-        $this->assertSame(60, $exception->getRetryAfter());
-        $this->assertStringContainsString('rate limit', $exception->getMessage());
-    }
+	public function testImplementsAkismetException(): void {
+		$exception = RateLimitException::fromResponse();
+		$this->assertInstanceOf( AkismetException::class, $exception );
+	}
 
-    public function testFromResponseWithoutRetryAfter(): void
-    {
-        $exception = RateLimitException::fromResponse();
-        $this->assertNull($exception->getRetryAfter());
-    }
+	public function testFromResponseStoresRetryAfterSeconds(): void {
+		// retryAfter is just stored metadata, not an actual delay
+		$exception = RateLimitException::fromResponse( 60 );
+		$this->assertSame( 60, $exception->getRetryAfter() );
+		$this->assertStringContainsString( 'rate limit', $exception->getMessage() );
+	}
 
-    public function testThrottled(): void
-    {
-        $exception = RateLimitException::throttled();
-        $this->assertStringContainsString('throttled', $exception->getMessage());
-        $this->assertNull($exception->getRetryAfter());
-    }
+	public function testFromResponseWithoutRetryAfter(): void {
+		$exception = RateLimitException::fromResponse();
+		$this->assertNull( $exception->getRetryAfter() );
+	}
+
+	public function testThrottled(): void {
+		$exception = RateLimitException::throttled();
+		$this->assertStringContainsString( 'throttled', $exception->getMessage() );
+		$this->assertNull( $exception->getRetryAfter() );
+	}
 }

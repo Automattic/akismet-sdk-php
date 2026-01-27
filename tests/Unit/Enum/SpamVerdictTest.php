@@ -14,54 +14,46 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(SpamVerdict::class)]
-final class SpamVerdictTest extends TestCase
-{
-    public function testHamIsNotSpam(): void
-    {
-        $this->assertFalse(SpamVerdict::Ham->isSpam());
-    }
+#[CoversClass( SpamVerdict::class )]
+final class SpamVerdictTest extends TestCase {
 
-    public function testSpamIsSpam(): void
-    {
-        $this->assertTrue(SpamVerdict::Spam->isSpam());
-    }
+	public function testHamIsNotSpam(): void {
+		$this->assertFalse( SpamVerdict::Ham->isSpam() );
+	}
 
-    public function testDiscardIsSpam(): void
-    {
-        $this->assertTrue(SpamVerdict::Discard->isSpam());
-    }
+	public function testSpamIsSpam(): void {
+		$this->assertTrue( SpamVerdict::Spam->isSpam() );
+	}
 
-    public function testHamShouldNotDiscard(): void
-    {
-        $this->assertFalse(SpamVerdict::Ham->shouldDiscard());
-    }
+	public function testDiscardIsSpam(): void {
+		$this->assertTrue( SpamVerdict::Discard->isSpam() );
+	}
 
-    public function testSpamShouldNotDiscard(): void
-    {
-        $this->assertFalse(SpamVerdict::Spam->shouldDiscard());
-    }
+	public function testHamShouldNotDiscard(): void {
+		$this->assertFalse( SpamVerdict::Ham->shouldDiscard() );
+	}
 
-    public function testDiscardShouldDiscard(): void
-    {
-        $this->assertTrue(SpamVerdict::Discard->shouldDiscard());
-    }
+	public function testSpamShouldNotDiscard(): void {
+		$this->assertFalse( SpamVerdict::Spam->shouldDiscard() );
+	}
 
-    #[DataProvider('verdictValueProvider')]
-    public function testVerdictValues(SpamVerdict $verdict, string $expected): void
-    {
-        $this->assertSame($expected, $verdict->value);
-    }
+	public function testDiscardShouldDiscard(): void {
+		$this->assertTrue( SpamVerdict::Discard->shouldDiscard() );
+	}
 
-    /**
-     * @return array<string, array{SpamVerdict, string}>
-     */
-    public static function verdictValueProvider(): array
-    {
-        return [
-            'ham' => [SpamVerdict::Ham, 'ham'],
-            'spam' => [SpamVerdict::Spam, 'spam'],
-            'discard' => [SpamVerdict::Discard, 'discard'],
-        ];
-    }
+	#[DataProvider( 'verdictValueProvider' )]
+	public function testVerdictValues( SpamVerdict $verdict, string $expected ): void {
+		$this->assertSame( $expected, $verdict->value );
+	}
+
+	/**
+	 * @return array<string, array{SpamVerdict, string}>
+	 */
+	public static function verdictValueProvider(): array {
+		return [
+			'ham'     => [ SpamVerdict::Ham, 'ham' ],
+			'spam'    => [ SpamVerdict::Spam, 'spam' ],
+			'discard' => [ SpamVerdict::Discard, 'discard' ],
+		];
+	}
 }
