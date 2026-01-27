@@ -14,96 +14,86 @@ use Automattic\Akismet\Exception\ValidationException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(Configuration::class)]
-final class ConfigurationTest extends TestCase
-{
-    public function testCreatesWithRequiredParameters(): void
-    {
-        $config = new Configuration('test-api-key', 'https://example.com');
+#[CoversClass( Configuration::class )]
+final class ConfigurationTest extends TestCase {
 
-        $this->assertSame('test-api-key', $config->apiKey);
-        $this->assertSame('https://example.com', $config->blog);
-        $this->assertSame(Configuration::DEFAULT_BASE_URL, $config->baseUrl);
-        $this->assertSame(Configuration::DEFAULT_TIMEOUT, $config->timeout);
-        $this->assertFalse($config->isTest);
-    }
+	public function testCreatesWithRequiredParameters(): void {
+		$config = new Configuration( 'test-api-key', 'https://example.com' );
 
-    public function testCreatesWithAllParameters(): void
-    {
-        $config = new Configuration(
-            'test-api-key',
-            'https://example.com',
-            'https://custom.api.com',
-            30,
-            true,
-        );
+		$this->assertSame( 'test-api-key', $config->apiKey );
+		$this->assertSame( 'https://example.com', $config->blog );
+		$this->assertSame( Configuration::DEFAULT_BASE_URL, $config->baseUrl );
+		$this->assertSame( Configuration::DEFAULT_TIMEOUT, $config->timeout );
+		$this->assertFalse( $config->isTest );
+	}
 
-        $this->assertSame('https://custom.api.com', $config->baseUrl);
-        $this->assertSame(30, $config->timeout);
-        $this->assertTrue($config->isTest);
-    }
+	public function testCreatesWithAllParameters(): void {
+		$config = new Configuration(
+			'test-api-key',
+			'https://example.com',
+			'https://custom.api.com',
+			30,
+			true,
+		);
 
-    public function testTrimsTrailingSlashFromBlog(): void
-    {
-        $config = new Configuration('key', 'https://example.com/');
-        $this->assertSame('https://example.com', $config->blog);
-    }
+		$this->assertSame( 'https://custom.api.com', $config->baseUrl );
+		$this->assertSame( 30, $config->timeout );
+		$this->assertTrue( $config->isTest );
+	}
 
-    public function testTrimsTrailingSlashFromBaseUrl(): void
-    {
-        $config = new Configuration('key', 'https://example.com', 'https://api.com/');
-        $this->assertSame('https://api.com', $config->baseUrl);
-    }
+	public function testTrimsTrailingSlashFromBlog(): void {
+		$config = new Configuration( 'key', 'https://example.com/' );
+		$this->assertSame( 'https://example.com', $config->blog );
+	}
 
-    public function testThrowsOnEmptyApiKey(): void
-    {
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('apiKey');
+	public function testTrimsTrailingSlashFromBaseUrl(): void {
+		$config = new Configuration( 'key', 'https://example.com', 'https://api.com/' );
+		$this->assertSame( 'https://api.com', $config->baseUrl );
+	}
 
-        new Configuration('', 'https://example.com');
-    }
+	public function testThrowsOnEmptyApiKey(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'apiKey' );
 
-    public function testThrowsOnEmptyBlog(): void
-    {
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('blog');
+		new Configuration( '', 'https://example.com' );
+	}
 
-        new Configuration('key', '');
-    }
+	public function testThrowsOnEmptyBlog(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'blog' );
 
-    public function testThrowsOnInvalidBlogUrl(): void
-    {
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('valid URL');
+		new Configuration( 'key', '' );
+	}
 
-        new Configuration('key', 'not-a-url');
-    }
+	public function testThrowsOnInvalidBlogUrl(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'valid URL' );
 
-    public function testThrowsOnZeroTimeout(): void
-    {
-        $this->expectException(ValidationException::class);
-        $this->expectExceptionMessage('timeout');
+		new Configuration( 'key', 'not-a-url' );
+	}
 
-        new Configuration('key', 'https://example.com', Configuration::DEFAULT_BASE_URL, 0);
-    }
+	public function testThrowsOnZeroTimeout(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'timeout' );
 
-    public function testWithTestModeReturnsNewInstance(): void
-    {
-        $config = new Configuration('key', 'https://example.com');
-        $testConfig = $config->withTestMode();
+		new Configuration( 'key', 'https://example.com', Configuration::DEFAULT_BASE_URL, 0 );
+	}
 
-        $this->assertNotSame($config, $testConfig);
-        $this->assertFalse($config->isTest);
-        $this->assertTrue($testConfig->isTest);
-    }
+	public function testWithTestModeReturnsNewInstance(): void {
+		$config     = new Configuration( 'key', 'https://example.com' );
+		$testConfig = $config->withTestMode();
 
-    public function testWithTimeoutReturnsNewInstance(): void
-    {
-        $config = new Configuration('key', 'https://example.com');
-        $newConfig = $config->withTimeout(60);
+		$this->assertNotSame( $config, $testConfig );
+		$this->assertFalse( $config->isTest );
+		$this->assertTrue( $testConfig->isTest );
+	}
 
-        $this->assertNotSame($config, $newConfig);
-        $this->assertSame(Configuration::DEFAULT_TIMEOUT, $config->timeout);
-        $this->assertSame(60, $newConfig->timeout);
-    }
+	public function testWithTimeoutReturnsNewInstance(): void {
+		$config    = new Configuration( 'key', 'https://example.com' );
+		$newConfig = $config->withTimeout( 60 );
+
+		$this->assertNotSame( $config, $newConfig );
+		$this->assertSame( Configuration::DEFAULT_TIMEOUT, $config->timeout );
+		$this->assertSame( 60, $newConfig->timeout );
+	}
 }

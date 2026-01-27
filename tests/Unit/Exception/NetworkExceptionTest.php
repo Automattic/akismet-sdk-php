@@ -15,39 +15,34 @@ use Exception;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(NetworkException::class)]
-final class NetworkExceptionTest extends TestCase
-{
-    public function testImplementsAkismetException(): void
-    {
-        $exception = NetworkException::connectionFailed();
-        $this->assertInstanceOf(AkismetException::class, $exception);
-    }
+#[CoversClass( NetworkException::class )]
+final class NetworkExceptionTest extends TestCase {
 
-    public function testConnectionFailed(): void
-    {
-        $exception = NetworkException::connectionFailed();
-        $this->assertStringContainsString('connect', $exception->getMessage());
-    }
+	public function testImplementsAkismetException(): void {
+		$exception = NetworkException::connectionFailed();
+		$this->assertInstanceOf( AkismetException::class, $exception );
+	}
 
-    public function testConnectionFailedWithPrevious(): void
-    {
-        $previous = new Exception('DNS lookup failed');
-        $exception = NetworkException::connectionFailed($previous);
-        $this->assertSame($previous, $exception->getPrevious());
-    }
+	public function testConnectionFailed(): void {
+		$exception = NetworkException::connectionFailed();
+		$this->assertStringContainsString( 'connect', $exception->getMessage() );
+	}
 
-    public function testTimeout(): void
-    {
-        $exception = NetworkException::timeout();
-        $this->assertStringContainsString('timed out', $exception->getMessage());
-    }
+	public function testConnectionFailedWithPrevious(): void {
+		$previous  = new Exception( 'DNS lookup failed' );
+		$exception = NetworkException::connectionFailed( $previous );
+		$this->assertSame( $previous, $exception->getPrevious() );
+	}
 
-    public function testFromClientException(): void
-    {
-        $previous = new Exception('Connection refused');
-        $exception = NetworkException::fromClientException($previous);
-        $this->assertStringContainsString('Connection refused', $exception->getMessage());
-        $this->assertSame($previous, $exception->getPrevious());
-    }
+	public function testTimeout(): void {
+		$exception = NetworkException::timeout();
+		$this->assertStringContainsString( 'timed out', $exception->getMessage() );
+	}
+
+	public function testFromClientException(): void {
+		$previous  = new Exception( 'Connection refused' );
+		$exception = NetworkException::fromClientException( $previous );
+		$this->assertStringContainsString( 'Connection refused', $exception->getMessage() );
+		$this->assertSame( $previous, $exception->getPrevious() );
+	}
 }

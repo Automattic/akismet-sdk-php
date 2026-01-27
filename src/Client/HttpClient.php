@@ -23,131 +23,123 @@ use Psr\Http\Message\StreamFactoryInterface;
 /**
  * HTTP client wrapper for making Akismet API requests.
  */
-final class HttpClient
-{
-    private const USER_AGENT = 'Automattic-Akismet-SDK/1.0';
+final class HttpClient {
 
-    private ClientInterface $client;
-    private RequestFactoryInterface $requestFactory;
-    private StreamFactoryInterface $streamFactory;
-    private Configuration $config;
+	private const USER_AGENT = 'Automattic-Akismet-SDK/1.0';
 
-    public function __construct(
-        Configuration $config,
-        ?ClientInterface $client = null,
-        ?RequestFactoryInterface $requestFactory = null,
-        ?StreamFactoryInterface $streamFactory = null,
-    ) {
-        $this->config = $config;
-        $this->client = $client ?? Psr18ClientDiscovery::find();
-        $this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
-        $this->streamFactory = $streamFactory ?? Psr17FactoryDiscovery::findStreamFactory();
-    }
+	private ClientInterface $client;
+	private RequestFactoryInterface $requestFactory;
+	private StreamFactoryInterface $streamFactory;
+	private Configuration $config;
 
-    /**
-     * Send a POST request with form data.
-     *
-     * @param string               $endpoint API endpoint path.
-     * @param array<string, string> $data    Form data to send.
-     * @return ResponseInterface
-     * @throws NetworkException
-     * @throws RateLimitException
-     */
-    public function post(string $endpoint, array $data): ResponseInterface
-    {
-        $url = $this->config->baseUrl . $endpoint;
+	public function __construct(
+		Configuration $config,
+		?ClientInterface $client = null,
+		?RequestFactoryInterface $requestFactory = null,
+		?StreamFactoryInterface $streamFactory = null,
+	) {
+		$this->config         = $config;
+		$this->client         = $client ?? Psr18ClientDiscovery::find();
+		$this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
+		$this->streamFactory  = $streamFactory ?? Psr17FactoryDiscovery::findStreamFactory();
+	}
 
-        // Add API key and blog to all requests
-        $data['api_key'] = $this->config->apiKey;
-        $data['blog'] = $this->config->blog;
+	/**
+	 * Send a POST request with form data.
+	 *
+	 * @param string               $endpoint API endpoint path.
+	 * @param array<string, string> $data    Form data to send.
+	 * @return ResponseInterface
+	 * @throws NetworkException
+	 * @throws RateLimitException
+	 */
+	public function post( string $endpoint, array $data ): ResponseInterface {
+		$url = $this->config->baseUrl . $endpoint;
 
-        // Add test flag if enabled
-        if ($this->config->isTest) {
-            $data['is_test'] = '1';
-        }
+		// Add API key and blog to all requests
+		$data['api_key'] = $this->config->apiKey;
+		$data['blog']    = $this->config->blog;
 
-        $body = http_build_query($data, '', '&');
+		// Add test flag if enabled
+		if ( $this->config->isTest ) {
+			$data['is_test'] = '1';
+		}
 
-        $request = $this->requestFactory
-            ->createRequest('POST', $url)
-            ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
-            ->withHeader('User-Agent', self::USER_AGENT)
-            ->withBody($this->streamFactory->createStream($body));
+		$body = http_build_query( $data, '', '&' );
 
-        return $this->send($request);
-    }
+		$request = $this->requestFactory
+			->createRequest( 'POST', $url )
+			->withHeader( 'Content-Type', 'application/x-www-form-urlencoded' )
+			->withHeader( 'User-Agent', self::USER_AGENT )
+			->withBody( $this->streamFactory->createStream( $body ) );
 
-    /**
-     * Send a GET request with query parameters.
-     *
-     * @param string               $endpoint API endpoint path.
-     * @param array<string, string> $params  Query parameters.
-     * @return ResponseInterface
-     * @throws NetworkException
-     * @throws RateLimitException
-     */
-    public function get(string $endpoint, array $params = []): ResponseInterface
-    {
-        // Add API key to query params
-        $params['api_key'] = $this->config->apiKey;
+		return $this->send( $request );
+	}
 
-        $url = $this->config->baseUrl . $endpoint;
-        if ($params !== []) {
-            $url .= '?' . http_build_query($params, '', '&');
-        }
+	/**
+	 * Send a GET request with query parameters.
+	 *
+	 * @param string               $endpoint API endpoint path.
+	 * @param array<string, string> $params  Query parameters.
+	 * @return ResponseInterface
+	 * @throws NetworkException
+	 * @throws RateLimitException
+	 */
+	public function get( string $endpoint, array $params = [] ): ResponseInterface {
+		// Add API key to query params
+		$params['api_key'] = $this->config->apiKey;
 
-        $request = $this->requestFactory
-            ->createRequest('GET', $url)
-            ->withHeader('User-Agent', self::USER_AGENT);
+		$url = $this->config->baseUrl . $endpoint . '?' . http_build_query( $params, '', '&' );
 
-        return $this->send($request);
-    }
+		$request = $this->requestFactory
+			->createRequest( 'GET', $url )
+			->withHeader( 'User-Agent', self::USER_AGENT );
 
-    /**
-     * Send a request and handle errors.
-     *
-     * @throws NetworkException
-     * @throws RateLimitException
-     */
-    private function send(\Psr\Http\Message\RequestInterface $request): ResponseInterface
-    {
-        try {
-            $response = $this->client->sendRequest($request);
-        } catch (ClientExceptionInterface $e) {
-            throw NetworkException::fromClientException($e);
-        }
+		return $this->send( $request );
+	}
 
-        $statusCode = $response->getStatusCode();
+	/**
+	 * Send a request and handle errors.
+	 *
+	 * @throws NetworkException
+	 * @throws RateLimitException
+	 */
+	private function send( \Psr\Http\Message\RequestInterface $request ): ResponseInterface {
+		try {
+			$response = $this->client->sendRequest( $request );
+		} catch ( ClientExceptionInterface $e ) {
+			throw NetworkException::fromClientException( $e );
+		}
 
-        if ($statusCode === 429) {
-            $retryAfter = $response->hasHeader('Retry-After')
-                ? (int) $response->getHeaderLine('Retry-After')
-                : null;
-            throw RateLimitException::fromResponse($retryAfter);
-        }
+		$statusCode = $response->getStatusCode();
 
-        return $response;
-    }
+		if ( $statusCode === 429 ) {
+			$retryAfter = $response->hasHeader( 'Retry-After' )
+				? (int) $response->getHeaderLine( 'Retry-After' )
+				: null;
+			throw RateLimitException::fromResponse( $retryAfter );
+		}
 
-    /**
-     * Get response body as string.
-     */
-    public static function getBody(ResponseInterface $response): string
-    {
-        return (string) $response->getBody();
-    }
+		return $response;
+	}
 
-    /**
-     * Get response headers as associative array.
-     *
-     * @return array<string, string>
-     */
-    public static function getHeaders(ResponseInterface $response): array
-    {
-        $headers = [];
-        foreach ($response->getHeaders() as $name => $values) {
-            $headers[$name] = implode(', ', $values);
-        }
-        return $headers;
-    }
+	/**
+	 * Get response body as string.
+	 */
+	public static function getBody( ResponseInterface $response ): string {
+		return (string) $response->getBody();
+	}
+
+	/**
+	 * Get response headers as associative array.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function getHeaders( ResponseInterface $response ): array {
+		$headers = [];
+		foreach ( $response->getHeaders() as $name => $values ) {
+			$headers[ $name ] = implode( ', ', $values );
+		}
+		return $headers;
+	}
 }

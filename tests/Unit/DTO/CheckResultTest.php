@@ -14,119 +14,117 @@ use Automattic\Akismet\Enum\SpamVerdict;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(CheckResult::class)]
-final class CheckResultTest extends TestCase
-{
-    public function testIsSpamReturnsTrueForSpamVerdict(): void
-    {
-        $result = new CheckResult(SpamVerdict::Spam);
-        $this->assertTrue($result->isSpam());
-    }
+#[CoversClass( CheckResult::class )]
+final class CheckResultTest extends TestCase {
 
-    public function testIsSpamReturnsTrueForDiscardVerdict(): void
-    {
-        $result = new CheckResult(SpamVerdict::Discard);
-        $this->assertTrue($result->isSpam());
-    }
+	public function testIsSpamReturnsTrueForSpamVerdict(): void {
+		$result = new CheckResult( SpamVerdict::Spam );
+		$this->assertTrue( $result->isSpam() );
+	}
 
-    public function testIsSpamReturnsFalseForHamVerdict(): void
-    {
-        $result = new CheckResult(SpamVerdict::Ham);
-        $this->assertFalse($result->isSpam());
-    }
+	public function testIsSpamReturnsTrueForDiscardVerdict(): void {
+		$result = new CheckResult( SpamVerdict::Discard );
+		$this->assertTrue( $result->isSpam() );
+	}
 
-    public function testShouldDiscardReturnsTrueOnlyForDiscardVerdict(): void
-    {
-        $this->assertFalse((new CheckResult(SpamVerdict::Ham))->shouldDiscard());
-        $this->assertFalse((new CheckResult(SpamVerdict::Spam))->shouldDiscard());
-        $this->assertTrue((new CheckResult(SpamVerdict::Discard))->shouldDiscard());
-    }
+	public function testIsSpamReturnsFalseForHamVerdict(): void {
+		$result = new CheckResult( SpamVerdict::Ham );
+		$this->assertFalse( $result->isSpam() );
+	}
 
-    public function testFromResponseWithFalseBody(): void
-    {
-        $result = CheckResult::fromResponse('false');
+	public function testShouldDiscardReturnsTrueOnlyForDiscardVerdict(): void {
+		$this->assertFalse( ( new CheckResult( SpamVerdict::Ham ) )->shouldDiscard() );
+		$this->assertFalse( ( new CheckResult( SpamVerdict::Spam ) )->shouldDiscard() );
+		$this->assertTrue( ( new CheckResult( SpamVerdict::Discard ) )->shouldDiscard() );
+	}
 
-        $this->assertSame(SpamVerdict::Ham, $result->verdict);
-        $this->assertFalse($result->isSpam());
-    }
+	public function testFromResponseWithFalseBody(): void {
+		$result = CheckResult::fromResponse( 'false' );
 
-    public function testFromResponseWithTrueBody(): void
-    {
-        $result = CheckResult::fromResponse('true');
+		$this->assertSame( SpamVerdict::Ham, $result->verdict );
+		$this->assertFalse( $result->isSpam() );
+	}
 
-        $this->assertSame(SpamVerdict::Spam, $result->verdict);
-        $this->assertTrue($result->isSpam());
-        $this->assertFalse($result->shouldDiscard());
-    }
+	public function testFromResponseWithTrueBody(): void {
+		$result = CheckResult::fromResponse( 'true' );
 
-    public function testFromResponseWithDiscardProTip(): void
-    {
-        $result = CheckResult::fromResponse('true', [
-            'X-akismet-pro-tip' => 'discard',
-        ]);
+		$this->assertSame( SpamVerdict::Spam, $result->verdict );
+		$this->assertTrue( $result->isSpam() );
+		$this->assertFalse( $result->shouldDiscard() );
+	}
 
-        $this->assertSame(SpamVerdict::Discard, $result->verdict);
-        $this->assertTrue($result->isSpam());
-        $this->assertTrue($result->shouldDiscard());
-        $this->assertSame('discard', $result->proTip);
-    }
+	public function testFromResponseWithDiscardProTip(): void {
+		$result = CheckResult::fromResponse(
+			'true',
+			[
+				'X-akismet-pro-tip' => 'discard',
+			]
+		);
 
-    public function testFromResponseExtractsHeaders(): void
-    {
-        $result = CheckResult::fromResponse('true', [
-            'X-Akismet-Debug-Help' => 'Some debug info',
-            'X-Akismet-Alert-Code' => '10001',
-            'X-Akismet-Alert-Msg' => 'Usage limit warning',
-        ]);
+		$this->assertSame( SpamVerdict::Discard, $result->verdict );
+		$this->assertTrue( $result->isSpam() );
+		$this->assertTrue( $result->shouldDiscard() );
+		$this->assertSame( 'discard', $result->proTip );
+	}
 
-        $this->assertSame('Some debug info', $result->debugHelp);
-        $this->assertSame('10001', $result->alertCode);
-        $this->assertSame('Usage limit warning', $result->alertMessage);
-    }
+	public function testFromResponseExtractsHeaders(): void {
+		$result = CheckResult::fromResponse(
+			'true',
+			[
+				'X-Akismet-Debug-Help' => 'Some debug info',
+				'X-Akismet-Alert-Code' => '10001',
+				'X-Akismet-Alert-Msg'  => 'Usage limit warning',
+			]
+		);
 
-    public function testFromResponseHandlesCaseInsensitiveHeaders(): void
-    {
-        $result = CheckResult::fromResponse('false', [
-            'x-akismet-debug-help' => 'lowercase headers',
-        ]);
+		$this->assertSame( 'Some debug info', $result->debugHelp );
+		$this->assertSame( '10001', $result->alertCode );
+		$this->assertSame( 'Usage limit warning', $result->alertMessage );
+	}
 
-        $this->assertSame('lowercase headers', $result->debugHelp);
-    }
+	public function testFromResponseHandlesCaseInsensitiveHeaders(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[
+				'x-akismet-debug-help' => 'lowercase headers',
+			]
+		);
 
-    public function testJsonSerializeAndFromJson(): void
-    {
-        $original = new CheckResult(
-            SpamVerdict::Spam,
-            'discard',
-            'debug info',
-            '10001',
-            'alert message',
-        );
+		$this->assertSame( 'lowercase headers', $result->debugHelp );
+	}
 
-        $json = json_encode($original);
-        $this->assertIsString($json);
+	public function testJsonSerializeAndFromJson(): void {
+		$original = new CheckResult(
+			SpamVerdict::Spam,
+			'discard',
+			'debug info',
+			'10001',
+			'alert message',
+		);
 
-        $decoded = json_decode($json, true);
-        $restored = CheckResult::fromJson($decoded);
+		$json = json_encode( $original );
+		$this->assertIsString( $json );
 
-        $this->assertSame($original->verdict, $restored->verdict);
-        $this->assertSame($original->proTip, $restored->proTip);
-        $this->assertSame($original->debugHelp, $restored->debugHelp);
-        $this->assertSame($original->alertCode, $restored->alertCode);
-        $this->assertSame($original->alertMessage, $restored->alertMessage);
-    }
+		$decoded  = json_decode( $json, true );
+		$restored = CheckResult::fromJson( $decoded );
 
-    public function testJsonSerializeReturnsCorrectStructure(): void
-    {
-        $result = new CheckResult(SpamVerdict::Ham);
-        $json = $result->jsonSerialize();
+		$this->assertSame( $original->verdict, $restored->verdict );
+		$this->assertSame( $original->proTip, $restored->proTip );
+		$this->assertSame( $original->debugHelp, $restored->debugHelp );
+		$this->assertSame( $original->alertCode, $restored->alertCode );
+		$this->assertSame( $original->alertMessage, $restored->alertMessage );
+	}
 
-        $this->assertArrayHasKey('verdict', $json);
-        $this->assertArrayHasKey('proTip', $json);
-        $this->assertArrayHasKey('debugHelp', $json);
-        $this->assertArrayHasKey('alertCode', $json);
-        $this->assertArrayHasKey('alertMessage', $json);
+	public function testJsonSerializeReturnsCorrectStructure(): void {
+		$result = new CheckResult( SpamVerdict::Ham );
+		$json   = $result->jsonSerialize();
 
-        $this->assertSame('ham', $json['verdict']);
-    }
+		$this->assertArrayHasKey( 'verdict', $json );
+		$this->assertArrayHasKey( 'proTip', $json );
+		$this->assertArrayHasKey( 'debugHelp', $json );
+		$this->assertArrayHasKey( 'alertCode', $json );
+		$this->assertArrayHasKey( 'alertMessage', $json );
+
+		$this->assertSame( 'ham', $json['verdict'] );
+	}
 }

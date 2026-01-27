@@ -14,50 +14,46 @@ use InvalidArgumentException;
 /**
  * Thrown when required parameters are missing or invalid.
  */
-final class ValidationException extends InvalidArgumentException implements AkismetException
-{
-    /**
-     * @var array<string>
-     */
-    private array $missingFields;
+final class ValidationException extends InvalidArgumentException implements AkismetException {
 
-    /**
-     * @param array<string> $missingFields
-     */
-    public function __construct(string $message, array $missingFields = [])
-    {
-        parent::__construct($message);
-        $this->missingFields = $missingFields;
-    }
+	/**
+	 * @var array<string>
+	 */
+	private array $missingFields;
 
-    /**
-     * Create exception for missing required fields.
-     *
-     * @param array<string> $fields
-     */
-    public static function missingRequired(array $fields): self
-    {
-        return new self(
-            sprintf('Missing required fields: %s', implode(', ', $fields)),
-            $fields
-        );
-    }
+	/**
+	 * @param array<string> $missingFields
+	 */
+	public function __construct( string $message, array $missingFields = [] ) {
+		parent::__construct( $message );
+		$this->missingFields = $missingFields;
+	}
 
-    /**
-     * Create exception for an invalid field value.
-     */
-    public static function invalidValue(string $field, string $reason): self
-    {
-        return new self(sprintf('Invalid value for %s: %s', $field, $reason));
-    }
+	/**
+	 * Create exception for missing required fields.
+	 *
+	 * @param array<string> $fields
+	 */
+	public static function missingRequired( array $fields ): self {
+		return new self(
+			sprintf( 'Missing required fields: %s', implode( ', ', $fields ) ),
+			$fields
+		);
+	}
 
-    /**
-     * Get the list of missing fields.
-     *
-     * @return array<string>
-     */
-    public function getMissingFields(): array
-    {
-        return $this->missingFields;
-    }
+	/**
+	 * Create exception for an invalid field value.
+	 */
+	public static function invalidValue( string $field, string $reason ): self {
+		return new self( sprintf( 'Invalid value for %s: %s', $field, $reason ) );
+	}
+
+	/**
+	 * Get the list of missing fields.
+	 *
+	 * @return array<string>
+	 */
+	public function getMissingFields(): array {
+		return $this->missingFields;
+	}
 }

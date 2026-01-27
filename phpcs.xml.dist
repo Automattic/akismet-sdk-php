@@ -19,11 +19,29 @@
         <exclude name="WordPress.Files.FileName"/>
         <!-- Allow short array syntax -->
         <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+        <!-- Allow PSR-4 camelCase naming conventions for SDK compatibility -->
+        <exclude name="WordPress.NamingConventions.ValidVariableName"/>
+        <exclude name="WordPress.NamingConventions.ValidFunctionName"/>
+        <!-- Allow standard condition syntax (not Yoda) -->
+        <exclude name="WordPress.PHP.YodaConditions"/>
     </rule>
 
     <!-- Also check for PHP cross-version compatibility -->
-    <rule ref="PHPCompatibility"/>
+    <rule ref="PHPCompatibility">
+        <!-- False positive: $this in enum methods is valid in PHP 8.1+ -->
+        <exclude name="PHPCompatibility.Variables.ForbiddenThisUseContexts"/>
+    </rule>
     <config name="testVersion" value="8.1-"/>
+
+    <!-- Exclude WordPress-specific rules not applicable to standalone SDK -->
+    <rule ref="WordPress.Security.EscapeOutput">
+        <!-- SDK exceptions don't need WordPress escaping -->
+        <exclude name="WordPress.Security.EscapeOutput.ExceptionNotEscaped"/>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions">
+        <!-- SDK can use standard PHP functions, not WordPress alternatives -->
+        <exclude name="WordPress.WP.AlternativeFunctions.json_encode_json_encode"/>
+    </rule>
 
     <!-- PSR-4 autoloading means class names match filenames -->
     <rule ref="Squiz.Classes.ClassFileName"/>

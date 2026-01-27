@@ -17,6 +17,6 @@ use Throwable;
  * All exceptions thrown by the Akismet SDK implement this interface,
  * allowing consumers to catch all SDK exceptions with a single catch block.
  */
-interface AkismetException extends Throwable
-{
+interface AkismetException extends Throwable {
+
 }

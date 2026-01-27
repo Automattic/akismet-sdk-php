@@ -14,37 +14,33 @@ use RuntimeException;
 /**
  * Thrown when API requests are being rate limited or throttled.
  */
-final class RateLimitException extends RuntimeException implements AkismetException
-{
-    private ?int $retryAfter;
+final class RateLimitException extends RuntimeException implements AkismetException {
 
-    public function __construct(string $message = '', ?int $retryAfter = null)
-    {
-        parent::__construct($message);
-        $this->retryAfter = $retryAfter;
-    }
+	private ?int $retryAfter;
 
-    /**
-     * Create exception for HTTP 429 response.
-     */
-    public static function fromResponse(?int $retryAfter = null): self
-    {
-        return new self('Akismet API rate limit exceeded', $retryAfter);
-    }
+	public function __construct( string $message = '', ?int $retryAfter = null ) {
+		parent::__construct( $message );
+		$this->retryAfter = $retryAfter;
+	}
 
-    /**
-     * Create exception for throttled account.
-     */
-    public static function throttled(): self
-    {
-        return new self('Akismet API requests are being throttled due to exceeding usage limits');
-    }
+	/**
+	 * Create exception for HTTP 429 response.
+	 */
+	public static function fromResponse( ?int $retryAfter = null ): self {
+		return new self( 'Akismet API rate limit exceeded', $retryAfter );
+	}
 
-    /**
-     * Get the number of seconds to wait before retrying.
-     */
-    public function getRetryAfter(): ?int
-    {
-        return $this->retryAfter;
-    }
+	/**
+	 * Create exception for throttled account.
+	 */
+	public static function throttled(): self {
+		return new self( 'Akismet API requests are being throttled due to exceeding usage limits' );
+	}
+
+	/**
+	 * Get the number of seconds to wait before retrying.
+	 */
+	public function getRetryAfter(): ?int {
+		return $this->retryAfter;
+	}
 }
