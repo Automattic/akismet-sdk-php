@@ -146,6 +146,7 @@ final class Akismet implements AkismetInterface {
 		$response = $this->httpClient->get( '/1.2/usage-limit' );
 		$data     = json_decode( HttpClient::getBody( $response ), true );
 
+		/** @var array{limit: int|string, usage: int, percentage: string, throttled: bool} $data */
 		return UsageLimit::fromResponse( $data );
 	}
 
@@ -174,6 +175,7 @@ final class Akismet implements AkismetInterface {
 		$response = $this->httpClient->get( '/1.2/key-sites', $params );
 		$data     = json_decode( HttpClient::getBody( $response ), true );
 
+		/** @var array<string, mixed> $data */
 		return KeySitesResponse::fromResponse( $data );
 	}
 
