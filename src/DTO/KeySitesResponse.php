@@ -48,9 +48,9 @@ final readonly class KeySitesResponse {
 	 * @param array<string, mixed> $data Raw API response data.
 	 */
 	public static function fromResponse( array $data ): self {
-		$limit  = (int) ( $data['limit'] ?? 500 );
-		$offset = (int) ( $data['offset'] ?? 0 );
-		$total  = (int) ( $data['total'] ?? 0 );
+		$limit  = isset( $data['limit'] ) && is_numeric( $data['limit'] ) ? (int) $data['limit'] : 500;
+		$offset = isset( $data['offset'] ) && is_numeric( $data['offset'] ) ? (int) $data['offset'] : 0;
+		$total  = isset( $data['total'] ) && is_numeric( $data['total'] ) ? (int) $data['total'] : 0;
 
 		// Remove pagination keys to get site data
 		unset( $data['limit'], $data['offset'], $data['total'] );

@@ -74,6 +74,7 @@ final class CommentFactory {
 		?string $honeypotFieldName = null,
 		?string $honeypotFieldValue = null,
 	): Comment {
+		/** @var array<string, mixed> $serverParams */
 		$serverParams = $request->getServerParams();
 
 		// Extract IP address (check common proxy headers first)
@@ -117,30 +118,76 @@ final class CommentFactory {
 	 * @param array<string, mixed> $data Comment data with keys matching Comment properties.
 	 */
 	public static function fromArray( array $data ): Comment {
-		$type = $data['type'] ?? null;
-		if ( is_string( $type ) ) {
-			$type = CommentType::tryFrom( $type ) ?? $type;
-		}
+		$type = self::getCommentType( $data );
+
+		// Extract server variables with proper type checking
+		$serverVars = $data['serverVariables'] ?? [];
+		/** @var array<string, string> $serverVariables */
+		$serverVariables = is_array( $serverVars ) ? $serverVars : [];
 
 		return new Comment(
-			userIp: (string) ( $data['userIp'] ?? $data['user_ip'] ?? '' ),
-			userAgent: $data['userAgent'] ?? $data['user_agent'] ?? null,
-			content: $data['content'] ?? $data['comment_content'] ?? null,
-			authorName: $data['authorName'] ?? $data['comment_author'] ?? null,
-			authorEmail: $data['authorEmail'] ?? $data['comment_author_email'] ?? null,
-			authorUrl: $data['authorUrl'] ?? $data['comment_author_url'] ?? null,
+			userIp: self::getString( $data, 'userIp', 'user_ip' ) ?? '',
+			userAgent: self::getString( $data, 'userAgent', 'user_agent' ),
+			content: self::getString( $data, 'content', 'comment_content' ),
+			authorName: self::getString( $data, 'authorName', 'comment_author' ),
+			authorEmail: self::getString( $data, 'authorEmail', 'comment_author_email' ),
+			authorUrl: self::getString( $data, 'authorUrl', 'comment_author_url' ),
 			type: $type,
-			permalink: $data['permalink'] ?? null,
-			referrer: $data['referrer'] ?? null,
-			dateGmt: $data['dateGmt'] ?? $data['comment_date_gmt'] ?? null,
-			postModifiedGmt: $data['postModifiedGmt'] ?? $data['comment_post_modified_gmt'] ?? null,
-			parentId: $data['parentId'] ?? $data['comment_parent'] ?? null,
-			userRole: $data['userRole'] ?? $data['user_role'] ?? null,
-			recheckReason: $data['recheckReason'] ?? $data['recheck_reason'] ?? null,
-			honeypotFieldName: $data['honeypotFieldName'] ?? $data['honeypot_field_name'] ?? null,
-			honeypotFieldValue: $data['honeypotFieldValue'] ?? null,
-			serverVariables: $data['serverVariables'] ?? [],
+			permalink: self::getString( $data, 'permalink' ),
+			referrer: self::getString( $data, 'referrer' ),
+			dateGmt: self::getDateTime( $data, 'dateGmt', 'comment_date_gmt' ),
+			postModifiedGmt: self::getDateTime( $data, 'postModifiedGmt', 'comment_post_modified_gmt' ),
+			parentId: self::getString( $data, 'parentId', 'comment_parent' ),
+			userRole: self::getString( $data, 'userRole', 'user_role' ),
+			recheckReason: self::getString( $data, 'recheckReason', 'recheck_reason' ),
+			honeypotFieldName: self::getString( $data, 'honeypotFieldName', 'honeypot_field_name' ),
+			honeypotFieldValue: self::getString( $data, 'honeypotFieldValue' ),
+			serverVariables: $serverVariables,
 		);
+	}
+
+	/**
+	 * Get a string value from data array with fallback key.
+	 *
+	 * @param array<string, mixed> $data        Source data.
+	 * @param string               $key         Primary key.
+	 * @param string|null          $fallbackKey Fallback key if primary not found.
+	 */
+	private static function getString( array $data, string $key, ?string $fallbackKey = null ): ?string {
+		$value = $data[ $key ] ?? ( $fallbackKey !== null ? ( $data[ $fallbackKey ] ?? null ) : null );
+		return is_string( $value ) ? $value : null;
+	}
+
+	/**
+	 * Get a DateTimeInterface value from data array with fallback key.
+	 *
+	 * @param array<string, mixed> $data        Source data.
+	 * @param string               $key         Primary key.
+	 * @param string|null          $fallbackKey Fallback key if primary not found.
+	 */
+	private static function getDateTime( array $data, string $key, ?string $fallbackKey = null ): ?DateTimeInterface {
+		$value = $data[ $key ] ?? ( $fallbackKey !== null ? ( $data[ $fallbackKey ] ?? null ) : null );
+		return $value instanceof DateTimeInterface ? $value : null;
+	}
+
+	/**
+	 * Get CommentType from data array.
+	 *
+	 * @param array<string, mixed> $data Source data.
+	 * @return CommentType|string|null
+	 */
+	private static function getCommentType( array $data ): CommentType|string|null {
+		$type = $data['type'] ?? null;
+
+		if ( $type instanceof CommentType ) {
+			return $type;
+		}
+
+		if ( is_string( $type ) ) {
+			return CommentType::tryFrom( $type ) ?? $type;
+		}
+
+		return null;
 	}
 
 	/**
@@ -173,7 +220,8 @@ final class CommentFactory {
 		}
 
 		// Fall back to REMOTE_ADDR
-		return (string) ( $serverParams['REMOTE_ADDR'] ?? '127.0.0.1' );
+		$remoteAddr = $serverParams['REMOTE_ADDR'] ?? '127.0.0.1';
+		return is_string( $remoteAddr ) ? $remoteAddr : '127.0.0.1';
 	}
 
 	/**
