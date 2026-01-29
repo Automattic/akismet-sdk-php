@@ -25,13 +25,6 @@
         </include>
     </source>
 
-    <coverage>
-        <report>
-            <html outputDirectory="coverage"/>
-            <clover outputFile="coverage/clover.xml"/>
-        </report>
-    </coverage>
-
     <php>
         <env name="AKISMET_API_KEY" value=""/>
         <env name="AKISMET_BLOG_URL" value="https://example.com"/>
