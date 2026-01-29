@@ -4,7 +4,7 @@ Thank you for your interest in contributing to the Akismet PHP SDK! This documen
 
 ## Code of Conduct
 
-This project follows Automattic's Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to opensource@automattic.com.
+This project follows Automattic's Code of Conduct. By participating, you are expected to uphold this code.
 
 ## Getting Started
 
@@ -228,7 +228,6 @@ Releases are handled by maintainers:
 
 - **Issues**: Open an issue for bugs or feature requests
 - **Discussions**: Use GitHub Discussions for questions
-- **Email**: opensource@automattic.com
 - **Security**: security@automattic.com (for security issues only)
 
 ## Resources

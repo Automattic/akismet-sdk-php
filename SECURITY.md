@@ -218,7 +218,6 @@ Eligible security vulnerabilities in the Akismet PHP SDK may qualify for bountie
 If you have questions about security but don't have a vulnerability to report, you can:
 
 - Open a GitHub Discussion
-- Email opensource@automattic.com
 
 For security vulnerabilities, always use security@automattic.com.
 
