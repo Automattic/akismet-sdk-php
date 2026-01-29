@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Config;
 
 use Automattic\Akismet\Exception\ValidationException;
+use Automattic\Akismet\Validator\InputValidator;
 
 /**
  * Immutable configuration for the Akismet client.
@@ -36,13 +37,8 @@ final readonly class Configuration {
 			throw ValidationException::invalidValue( 'apiKey', 'cannot be empty' );
 		}
 
-		if ( $blog === '' ) {
-			throw ValidationException::invalidValue( 'blog', 'cannot be empty' );
-		}
-
-		if ( ! filter_var( $blog, FILTER_VALIDATE_URL ) ) {
-			throw ValidationException::invalidValue( 'blog', 'must be a valid URL' );
-		}
+		InputValidator::validateUrl( $blog, 'blog' );
+		InputValidator::validateUrl( $baseUrl, 'baseUrl' );
 
 		if ( $timeout < 1 ) {
 			throw ValidationException::invalidValue( 'timeout', 'must be at least 1 second' );

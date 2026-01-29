@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Automattic\Akismet\DTO;
 
 use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\Validator\InputValidator;
 use DateTimeInterface;
 
 /**
@@ -55,6 +56,11 @@ final readonly class Comment {
 		public ?string $honeypotFieldValue = null,
 		public array $serverVariables = [],
 	) {
+		InputValidator::validateIp( $userIp, 'userIp' );
+
+		if ( $authorEmail !== null ) {
+			InputValidator::validateEmail( $authorEmail, 'authorEmail' );
+		}
 	}
 
 	/**
