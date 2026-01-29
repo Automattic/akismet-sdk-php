@@ -101,4 +101,29 @@ final class AkismetIntegrationTest extends TestCase {
 
 		$this->akismet->submitHam( $comment );
 	}
+
+	public function testGetUsageLimit(): void {
+		$usage = $this->akismet->getUsageLimit();
+
+		$this->assertGreaterThanOrEqual( 0, $usage->usage );
+		$this->assertIsInt( $usage->limit );
+		$this->assertIsString( $usage->percentage );
+		$this->assertIsBool( $usage->throttled );
+	}
+
+	public function testGetKeySites(): void {
+		$response = $this->akismet->getKeySites( limit: 10 );
+
+		$this->assertIsArray( $response->sites );
+		$this->assertLessThanOrEqual( 10, count( $response->sites ) );
+	}
+
+	public function testGetKeySitesWithFilter(): void {
+		$response = $this->akismet->getKeySites(
+			filter: 'example.com',
+			limit: 5
+		);
+
+		$this->assertIsArray( $response->sites );
+	}
 }
