@@ -44,6 +44,14 @@ interface AkismetInterface {
 	 *
 	 * Use this when content was not caught as spam but should have been.
 	 *
+	 * Best Practices:
+	 * - Only submit after human review confirms it is spam
+	 * - Include all available context (author info, content, user agent)
+	 * - Submit within a reasonable timeframe of the original check
+	 * - Use consistent data between check and submit calls
+	 * - Consider implementing a delay to allow for human moderation
+	 * - Do not submit based solely on automated rules without verification
+	 *
 	 * @param Comment $comment The spam content.
 	 * @throws AkismetException On network or API errors.
 	 */
@@ -53,6 +61,14 @@ interface AkismetInterface {
 	 * Submit content as ham (false positive).
 	 *
 	 * Use this when content was incorrectly marked as spam.
+	 *
+	 * Best Practices:
+	 * - Submit as soon as false positives are identified to improve accuracy
+	 * - Ensure the same data is submitted that was originally checked
+	 * - Include all context fields used in the original check
+	 * - Submit consistently to help train the spam detection system
+	 * - Consider batching submissions if processing historical data
+	 * - Track and monitor false positive rates to identify patterns
 	 *
 	 * @param Comment $comment The legitimate content.
 	 * @throws AkismetException On network or API errors.
