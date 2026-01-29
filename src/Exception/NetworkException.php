@@ -32,13 +32,17 @@ final class NetworkException extends RuntimeException implements AkismetExceptio
 	}
 
 	/**
-	 * Create exception from a PSR-18 client exception.
+	 * Create exception with endpoint context.
 	 */
-	public static function fromClientException( Throwable $exception ): self {
+	public static function fromEndpoint(
+		string $endpoint,
+		string $message,
+		?Throwable $previous = null
+	): self {
 		return new self(
-			sprintf( 'Akismet API request failed: %s', $exception->getMessage() ),
+			sprintf( 'Akismet API request to %s failed: %s', $endpoint, $message ),
 			0,
-			$exception
+			$previous
 		);
 	}
 }

@@ -108,7 +108,8 @@ final class HttpClient {
 		try {
 			$response = $this->client->sendRequest( $request );
 		} catch ( ClientExceptionInterface $e ) {
-			throw NetworkException::fromClientException( $e );
+			$endpoint = parse_url( (string) $request->getUri(), PHP_URL_PATH );
+			throw NetworkException::fromEndpoint( $endpoint ? $endpoint : 'unknown', $e->getMessage(), $e );
 		}
 
 		$statusCode = $response->getStatusCode();

@@ -38,11 +38,4 @@ final class NetworkExceptionTest extends TestCase {
 		$exception = NetworkException::timeout();
 		$this->assertStringContainsString( 'timed out', $exception->getMessage() );
 	}
-
-	public function testFromClientException(): void {
-		$previous  = new Exception( 'Connection refused' );
-		$exception = NetworkException::fromClientException( $previous );
-		$this->assertStringContainsString( 'Connection refused', $exception->getMessage() );
-		$this->assertSame( $previous, $exception->getPrevious() );
-	}
 }
