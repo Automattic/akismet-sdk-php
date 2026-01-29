@@ -41,6 +41,7 @@
     <rule ref="WordPress.WP.AlternativeFunctions">
         <!-- SDK can use standard PHP functions, not WordPress alternatives -->
         <exclude name="WordPress.WP.AlternativeFunctions.json_encode_json_encode"/>
+        <exclude name="WordPress.WP.AlternativeFunctions.parse_url_parse_url"/>
     </rule>
 
     <!-- PSR-4 autoloading means class names match filenames -->
