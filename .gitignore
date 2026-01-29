@@ -16,6 +16,10 @@ composer.lock
 .phpunit.result.cache
 phpunit.xml
 
+# Coverage reports
+.phpunit.cache/coverage-html/
+coverage.xml
+
 # =============================================================================
 # Static Analysis / Code Quality
 # =============================================================================
