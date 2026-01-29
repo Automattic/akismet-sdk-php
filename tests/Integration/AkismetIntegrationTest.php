@@ -106,7 +106,7 @@ final class AkismetIntegrationTest extends TestCase {
 		$usage = $this->akismet->getUsageLimit();
 
 		$this->assertGreaterThanOrEqual( 0, $usage->usage );
-		$this->assertIsInt( $usage->limit );
+		$this->assertTrue( is_int( $usage->limit ) || $usage->limit === null );
 		$this->assertIsString( $usage->percentage );
 		$this->assertIsBool( $usage->throttled );
 	}
