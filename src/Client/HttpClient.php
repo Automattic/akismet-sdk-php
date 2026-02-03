@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Client;
 
 use Automattic\Akismet\Config\Configuration;
-use Automattic\Akismet\Exception\BadRequestException;
+use Automattic\Akismet\Exception\ClientErrorException;
 use Automattic\Akismet\Exception\NetworkException;
 use Automattic\Akismet\Exception\RateLimitException;
 use Automattic\Akismet\Exception\ServerException;
@@ -52,7 +52,7 @@ final class HttpClient {
 	 * @param string               $endpoint API endpoint path.
 	 * @param array<string, string> $data    Form data to send.
 	 * @return ResponseInterface
-	 * @throws BadRequestException
+	 * @throws ClientErrorException
 	 * @throws NetworkException
 	 * @throws RateLimitException
 	 * @throws ServerException
@@ -86,7 +86,7 @@ final class HttpClient {
 	 * @param string               $endpoint API endpoint path.
 	 * @param array<string, string> $params  Query parameters.
 	 * @return ResponseInterface
-	 * @throws BadRequestException
+	 * @throws ClientErrorException
 	 * @throws NetworkException
 	 * @throws RateLimitException
 	 * @throws ServerException
@@ -107,7 +107,7 @@ final class HttpClient {
 	/**
 	 * Send a request and handle errors.
 	 *
-	 * @throws BadRequestException
+	 * @throws ClientErrorException
 	 * @throws NetworkException
 	 * @throws RateLimitException
 	 * @throws ServerException
@@ -134,7 +134,7 @@ final class HttpClient {
 		}
 
 		if ( $statusCode >= 400 ) {
-			throw BadRequestException::fromStatusCode( $statusCode, self::getBody( $response ) );
+			throw ClientErrorException::fromStatusCode( $statusCode, self::getBody( $response ) );
 		}
 
 		return $response;
