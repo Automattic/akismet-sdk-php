@@ -25,6 +25,9 @@ final class RateLimitException extends RuntimeException implements AkismetExcept
 
 	/**
 	 * Create exception for HTTP 429 response.
+	 *
+	 * @param int|null $retryAfter Seconds to wait before retrying.
+	 * @return self
 	 */
 	public static function fromResponse( ?int $retryAfter = null ): self {
 		return new self( 'Akismet API rate limit exceeded', $retryAfter );
@@ -32,6 +35,8 @@ final class RateLimitException extends RuntimeException implements AkismetExcept
 
 	/**
 	 * Create exception for throttled account.
+	 *
+	 * @return self
 	 */
 	public static function throttled(): self {
 		return new self( 'Akismet API requests are being throttled due to exceeding usage limits' );
@@ -39,6 +44,8 @@ final class RateLimitException extends RuntimeException implements AkismetExcept
 
 	/**
 	 * Get the number of seconds to wait before retrying.
+	 *
+	 * @return int|null
 	 */
 	public function getRetryAfter(): ?int {
 		return $this->retryAfter;

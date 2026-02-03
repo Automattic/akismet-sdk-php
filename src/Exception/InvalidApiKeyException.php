@@ -18,6 +18,9 @@ final class InvalidApiKeyException extends RuntimeException implements AkismetEx
 
 	/**
 	 * Create exception for an invalid API key.
+	 *
+	 * @param string $apiKey The invalid API key.
+	 * @return self
 	 */
 	public static function forKey( string $apiKey ): self {
 		$maskedKey = substr( $apiKey, 0, 4 ) . str_repeat( '*', max( 0, strlen( $apiKey ) - 4 ) );
@@ -26,6 +29,9 @@ final class InvalidApiKeyException extends RuntimeException implements AkismetEx
 
 	/**
 	 * Create exception for key verification failure.
+	 *
+	 * @param string|null $debugHelp Debug help message from API.
+	 * @return self
 	 */
 	public static function verificationFailed( ?string $debugHelp = null ): self {
 		$message = 'Akismet API key verification failed';
