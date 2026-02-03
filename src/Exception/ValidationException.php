@@ -22,7 +22,8 @@ final class ValidationException extends InvalidArgumentException implements Akis
 	private array $missingFields;
 
 	/**
-	 * @param array<string> $missingFields
+	 * @param string        $message       Exception message.
+	 * @param array<string> $missingFields List of missing field names.
 	 */
 	public function __construct( string $message, array $missingFields = [] ) {
 		parent::__construct( $message );
@@ -32,7 +33,8 @@ final class ValidationException extends InvalidArgumentException implements Akis
 	/**
 	 * Create exception for missing required fields.
 	 *
-	 * @param array<string> $fields
+	 * @param array<string> $fields List of missing field names.
+	 * @return self
 	 */
 	public static function missingRequired( array $fields ): self {
 		return new self(
@@ -43,6 +45,10 @@ final class ValidationException extends InvalidArgumentException implements Akis
 
 	/**
 	 * Create exception for an invalid field value.
+	 *
+	 * @param string $field  Field name.
+	 * @param string $reason Reason the value is invalid.
+	 * @return self
 	 */
 	public static function invalidValue( string $field, string $reason ): self {
 		return new self( sprintf( 'Invalid value for %s: %s', $field, $reason ) );

@@ -19,6 +19,9 @@ final class NetworkException extends RuntimeException implements AkismetExceptio
 
 	/**
 	 * Create exception for connection failure.
+	 *
+	 * @param Throwable|null $previous Previous exception.
+	 * @return self
 	 */
 	public static function connectionFailed( ?Throwable $previous = null ): self {
 		return new self( 'Failed to connect to Akismet API', 0, $previous );
@@ -26,6 +29,9 @@ final class NetworkException extends RuntimeException implements AkismetExceptio
 
 	/**
 	 * Create exception for request timeout.
+	 *
+	 * @param Throwable|null $previous Previous exception.
+	 * @return self
 	 */
 	public static function timeout( ?Throwable $previous = null ): self {
 		return new self( 'Akismet API request timed out', 0, $previous );
@@ -33,6 +39,11 @@ final class NetworkException extends RuntimeException implements AkismetExceptio
 
 	/**
 	 * Create exception with endpoint context.
+	 *
+	 * @param string         $endpoint API endpoint path.
+	 * @param string         $message  Error message.
+	 * @param Throwable|null $previous Previous exception.
+	 * @return self
 	 */
 	public static function fromEndpoint(
 		string $endpoint,
