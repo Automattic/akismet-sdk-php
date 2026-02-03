@@ -10,8 +10,10 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Client;
 
 use Automattic\Akismet\Config\Configuration;
+use Automattic\Akismet\Exception\ClientErrorException;
 use Automattic\Akismet\Exception\NetworkException;
 use Automattic\Akismet\Exception\RateLimitException;
+use Automattic\Akismet\Exception\ServerException;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
 use Psr\Http\Client\ClientExceptionInterface;
@@ -50,8 +52,10 @@ final class HttpClient {
 	 * @param string               $endpoint API endpoint path.
 	 * @param array<string, string> $data    Form data to send.
 	 * @return ResponseInterface
+	 * @throws ClientErrorException
 	 * @throws NetworkException
 	 * @throws RateLimitException
+	 * @throws ServerException
 	 */
 	public function post( string $endpoint, array $data ): ResponseInterface {
 		$url = $this->config->baseUrl . $endpoint;
@@ -82,8 +86,10 @@ final class HttpClient {
 	 * @param string               $endpoint API endpoint path.
 	 * @param array<string, string> $params  Query parameters.
 	 * @return ResponseInterface
+	 * @throws ClientErrorException
 	 * @throws NetworkException
 	 * @throws RateLimitException
+	 * @throws ServerException
 	 */
 	public function get( string $endpoint, array $params = [] ): ResponseInterface {
 		// Add API key to query params
@@ -101,23 +107,34 @@ final class HttpClient {
 	/**
 	 * Send a request and handle errors.
 	 *
+	 * @throws ClientErrorException
 	 * @throws NetworkException
 	 * @throws RateLimitException
+	 * @throws ServerException
 	 */
 	private function send( \Psr\Http\Message\RequestInterface $request ): ResponseInterface {
 		try {
 			$response = $this->client->sendRequest( $request );
 		} catch ( ClientExceptionInterface $e ) {
-			throw NetworkException::fromClientException( $e );
+			$endpoint = parse_url( (string) $request->getUri(), PHP_URL_PATH );
+			throw NetworkException::fromEndpoint( $endpoint ? $endpoint : 'unknown', $e->getMessage(), $e );
 		}
 
 		$statusCode = $response->getStatusCode();
+
+		if ( $statusCode >= 500 ) {
+			throw ServerException::fromStatusCode( $statusCode, self::getBody( $response ) );
+		}
 
 		if ( $statusCode === 429 ) {
 			$retryAfter = $response->hasHeader( 'Retry-After' )
 				? (int) $response->getHeaderLine( 'Retry-After' )
 				: null;
 			throw RateLimitException::fromResponse( $retryAfter );
+		}
+
+		if ( $statusCode >= 400 ) {
+			throw ClientErrorException::fromStatusCode( $statusCode, self::getBody( $response ) );
 		}
 
 		return $response;
