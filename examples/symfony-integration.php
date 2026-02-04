@@ -34,24 +34,14 @@ akismet:
 services:
     # ... existing services
 
-    Automattic\Akismet\Config\Configuration:
+    Automattic\Akismet\Akismet:
         arguments:
             $apiKey: '%env(AKISMET_API_KEY)%'
             $blog: '%env(AKISMET_SITE_URL)%'
             $isTest: '%env(bool:AKISMET_TEST_MODE)%'
 
-    Automattic\Akismet\Akismet:
-        arguments:
-            $configuration: '@Automattic\Akismet\Config\Configuration'
-
     Automattic\Akismet\AkismetInterface:
         alias: Automattic\Akismet\Akismet
-
-    # Auto-wire the SDK classes
-    Automattic\Akismet\:
-        resource: '../vendor/automattic/akismet-sdk-php/src/*'
-        exclude:
-            - '../vendor/automattic/akismet-sdk-php/src/{DTO,Enum,Exception}'
 */
 
 // Example Controller Usage:
@@ -85,20 +75,20 @@ class CommentController extends AbstractController
 
         // Create Akismet comment from request
         $akismetComment = new Comment(
-            user_ip: $request->getClientIp() ?? '',
-            user_agent: $request->headers->get('User-Agent') ?? '',
-            comment_content: $data['content'],
-            comment_author: $data['author'],
-            comment_author_email: $data['author_email'],
-            comment_type: CommentType::COMMENT,
+            userIp: $request->getClientIp() ?? '',
+            userAgent: $request->headers->get('User-Agent'),
+            content: $data['content'],
+            authorName: $data['author'],
+            authorEmail: $data['author_email'],
+            type: CommentType::Comment,
             referrer: $request->headers->get('referer'),
             permalink: $request->getUri()
         );
 
         // Check for spam
-        $result = $this->akismet->checkComment($akismetComment);
+        $result = $this->akismet->check($akismetComment);
 
-        if ($result->isDiscard()) {
+        if ($result->shouldDiscard()) {
             // Blatant spam - just reject it
             return $this->json(
                 ['message' => 'Comment rejected as spam'],
@@ -138,54 +128,81 @@ class SpamService
         private readonly AkismetInterface $akismet
     ) {}
 
+    /**
+     * Check a comment for spam.
+     *
+     * @param array<string, mixed> $commentData Comment data.
+     * @param string               $userIp      User IP address.
+     * @param string               $userAgent   User agent string.
+     * @return array{is_spam: bool, is_discard: bool, verdict: string}
+     */
     public function checkComment(array $commentData, string $userIp, string $userAgent): array
     {
         $akismetComment = new AkismetComment(
-            user_ip: $userIp,
-            user_agent: $userAgent,
-            comment_content: $commentData['content'],
-            comment_author: $commentData['author'] ?? null,
-            comment_author_email: $commentData['author_email'] ?? null,
-            comment_type: CommentType::from($commentData['type'] ?? 'comment')
+            userIp: $userIp,
+            userAgent: $userAgent,
+            content: $commentData['content'] ?? null,
+            authorName: $commentData['author'] ?? null,
+            authorEmail: $commentData['author_email'] ?? null,
+            type: CommentType::from($commentData['type'] ?? 'comment')
         );
 
-        $result = $this->akismet->checkComment($akismetComment);
+        $result = $this->akismet->check($akismetComment);
 
         return [
             'is_spam' => $result->isSpam(),
-            'is_discard' => $result->isDiscard(),
+            'is_discard' => $result->shouldDiscard(),
             'verdict' => $result->verdict->value,
         ];
     }
 
+    /**
+     * Report a comment as spam.
+     *
+     * @param array<string, mixed> $commentData Comment data.
+     * @param string               $userIp      User IP address.
+     * @param string               $userAgent   User agent string.
+     */
     public function reportSpam(array $commentData, string $userIp, string $userAgent): void
     {
         $akismetComment = new AkismetComment(
-            user_ip: $userIp,
-            user_agent: $userAgent,
-            comment_content: $commentData['content'],
-            comment_author: $commentData['author'] ?? null,
-            comment_author_email: $commentData['author_email'] ?? null,
-            comment_type: CommentType::from($commentData['type'] ?? 'comment')
+            userIp: $userIp,
+            userAgent: $userAgent,
+            content: $commentData['content'] ?? null,
+            authorName: $commentData['author'] ?? null,
+            authorEmail: $commentData['author_email'] ?? null,
+            type: CommentType::from($commentData['type'] ?? 'comment')
         );
 
         $this->akismet->submitSpam($akismetComment);
     }
 
+    /**
+     * Report a comment as ham (not spam).
+     *
+     * @param array<string, mixed> $commentData Comment data.
+     * @param string               $userIp      User IP address.
+     * @param string               $userAgent   User agent string.
+     */
     public function reportHam(array $commentData, string $userIp, string $userAgent): void
     {
         $akismetComment = new AkismetComment(
-            user_ip: $userIp,
-            user_agent: $userAgent,
-            comment_content: $commentData['content'],
-            comment_author: $commentData['author'] ?? null,
-            comment_author_email: $commentData['author_email'] ?? null,
-            comment_type: CommentType::from($commentData['type'] ?? 'comment')
+            userIp: $userIp,
+            userAgent: $userAgent,
+            content: $commentData['content'] ?? null,
+            authorName: $commentData['author'] ?? null,
+            authorEmail: $commentData['author_email'] ?? null,
+            type: CommentType::from($commentData['type'] ?? 'comment')
         );
 
         $this->akismet->submitHam($akismetComment);
     }
 
+    /**
+     * Get API usage statistics.
+     *
+     * @return array{usage: int, limit: int|null, percentage: string, throttled: bool}
+     */
     public function getUsageStats(): array
     {
         $usage = $this->akismet->getUsageLimit();

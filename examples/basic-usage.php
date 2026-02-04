@@ -5,7 +5,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Automattic\Akismet\Akismet;
-use Automattic\Akismet\Config\Configuration;
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\Enum\CommentType;
 use Automattic\Akismet\Exception\AkismetException;
@@ -21,13 +20,11 @@ if (!$apiKey || !$siteUrl) {
 
 try {
     // Initialize the SDK
-    $config = new Configuration(
+    $akismet = new Akismet(
         apiKey: $apiKey,
         blog: $siteUrl,
         isTest: true // Enable test mode
     );
-
-    $akismet = new Akismet($config);
 
     // Step 1: Verify your API key
     echo "Verifying API key...\n";
@@ -42,23 +39,22 @@ try {
     echo "\nChecking a comment...\n";
 
     $comment = new Comment(
-        user_ip: '192.168.1.1',
-        user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        comment_content: 'Great article! Thanks for sharing.',
-        comment_author: 'John Doe',
-        comment_author_email: 'john@example.com',
-        comment_type: CommentType::COMMENT,
+        userIp: '192.168.1.1',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        content: 'Great article! Thanks for sharing.',
+        authorName: 'John Doe',
+        authorEmail: 'john@example.com',
+        type: CommentType::Comment,
         referrer: 'https://google.com',
         permalink: 'https://example.com/article',
-        is_test: true // Test mode flag
     );
 
-    $result = $akismet->checkComment($comment);
+    $result = $akismet->check($comment);
 
     echo "Spam verdict: {$result->verdict->value}\n";
     if ($result->isSpam()) {
         echo "This comment appears to be spam";
-        if ($result->isDiscard()) {
+        if ($result->shouldDiscard()) {
             echo " (blatant spam - safe to discard)";
         }
         echo "\n";
@@ -71,9 +67,9 @@ try {
     $usage = $akismet->getUsageLimit();
 
     echo sprintf(
-        "Usage: %d/%d (%d%%)\n",
+        "Usage: %d/%s (%s%%)\n",
         $usage->usage,
-        $usage->limit,
+        $usage->limit ?? 'unlimited',
         $usage->percentage
     );
 
