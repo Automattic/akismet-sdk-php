@@ -12,12 +12,14 @@ namespace Automattic\Akismet\Tests\Integration;
 use Automattic\Akismet\Akismet;
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\Enum\CommentType;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap.php';
 
 #[Group( 'integration' )]
+#[CoversNothing]
 final class AkismetIntegrationTest extends TestCase {
 
 	private Akismet $akismet;
