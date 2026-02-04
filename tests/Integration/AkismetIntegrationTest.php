@@ -2,6 +2,9 @@
 /**
  * Integration tests for Akismet API.
  *
+ * These tests run against the real Akismet API and require a valid API key.
+ * They verify the SDK correctly communicates with the API under normal conditions.
+ *
  * @package Automattic\Akismet
  */
 
@@ -12,6 +15,7 @@ namespace Automattic\Akismet\Tests\Integration;
 use Automattic\Akismet\Akismet;
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\Exception\InvalidApiKeyException;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
@@ -23,36 +27,56 @@ require_once __DIR__ . '/bootstrap.php';
 final class AkismetIntegrationTest extends TestCase {
 
 	private Akismet $akismet;
+	private string $apiKey;
+	private string $blogUrl;
 
 	protected function setUp(): void {
-		$apiKey  = getenv( 'AKISMET_API_KEY' );
-		$blogUrl = getenv( 'AKISMET_BLOG_URL' );
+		$apiKey        = getenv( 'AKISMET_API_KEY' );
+		$this->apiKey  = false !== $apiKey ? $apiKey : '';
+		$blogUrl       = getenv( 'AKISMET_BLOG_URL' );
+		$this->blogUrl = false !== $blogUrl ? $blogUrl : 'https://example.com';
 
-		if ( false === $blogUrl ) {
-			$blogUrl = 'https://example.com';
-		}
-
-		if ( false === $apiKey ) {
+		if ( '' === $this->apiKey ) {
 			$this->fail( 'AKISMET_API_KEY environment variable is required' );
 		}
 
 		$this->akismet = new Akismet(
-			apiKey: $apiKey,
-			blog: $blogUrl,
+			apiKey: $this->apiKey,
+			blog: $this->blogUrl,
 			isTest: true
 		);
 	}
 
-	public function testVerifyKey(): void {
+	// =========================================================================
+	// Key Verification Tests
+	// =========================================================================
+
+	public function testVerifyKeyWithValidKey(): void {
 		$isValid = $this->akismet->verifyKey();
-		$this->assertTrue( $isValid );
+
+		$this->assertTrue( $isValid, 'Valid API key should be accepted' );
 	}
 
-	public function testCheckHam(): void {
+	public function testVerifyKeyWithInvalidKey(): void {
+		$akismet = new Akismet(
+			apiKey: 'invalid-key-that-does-not-exist',
+			blog: $this->blogUrl,
+			isTest: true
+		);
+
+		$this->expectException( InvalidApiKeyException::class );
+		$akismet->verifyKey();
+	}
+
+	// =========================================================================
+	// Comment Check Tests - Ham (Not Spam)
+	// =========================================================================
+
+	public function testCheckHamWithTypicalComment(): void {
 		$comment = new Comment(
 			userIp: '127.0.0.1',
-			userAgent: 'Mozilla/5.0',
-			content: 'This is a legitimate comment',
+			userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+			content: 'This is a legitimate comment with normal content.',
 			authorName: 'John Doe',
 			authorEmail: 'john@example.com',
 			type: CommentType::Comment
@@ -60,72 +84,267 @@ final class AkismetIntegrationTest extends TestCase {
 
 		$result = $this->akismet->check( $comment );
 
-		$this->assertFalse( $result->isSpam() );
-		$this->assertFalse( $result->shouldDiscard() );
+		$this->assertFalse( $result->isSpam(), 'Normal comment should not be spam' );
+		$this->assertFalse( $result->shouldDiscard(), 'Normal comment should not be discarded' );
 	}
 
-	public function testCheckSpam(): void {
+	public function testCheckHamWithMinimalData(): void {
+		// Only the required field (userIp) is provided.
+		$comment = new Comment( userIp: '192.168.1.1' );
+
+		$result = $this->akismet->check( $comment );
+
+		// With minimal data, Akismet should still return a valid result.
+		$this->assertIsBool( $result->isSpam() );
+		$this->assertIsBool( $result->shouldDiscard() );
+	}
+
+	public function testCheckHamWithAdministratorRole(): void {
+		// Administrator role should bias toward ham.
 		$comment = new Comment(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: 'viagra-test-123',
+			content: 'Admin comment',
+			authorName: 'Site Admin',
+			authorEmail: 'admin@example.com',
+			type: CommentType::Comment,
+			userRole: 'administrator'
+		);
+
+		$result = $this->akismet->check( $comment );
+
+		$this->assertFalse( $result->isSpam(), 'Administrator comments should not be spam' );
+	}
+
+	// =========================================================================
+	// Comment Check Tests - Spam
+	// =========================================================================
+
+	public function testCheckSpamWithGuaranteedSpamEmail(): void {
+		// Akismet test mode: akismet-guaranteed-spam@example.com always triggers spam.
+		$comment = new Comment(
+			userIp: '127.0.0.1',
+			userAgent: 'Mozilla/5.0',
+			content: 'This comment uses a guaranteed spam email.',
 			authorEmail: 'akismet-guaranteed-spam@example.com',
 			type: CommentType::Comment
 		);
 
 		$result = $this->akismet->check( $comment );
 
-		$this->assertTrue( $result->isSpam() );
+		$this->assertTrue( $result->isSpam(), 'Guaranteed spam email should be flagged' );
 	}
 
-	public function testSubmitSpam(): void {
-		$this->expectNotToPerformAssertions();
-
+	public function testCheckSpamWithGuaranteedSpamAuthor(): void {
+		// Using viagra-test-123 as author name triggers spam detection.
 		$comment = new Comment(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: 'spam content',
+			content: 'Check out my website!',
+			authorName: 'viagra-test-123',
+			authorEmail: 'akismet-guaranteed-spam@example.com',
 			type: CommentType::Comment
 		);
 
-		$this->akismet->submitSpam( $comment );
+		$result = $this->akismet->check( $comment );
+
+		$this->assertTrue( $result->isSpam(), 'Guaranteed spam author should be flagged' );
 	}
 
-	public function testSubmitHam(): void {
-		$this->expectNotToPerformAssertions();
-
+	public function testCheckSpamBlatantShouldDiscard(): void {
+		// Combining multiple spam signals should trigger blatant spam (discard).
 		$comment = new Comment(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: 'legitimate content',
+			content: 'viagra-test-123',
+			authorName: 'viagra-test-123',
+			authorEmail: 'akismet-guaranteed-spam@example.com',
+			authorUrl: 'https://spam-site.example.com',
 			type: CommentType::Comment
 		);
 
-		$this->akismet->submitHam( $comment );
+		$result = $this->akismet->check( $comment );
+
+		$this->assertTrue( $result->isSpam(), 'Blatant spam should be flagged as spam' );
+		// Note: shouldDiscard() depends on X-akismet-pro-tip header from API.
+		// We assert isSpam at minimum; discard is API-dependent.
 	}
 
-	public function testGetUsageLimit(): void {
+	// =========================================================================
+	// Comment Check Tests - All Fields
+	// =========================================================================
+
+	public function testCheckWithAllOptionalFields(): void {
+		$date         = new \DateTimeImmutable( '2024-01-15T10:30:00Z' );
+		$postModified = new \DateTimeImmutable( '2024-01-10T08:00:00Z' );
+
+		$comment = new Comment(
+			userIp: '203.0.113.42',
+			userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+			content: 'This is a test comment with all fields populated.',
+			authorName: 'Jane Smith',
+			authorEmail: 'jane@example.com',
+			authorUrl: 'https://jane.example.com',
+			type: CommentType::Comment,
+			permalink: 'https://example.com/blog/post-123',
+			referrer: 'https://google.com/search?q=example',
+			dateGmt: $date,
+			postModifiedGmt: $postModified,
+			userRole: 'subscriber',
+			recheckReason: 'edit',
+			honeypotFieldName: 'website_url',
+			honeypotFieldValue: '',
+			serverVariables: [
+				'HTTP_ACCEPT_LANGUAGE' => 'en-US,en;q=0.9',
+			],
+		);
+
+		$result = $this->akismet->check( $comment );
+
+		// Verify we get a valid result with all fields populated.
+		$this->assertIsBool( $result->isSpam() );
+		$this->assertIsBool( $result->shouldDiscard() );
+		$this->assertNotNull( $result->verdict );
+	}
+
+	// =========================================================================
+	// Comment Check Tests - Different Comment Types
+	// =========================================================================
+
+	public function testCheckContactFormSubmission(): void {
+		$comment = new Comment(
+			userIp: '127.0.0.1',
+			userAgent: 'Mozilla/5.0',
+			content: 'I have a question about your services.',
+			authorName: 'Potential Customer',
+			authorEmail: 'customer@example.com',
+			type: CommentType::ContactForm
+		);
+
+		$result = $this->akismet->check( $comment );
+
+		$this->assertFalse( $result->isSpam(), 'Legitimate contact form should not be spam' );
+	}
+
+	public function testCheckSignupSubmission(): void {
+		$comment = new Comment(
+			userIp: '127.0.0.1',
+			userAgent: 'Mozilla/5.0',
+			content: '',
+			authorName: 'newuser123',
+			authorEmail: 'newuser@example.com',
+			type: CommentType::Signup
+		);
+
+		$result = $this->akismet->check( $comment );
+
+		$this->assertIsBool( $result->isSpam() );
+	}
+
+	// =========================================================================
+	// Spam/Ham Submission Tests
+	// =========================================================================
+
+	public function testSubmitSpamDoesNotThrow(): void {
+		$comment = new Comment(
+			userIp: '127.0.0.1',
+			userAgent: 'Mozilla/5.0',
+			content: 'This was spam that got through.',
+			authorEmail: 'spammer@example.com',
+			type: CommentType::Comment
+		);
+
+		// submitSpam returns void; verify no exception is thrown.
+		$exception = null;
+		try {
+			$this->akismet->submitSpam( $comment );
+		} catch ( \Throwable $e ) {
+			$exception = $e;
+		}
+
+		$this->assertNull( $exception, 'submitSpam should not throw for valid request' );
+	}
+
+	public function testSubmitHamDoesNotThrow(): void {
+		$comment = new Comment(
+			userIp: '127.0.0.1',
+			userAgent: 'Mozilla/5.0',
+			content: 'This was incorrectly flagged as spam.',
+			authorName: 'Legitimate User',
+			authorEmail: 'legit@example.com',
+			type: CommentType::Comment
+		);
+
+		// submitHam returns void; verify no exception is thrown.
+		$exception = null;
+		try {
+			$this->akismet->submitHam( $comment );
+		} catch ( \Throwable $e ) {
+			$exception = $e;
+		}
+
+		$this->assertNull( $exception, 'submitHam should not throw for valid request' );
+	}
+
+	// =========================================================================
+	// Usage Limit Tests
+	// =========================================================================
+
+	public function testGetUsageLimitReturnsValidData(): void {
 		$usage = $this->akismet->getUsageLimit();
 
-		$this->assertGreaterThanOrEqual( 0, $usage->usage );
-		$this->assertTrue( is_int( $usage->limit ) || $usage->limit === null );
-		$this->assertIsString( $usage->percentage );
-		$this->assertIsBool( $usage->throttled );
+		$this->assertGreaterThanOrEqual( 0, $usage->usage, 'Usage should be non-negative' );
+		$this->assertTrue(
+			is_int( $usage->limit ) || $usage->limit === null,
+			'Limit should be int or null (unlimited)'
+		);
+		$this->assertIsString( $usage->percentage, 'Percentage should be a string' );
+		$this->assertIsBool( $usage->throttled, 'Throttled should be boolean' );
+
+		// Verify percentage is numeric-ish.
+		$this->assertMatchesRegularExpression(
+			'/^\d+(\.\d+)?$/',
+			$usage->percentage,
+			'Percentage should be a numeric string'
+		);
 	}
 
-	public function testGetKeySites(): void {
+	public function testGetUsageLimitRemainingCalculation(): void {
+		$usage = $this->akismet->getUsageLimit();
+
+		$remaining = $usage->getRemaining();
+
+		if ( $usage->limit === null ) {
+			$this->assertNull( $remaining, 'Remaining should be null for unlimited plans' );
+		} else {
+			$this->assertIsInt( $remaining, 'Remaining should be int for limited plans' );
+			$this->assertGreaterThanOrEqual( 0, $remaining, 'Remaining should be non-negative' );
+		}
+	}
+
+	// =========================================================================
+	// Key Sites Tests
+	// =========================================================================
+
+	public function testGetKeySitesReturnsValidResponse(): void {
 		$response = $this->akismet->getKeySites( limit: 10 );
 
-		$this->assertIsArray( $response->sites );
-		$this->assertLessThanOrEqual( 10, count( $response->sites ) );
+		$this->assertIsArray( $response->sites, 'Sites should be an array' );
+		$this->assertLessThanOrEqual( 10, count( $response->sites ), 'Should respect limit' );
+
+		// Verify pagination metadata exists.
+		$this->assertIsInt( $response->offset );
+		$this->assertIsInt( $response->limit );
 	}
 
-	public function testGetKeySitesWithFilter(): void {
-		$response = $this->akismet->getKeySites(
-			filter: 'example.com',
+	public function testGetKeySitesWithMonthFilter(): void {
+		$currentMonth = gmdate( 'Y-m' );
+		$response     = $this->akismet->getKeySites(
+			month: $currentMonth,
 			limit: 5
 		);
 
 		$this->assertIsArray( $response->sites );
+		// Month filter should return sites active in that month.
 	}
 }
