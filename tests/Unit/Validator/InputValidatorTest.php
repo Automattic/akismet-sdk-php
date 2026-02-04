@@ -67,12 +67,12 @@ final class InputValidatorTest extends TestCase {
 	 */
 	public static function invalidUrlProvider(): array {
 		return [
-			'empty string'      => [ '', 'cannot be empty' ],
+			'empty string'      => [ '', 'must be a valid URL' ],
 			'no scheme'         => [ 'example.com', 'must be a valid URL' ],
 			'ftp scheme'        => [ 'ftp://example.com', 'must use http or https scheme' ],
-			'javascript scheme' => [ 'javascript:alert(1)', 'must use http or https scheme' ],
-			'data scheme'       => [ 'data:text/plain,hello', 'must use http or https scheme' ],
-			'file scheme'       => [ 'file:///etc/passwd', 'must use http or https scheme' ],
+			'javascript scheme' => [ 'javascript:alert(1)', 'must be a valid URL' ],
+			'data scheme'       => [ 'data:text/plain,hello', 'must be a valid URL' ],
+			'file scheme'       => [ 'file:///etc/passwd', 'must be a valid URL' ],
 			'no host'           => [ 'https://', 'must be a valid URL' ],
 			'only scheme'       => [ 'http://', 'must be a valid URL' ],
 			'relative path'     => [ '/path/to/page', 'must be a valid URL' ],
@@ -134,7 +134,7 @@ final class InputValidatorTest extends TestCase {
 	 */
 	public static function invalidIpProvider(): array {
 		return [
-			'empty string'           => [ '', 'cannot be empty' ],
+			'empty string'           => [ '', 'must be a valid IP address' ],
 			'not an ip'              => [ 'not-an-ip', 'must be a valid IP address' ],
 			'hostname'               => [ 'example.com', 'must be a valid IP address' ],
 			'ipv4 too large'         => [ '256.1.1.1', 'must be a valid IP address' ],
@@ -198,7 +198,7 @@ final class InputValidatorTest extends TestCase {
 	 */
 	public static function invalidEmailProvider(): array {
 		return [
-			'empty string'       => [ '', 'cannot be empty' ],
+			'empty string'       => [ '', 'must be a valid email address' ],
 			'no at sign'         => [ 'notanemail', 'must be a valid email address' ],
 			'no domain'          => [ 'user@', 'must be a valid email address' ],
 			'no local part'      => [ '@example.com', 'must be a valid email address' ],

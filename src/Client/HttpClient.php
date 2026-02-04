@@ -34,6 +34,12 @@ final class HttpClient {
 	private StreamFactoryInterface $streamFactory;
 	private Configuration $config;
 
+	/**
+	 * @param Configuration                 $config         SDK configuration.
+	 * @param ClientInterface|null          $client         PSR-18 HTTP client (auto-discovered if null).
+	 * @param RequestFactoryInterface|null  $requestFactory PSR-17 request factory (auto-discovered if null).
+	 * @param StreamFactoryInterface|null   $streamFactory  PSR-17 stream factory (auto-discovered if null).
+	 */
 	public function __construct(
 		Configuration $config,
 		?ClientInterface $client = null,
@@ -107,10 +113,12 @@ final class HttpClient {
 	/**
 	 * Send a request and handle errors.
 	 *
-	 * @throws ClientErrorException
-	 * @throws NetworkException
-	 * @throws RateLimitException
-	 * @throws ServerException
+	 * @param \Psr\Http\Message\RequestInterface $request The request to send.
+	 * @return ResponseInterface The response.
+	 * @throws ClientErrorException If the API returns a 4xx error.
+	 * @throws NetworkException If a network error occurs.
+	 * @throws RateLimitException If rate limited (429).
+	 * @throws ServerException If the API returns a 5xx error.
 	 */
 	private function send( \Psr\Http\Message\RequestInterface $request ): ResponseInterface {
 		try {
@@ -142,6 +150,9 @@ final class HttpClient {
 
 	/**
 	 * Get response body as string.
+	 *
+	 * @param ResponseInterface $response The response.
+	 * @return string The response body.
 	 */
 	public static function getBody( ResponseInterface $response ): string {
 		return (string) $response->getBody();
@@ -150,7 +161,8 @@ final class HttpClient {
 	/**
 	 * Get response headers as associative array.
 	 *
-	 * @return array<string, string>
+	 * @param ResponseInterface $response The response.
+	 * @return array<string, string> Headers as key-value pairs.
 	 */
 	public static function getHeaders( ResponseInterface $response ): array {
 		$headers = [];
