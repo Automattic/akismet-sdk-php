@@ -18,6 +18,10 @@ final class RateLimitException extends RuntimeException implements AkismetExcept
 
 	private ?int $retryAfter;
 
+	/**
+	 * @param string   $message    Exception message.
+	 * @param int|null $retryAfter Seconds to wait before retrying.
+	 */
 	public function __construct( string $message = '', ?int $retryAfter = null ) {
 		parent::__construct( $message );
 		$this->retryAfter = $retryAfter;

@@ -10,12 +10,29 @@ declare(strict_types=1);
 namespace Automattic\Akismet\DTO;
 
 use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\Exception\ValidationException;
+use Automattic\Akismet\Validator\InputValidator;
 use DateTimeInterface;
 
 /**
  * Immutable data transfer object representing content to check for spam.
  */
 final readonly class Comment {
+
+	/**
+	 * Email of the content author (normalized from empty string to null).
+	 */
+	public ?string $authorEmail;
+
+	/**
+	 * URL/website of the content author (normalized from empty string to null).
+	 */
+	public ?string $authorUrl;
+
+	/**
+	 * Permanent URL of the entry being commented on (normalized from empty string to null).
+	 */
+	public ?string $permalink;
 
 	/**
 	 * @param string                  $userIp                  IP address of the content submitter (required).
@@ -35,16 +52,17 @@ final readonly class Comment {
 	 * @param string|null             $honeypotFieldName       Name of a honeypot field if one was used.
 	 * @param string|null             $honeypotFieldValue      Value of the honeypot field (should be empty for humans).
 	 * @param array<string, string>   $serverVariables         Additional server variables to include.
+	 * @throws ValidationException If userIp, authorEmail, authorUrl, or permalink is invalid.
 	 */
 	public function __construct(
 		public string $userIp,
 		public ?string $userAgent = null,
 		public ?string $content = null,
 		public ?string $authorName = null,
-		public ?string $authorEmail = null,
-		public ?string $authorUrl = null,
+		?string $authorEmail = null,
+		?string $authorUrl = null,
 		public CommentType|string|null $type = null,
-		public ?string $permalink = null,
+		?string $permalink = null,
 		public ?string $referrer = null,
 		public ?DateTimeInterface $dateGmt = null,
 		public ?DateTimeInterface $postModifiedGmt = null,
@@ -55,6 +73,24 @@ final readonly class Comment {
 		public ?string $honeypotFieldValue = null,
 		public array $serverVariables = [],
 	) {
+		// Normalize empty strings to null for optional validated fields.
+		$this->authorEmail = $authorEmail === '' ? null : $authorEmail;
+		$this->authorUrl   = $authorUrl === '' ? null : $authorUrl;
+		$this->permalink   = $permalink === '' ? null : $permalink;
+
+		// Validate required fields.
+		InputValidator::validateIp( $userIp, 'userIp' );
+
+		// Validate optional fields.
+		if ( $this->authorEmail !== null ) {
+			InputValidator::validateEmail( $this->authorEmail, 'authorEmail' );
+		}
+		if ( $this->authorUrl !== null ) {
+			InputValidator::validateUrl( $this->authorUrl, 'authorUrl' );
+		}
+		if ( $this->permalink !== null ) {
+			InputValidator::validateUrl( $this->permalink, 'permalink' );
+		}
 	}
 
 	/**

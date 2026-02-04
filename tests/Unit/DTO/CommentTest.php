@@ -11,6 +11,7 @@ namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\Exception\ValidationException;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -133,5 +134,66 @@ final class CommentTest extends TestCase {
 
 		$this->assertSame( 'en-US,en;q=0.9', $array['HTTP_ACCEPT_LANGUAGE'] );
 		$this->assertSame( 'gzip, deflate', $array['HTTP_ACCEPT_ENCODING'] );
+	}
+
+	public function testNormalizesEmptyStringToNullForAuthorEmail(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			authorEmail: '',
+		);
+
+		$this->assertNull( $comment->authorEmail );
+		$this->assertArrayNotHasKey( 'comment_author_email', $comment->toArray() );
+	}
+
+	public function testNormalizesEmptyStringToNullForAuthorUrl(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			authorUrl: '',
+		);
+
+		$this->assertNull( $comment->authorUrl );
+		$this->assertArrayNotHasKey( 'comment_author_url', $comment->toArray() );
+	}
+
+	public function testNormalizesEmptyStringToNullForPermalink(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			permalink: '',
+		);
+
+		$this->assertNull( $comment->permalink );
+		$this->assertArrayNotHasKey( 'permalink', $comment->toArray() );
+	}
+
+	public function testValidatesAuthorUrl(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'authorUrl' );
+
+		new Comment(
+			userIp: '192.168.1.1',
+			authorUrl: 'not-a-valid-url',
+		);
+	}
+
+	public function testValidatesPermalink(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'permalink' );
+
+		new Comment(
+			userIp: '192.168.1.1',
+			permalink: 'not-a-valid-url',
+		);
+	}
+
+	public function testAcceptsValidUrls(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			authorUrl: 'https://example.com',
+			permalink: 'https://example.com/post/123',
+		);
+
+		$this->assertSame( 'https://example.com', $comment->authorUrl );
+		$this->assertSame( 'https://example.com/post/123', $comment->permalink );
 	}
 }
