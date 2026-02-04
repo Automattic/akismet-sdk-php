@@ -11,12 +11,14 @@ namespace Automattic\Akismet\Tests\Unit\Validator;
 
 use Automattic\Akismet\Exception\ValidationException;
 use Automattic\Akismet\Validator\InputValidator;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Test input validation.
  */
+#[CoversClass( InputValidator::class )]
 final class InputValidatorTest extends TestCase {
 
 	/**
