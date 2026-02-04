@@ -11,10 +11,14 @@ namespace Automattic\Akismet\Tests\Unit\Config;
 
 use Automattic\Akismet\Config\Configuration;
 use Automattic\Akismet\Exception\ValidationException;
+use Automattic\Akismet\Validator\InputValidator;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( Configuration::class )]
+#[UsesClass( InputValidator::class )]
+#[UsesClass( ValidationException::class )]
 final class ConfigurationTest extends TestCase {
 
 	public function testCreatesWithRequiredParameters(): void {

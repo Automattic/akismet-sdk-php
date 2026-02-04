@@ -9,14 +9,19 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet\Tests\Unit\Factory;
 
+use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\Enum\CommentType;
 use Automattic\Akismet\Factory\CommentFactory;
+use Automattic\Akismet\Validator\InputValidator;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 
 #[CoversClass( CommentFactory::class )]
+#[UsesClass( Comment::class )]
+#[UsesClass( InputValidator::class )]
 final class CommentFactoryTest extends TestCase {
 
 	public function testFromRequestExtractsBasicInfo(): void {

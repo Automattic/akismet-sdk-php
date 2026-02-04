@@ -12,11 +12,15 @@ namespace Automattic\Akismet\Tests\Unit\DTO;
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\Enum\CommentType;
 use Automattic\Akismet\Exception\ValidationException;
+use Automattic\Akismet\Validator\InputValidator;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( Comment::class )]
+#[UsesClass( InputValidator::class )]
+#[UsesClass( ValidationException::class )]
 final class CommentTest extends TestCase {
 
 	public function testCreatesWithRequiredFields(): void {
