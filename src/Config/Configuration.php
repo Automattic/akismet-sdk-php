@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Config;
 
 use Automattic\Akismet\Exception\ValidationException;
+use Automattic\Akismet\Validator\InputValidator;
 
 /**
  * Immutable configuration for the Akismet client.
@@ -25,6 +26,14 @@ final readonly class Configuration {
 	public int $timeout;
 	public bool $isTest;
 
+	/**
+	 * @param string $apiKey  Akismet API key.
+	 * @param string $blog    Blog URL.
+	 * @param string $baseUrl Base URL for API requests.
+	 * @param int    $timeout Request timeout in seconds.
+	 * @param bool   $isTest  Whether to enable test mode.
+	 * @throws ValidationException If any parameter is invalid.
+	 */
 	public function __construct(
 		string $apiKey,
 		string $blog,
@@ -36,13 +45,8 @@ final readonly class Configuration {
 			throw ValidationException::invalidValue( 'apiKey', 'cannot be empty' );
 		}
 
-		if ( $blog === '' ) {
-			throw ValidationException::invalidValue( 'blog', 'cannot be empty' );
-		}
-
-		if ( ! filter_var( $blog, FILTER_VALIDATE_URL ) ) {
-			throw ValidationException::invalidValue( 'blog', 'must be a valid URL' );
-		}
+		InputValidator::validateUrl( $blog, 'blog' );
+		InputValidator::validateUrl( $baseUrl, 'baseUrl' );
 
 		if ( $timeout < 1 ) {
 			throw ValidationException::invalidValue( 'timeout', 'must be at least 1 second' );
@@ -57,6 +61,9 @@ final readonly class Configuration {
 
 	/**
 	 * Create a new configuration with test mode enabled.
+	 *
+	 * @param bool $isTest Whether to enable test mode.
+	 * @return self New configuration instance.
 	 */
 	public function withTestMode( bool $isTest = true ): self {
 		return new self(
@@ -70,6 +77,10 @@ final readonly class Configuration {
 
 	/**
 	 * Create a new configuration with a different timeout.
+	 *
+	 * @param int $timeout Request timeout in seconds.
+	 * @return self New configuration instance.
+	 * @throws ValidationException If timeout is less than 1.
 	 */
 	public function withTimeout( int $timeout ): self {
 		return new self(
