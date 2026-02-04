@@ -29,7 +29,6 @@ namespace App\Providers;
 
 use Automattic\Akismet\Akismet;
 use Automattic\Akismet\AkismetInterface;
-use Automattic\Akismet\Config\Configuration;
 use Illuminate\Support\ServiceProvider;
 
 class AkismetServiceProvider extends ServiceProvider
@@ -40,13 +39,11 @@ class AkismetServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(AkismetInterface::class, function ($app) {
-            $config = new Configuration(
+            return new Akismet(
                 apiKey: config('services.akismet.api_key'),
                 blog: config('services.akismet.site_url'),
                 isTest: config('services.akismet.test_mode', false)
             );
-
-            return new Akismet($config);
         });
 
         // Also bind the concrete class for type-hinting
@@ -107,20 +104,20 @@ class CommentController extends Controller
 
         // Create Akismet comment from request
         $akismetComment = new Comment(
-            user_ip: $request->ip(),
-            user_agent: $request->userAgent() ?? '',
-            comment_content: $validated['content'],
-            comment_author: $validated['author'],
-            comment_author_email: $validated['author_email'],
-            comment_type: CommentType::COMMENT,
+            userIp: $request->ip(),
+            userAgent: $request->userAgent(),
+            content: $validated['content'],
+            authorName: $validated['author'],
+            authorEmail: $validated['author_email'],
+            type: CommentType::Comment,
             referrer: $request->header('referer'),
             permalink: $request->url()
         );
 
         // Check for spam
-        $result = $this->akismet->checkComment($akismetComment);
+        $result = $this->akismet->check($akismetComment);
 
-        if ($result->isDiscard()) {
+        if ($result->shouldDiscard()) {
             // Blatant spam - just discard it
             return response()->json(['message' => 'Comment rejected'], 400);
         }
@@ -166,7 +163,7 @@ class CheckCommentForSpam implements ShouldQueue
         $comment = Comment::findOrFail($this->commentId);
 
         $akismetComment = new AkismetComment(...$this->akismetData);
-        $result = $akismet->checkComment($akismetComment);
+        $result = $akismet->check($akismetComment);
 
         $comment->update([
             'is_spam' => $result->isSpam(),

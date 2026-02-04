@@ -26,7 +26,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Automattic\Akismet\Akismet;
-use Automattic\Akismet\Config\Configuration;
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\Enum\CommentType;
 use Automattic\Akismet\Exception\AkismetException;
@@ -52,27 +51,30 @@ class CommentSpamChecker
 
     /**
      * Process a single comment from the queue.
+     *
+     * @param array<string, mixed> $commentData Comment data from queue.
+     * @return array{success: bool, is_spam?: bool, is_discard?: bool, verdict?: string, error?: string, retry?: bool}
      */
     public function processComment(array $commentData): array
     {
         try {
             $comment = new Comment(
-                user_ip: $commentData['user_ip'],
-                user_agent: $commentData['user_agent'],
-                comment_content: $commentData['content'],
-                comment_author: $commentData['author'] ?? null,
-                comment_author_email: $commentData['email'] ?? null,
-                comment_type: CommentType::from($commentData['type'] ?? 'comment'),
+                userIp: $commentData['user_ip'],
+                userAgent: $commentData['user_agent'] ?? null,
+                content: $commentData['content'] ?? null,
+                authorName: $commentData['author'] ?? null,
+                authorEmail: $commentData['email'] ?? null,
+                type: CommentType::from($commentData['type'] ?? 'comment'),
                 referrer: $commentData['referrer'] ?? null,
                 permalink: $commentData['permalink'] ?? null
             );
 
-            $result = $this->akismet->checkComment($comment);
+            $result = $this->akismet->check($comment);
 
             return [
                 'success' => true,
                 'is_spam' => $result->isSpam(),
-                'is_discard' => $result->isDiscard(),
+                'is_discard' => $result->shouldDiscard(),
                 'verdict' => $result->verdict->value,
             ];
 
@@ -90,7 +92,11 @@ class CommentSpamChecker
 
     /**
      * Process multiple comments in a batch.
+     *
      * Useful for cron-based processing or batch workers.
+     *
+     * @param array<int, array<string, mixed>> $comments Comments to process.
+     * @return array<int, array{id: mixed, result: array<string, mixed>}>
      */
     public function processBatch(array $comments): array
     {
@@ -113,13 +119,12 @@ class CommentSpamChecker
 // Example: Simple queue worker
 function runWorker(): void
 {
-    $config = new Configuration(
+    $akismet = new Akismet(
         apiKey: getenv('AKISMET_API_KEY') ?: '',
         blog: getenv('AKISMET_SITE_URL') ?: '',
         isTest: true
     );
 
-    $akismet = new Akismet($config);
     $checker = new CommentSpamChecker($akismet);
 
     echo "Starting spam check worker...\n";
