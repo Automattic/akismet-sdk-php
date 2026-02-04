@@ -18,10 +18,12 @@ use Automattic\Akismet\Exception\ClientErrorException;
 use Automattic\Akismet\Exception\NetworkException;
 use Automattic\Akismet\Exception\RateLimitException;
 use Automattic\Akismet\Exception\ServerException;
+use Automattic\Akismet\Validator\InputValidator;
 use GuzzleHttp\Psr7\HttpFactory;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
@@ -29,6 +31,12 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 #[CoversClass( HttpClient::class )]
+#[UsesClass( Configuration::class )]
+#[UsesClass( InputValidator::class )]
+#[UsesClass( ServerException::class )]
+#[UsesClass( ClientErrorException::class )]
+#[UsesClass( RateLimitException::class )]
+#[UsesClass( NetworkException::class )]
 final class HttpClientErrorTest extends TestCase {
 
 	private Configuration $config;
