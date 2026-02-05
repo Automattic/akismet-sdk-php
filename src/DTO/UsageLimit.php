@@ -51,7 +51,7 @@ final readonly class UsageLimit {
 	/**
 	 * Create from API JSON response.
 	 *
-	 * @param array{limit: int|string, usage: int, percentage: string, throttled: bool} $data
+	 * @param array{limit: int|string, usage: int|string, percentage: int|string, throttled: bool} $data
 	 */
 	public static function fromResponse( array $data ): self {
 		// limit can be an integer or "none" for unlimited
@@ -60,7 +60,7 @@ final readonly class UsageLimit {
 		return new self(
 			$limit,
 			(int) $data['usage'],
-			$data['percentage'],
+			(string) $data['percentage'],
 			(bool) $data['throttled'],
 		);
 	}

@@ -17,28 +17,36 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass( SpamVerdict::class )]
 final class SpamVerdictTest extends TestCase {
 
-	public function testHamIsNotSpam(): void {
-		$this->assertFalse( SpamVerdict::Ham->isSpam() );
+	#[DataProvider( 'isSpamProvider' )]
+	public function testIsSpam( SpamVerdict $verdict, bool $expectedIsSpam ): void {
+		$this->assertSame( $expectedIsSpam, $verdict->isSpam() );
 	}
 
-	public function testSpamIsSpam(): void {
-		$this->assertTrue( SpamVerdict::Spam->isSpam() );
+	/**
+	 * @return array<string, array{SpamVerdict, bool}>
+	 */
+	public static function isSpamProvider(): array {
+		return [
+			'ham is not spam' => [ SpamVerdict::Ham, false ],
+			'spam is spam'    => [ SpamVerdict::Spam, true ],
+			'discard is spam' => [ SpamVerdict::Discard, true ],
+		];
 	}
 
-	public function testDiscardIsSpam(): void {
-		$this->assertTrue( SpamVerdict::Discard->isSpam() );
+	#[DataProvider( 'shouldDiscardProvider' )]
+	public function testShouldDiscard( SpamVerdict $verdict, bool $expectedShouldDiscard ): void {
+		$this->assertSame( $expectedShouldDiscard, $verdict->shouldDiscard() );
 	}
 
-	public function testHamShouldNotDiscard(): void {
-		$this->assertFalse( SpamVerdict::Ham->shouldDiscard() );
-	}
-
-	public function testSpamShouldNotDiscard(): void {
-		$this->assertFalse( SpamVerdict::Spam->shouldDiscard() );
-	}
-
-	public function testDiscardShouldDiscard(): void {
-		$this->assertTrue( SpamVerdict::Discard->shouldDiscard() );
+	/**
+	 * @return array<string, array{SpamVerdict, bool}>
+	 */
+	public static function shouldDiscardProvider(): array {
+		return [
+			'ham should not discard'  => [ SpamVerdict::Ham, false ],
+			'spam should not discard' => [ SpamVerdict::Spam, false ],
+			'discard should discard'  => [ SpamVerdict::Discard, true ],
+		];
 	}
 
 	#[DataProvider( 'verdictValueProvider' )]
