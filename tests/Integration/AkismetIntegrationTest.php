@@ -136,13 +136,13 @@ final class AkismetIntegrationTest extends TestCase {
 	}
 
 	public function testCheckSpamWithGuaranteedSpamAuthor(): void {
-		// Using viagra-test-123 as author name triggers spam detection.
+		// Using akismet-guaranteed-spam as author name triggers spam detection.
 		$comment = new Comment(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
 			content: 'Check out my website!',
-			authorName: 'viagra-test-123',
-			authorEmail: 'akismet-guaranteed-spam@example.com',
+			authorName: 'akismet-guaranteed-spam',
+			authorEmail: 'test@example.com',
 			type: CommentType::Comment
 		);
 
@@ -156,8 +156,8 @@ final class AkismetIntegrationTest extends TestCase {
 		$comment = new Comment(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: 'viagra-test-123',
-			authorName: 'viagra-test-123',
+			content: 'Buy cheap stuff now!',
+			authorName: 'akismet-guaranteed-spam',
 			authorEmail: 'akismet-guaranteed-spam@example.com',
 			authorUrl: 'https://spam-site.example.com',
 			type: CommentType::Comment
@@ -201,9 +201,8 @@ final class AkismetIntegrationTest extends TestCase {
 
 		$result = $this->akismet->check( $comment );
 
-		// Verify we get a valid result with all fields populated.
-		$this->assertIsBool( $result->isSpam() );
-		$this->assertIsBool( $result->shouldDiscard() );
+		// Legitimate content with all fields should not be spam.
+		$this->assertFalse( $result->isSpam(), 'Comment with all fields should not be spam' );
 		$this->assertNotNull( $result->verdict );
 	}
 
@@ -246,6 +245,8 @@ final class AkismetIntegrationTest extends TestCase {
 	// =========================================================================
 
 	public function testSubmitSpamDoesNotThrow(): void {
+		$this->expectNotToPerformAssertions();
+
 		$comment = new Comment(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
@@ -254,18 +255,12 @@ final class AkismetIntegrationTest extends TestCase {
 			type: CommentType::Comment
 		);
 
-		// submitSpam returns void; verify no exception is thrown.
-		$exception = null;
-		try {
-			$this->akismet->submitSpam( $comment );
-		} catch ( \Throwable $e ) {
-			$exception = $e;
-		}
-
-		$this->assertNull( $exception, 'submitSpam should not throw for valid request' );
+		$this->akismet->submitSpam( $comment );
 	}
 
 	public function testSubmitHamDoesNotThrow(): void {
+		$this->expectNotToPerformAssertions();
+
 		$comment = new Comment(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
@@ -275,15 +270,7 @@ final class AkismetIntegrationTest extends TestCase {
 			type: CommentType::Comment
 		);
 
-		// submitHam returns void; verify no exception is thrown.
-		$exception = null;
-		try {
-			$this->akismet->submitHam( $comment );
-		} catch ( \Throwable $e ) {
-			$exception = $e;
-		}
-
-		$this->assertNull( $exception, 'submitHam should not throw for valid request' );
+		$this->akismet->submitHam( $comment );
 	}
 
 	// =========================================================================
