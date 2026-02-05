@@ -43,8 +43,8 @@ composer test
 # Run integration tests (requires API key)
 AKISMET_API_KEY=your_key_here ./vendor/bin/phpunit --testsuite=integration
 
-# Run with coverage
-./vendor/bin/phpunit --coverage-html coverage
+# Run with coverage (outputs to .phpunit.cache/coverage-html)
+composer test
 ```
 
 ### Code Quality
@@ -125,7 +125,6 @@ All code must pass PHPStan at maximum level with no errors.
    - Summary of changes
    - Related issue numbers
    - Testing instructions
-   - Screenshots (if UI changes)
 
 3. **Commits**:
    - Keep commits focused and atomic
@@ -227,7 +226,6 @@ Releases are handled by maintainers:
 ## Getting Help
 
 - **Issues**: Open an issue for bugs or feature requests
-- **Discussions**: Use GitHub Discussions for questions
 - **Security**: security@automattic.com (for security issues only)
 
 ## Resources

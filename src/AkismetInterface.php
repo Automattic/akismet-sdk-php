@@ -49,7 +49,6 @@ interface AkismetInterface {
 	 * - Include all available context (author info, content, user agent)
 	 * - Submit within a reasonable timeframe of the original check
 	 * - Use consistent data between check and submit calls
-	 * - Consider implementing a delay to allow for human moderation
 	 * - Do not submit based solely on automated rules without verification
 	 *
 	 * @param Comment $comment The spam content.
@@ -64,8 +63,7 @@ interface AkismetInterface {
 	 *
 	 * Best Practices:
 	 * - Submit as soon as false positives are identified to improve accuracy
-	 * - Ensure the same data is submitted that was originally checked
-	 * - Include all context fields used in the original check
+	 * - Submit the same data (including all context fields) that was originally checked
 	 * - Submit consistently to help train the spam detection system
 	 * - Consider batching submissions if processing historical data
 	 * - Track and monitor false positive rates to identify patterns

@@ -67,10 +67,6 @@ Add any other context about the problem here:
 - Any workarounds you've found?
 - Related issues or PRs
 
-## Possible Solution
-
-If you have suggestions on how to fix the bug, please share them here.
-
 ## Checklist
 
 - [ ] I have searched existing issues to ensure this is not a duplicate

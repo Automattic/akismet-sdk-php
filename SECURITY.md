@@ -6,10 +6,9 @@ We release patches for security vulnerabilities in the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.x.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| 0.x.x   | :white_check_mark: |
 
-We recommend always using the latest stable version of the SDK.
+This policy will be updated when the SDK reaches a stable 1.0 release. We recommend always using the latest version of the SDK.
 
 ## Reporting a Vulnerability
 
@@ -143,17 +142,9 @@ composer update
 
 ### Test Mode
 
-Never use test mode in production:
-
-```php
-// Good: Test mode only in development
-$comment = Comment::fromRequest($_POST, [
-    'is_test' => $_ENV['APP_ENV'] === 'development' ? 1 : 0,
-]);
-
-// Bad: Test mode in production
-$comment = Comment::fromRequest($_POST, ['is_test' => 1]);
-```
+Never use test mode in production. The `is_test` parameter is set at the API request
+level, not on the Comment DTO. Ensure your application only enables it in development
+environments.
 
 ## Known Security Considerations
 
@@ -166,7 +157,8 @@ The SDK requires the user's IP address for spam checking. Ensure you're capturin
 - Direct connection: Use `$_SERVER['REMOTE_ADDR']`
 
 ```php
-// Validate X-Forwarded-For
+// WARNING: X-Forwarded-For can be spoofed by clients.
+// Only trust this header if your reverse proxy strips/overwrites it.
 $forwardedFor = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
 $ips = array_map('trim', explode(',', $forwardedFor));
 $userIp = filter_var($ips[0] ?? $_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP);
@@ -178,11 +170,13 @@ Always pass the user's real User-Agent, not your application's:
 
 ```php
 // Good: User's browser User-Agent
-$comment = Comment::fromRequest($_POST, [
-    'user_agent' => $_SERVER['HTTP_USER_AGENT'],
-]);
+$comment = new Comment(
+    userIp: $_SERVER['REMOTE_ADDR'],
+    userAgent: $_SERVER['HTTP_USER_AGENT'],
+    // ... other params
+);
 
-// Bad: Your application's User-Agent
+// Bad: Omitting userAgent or substituting your application's User-Agent
 // This reduces spam detection accuracy
 ```
 
@@ -215,9 +209,8 @@ Eligible security vulnerabilities in the Akismet PHP SDK may qualify for bountie
 
 ## Questions?
 
-If you have questions about security but don't have a vulnerability to report, you can:
-
-- Open a GitHub Discussion
+If you have questions about security but don't have a vulnerability to report, you can
+open an issue on GitHub.
 
 For security vulnerabilities, always use security@automattic.com.
 

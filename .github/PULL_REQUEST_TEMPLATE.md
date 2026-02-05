@@ -35,7 +35,6 @@ Relates to #
 ### Test Environment
 
 - PHP Version:
-- Operating System:
 - HTTP Client:
 
 ### Test Cases
@@ -58,45 +57,17 @@ Relates to #
 - [ ] PHPStan analysis passes at max level (`composer analyze`)
 - [ ] All quality checks pass (`composer check`)
 - [ ] Changelog entry added (`vendor/bin/changelogger add`)
+- [ ] This change is backwards compatible
 
 ## Documentation
 
-- [ ] Code is well-commented (explains "why" not "what")
 - [ ] PHPDoc blocks are complete and accurate
 - [ ] README updated (if needed)
 - [ ] CHANGELOG updated via changelogger
-- [ ] Documentation in `docs/` updated (if needed)
-
-## Backwards Compatibility
-
-<!-- If this is a breaking change, explain the impact and migration path -->
-
-- [ ] This change is backwards compatible
-- [ ] Breaking changes are documented
-- [ ] Migration guide provided (if needed)
-
-## Screenshots
-
-<!-- If applicable, add screenshots to demonstrate changes -->
 
 ## Additional Context
 
 <!-- Add any other context about the PR here -->
-
-## Checklist
-
-- [ ] My code follows the project's coding standards
-- [ ] I have performed a self-review of my code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings or errors
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] Any dependent changes have been merged and published
-
-## Reviewer Notes
-
-<!-- Any specific areas you'd like reviewers to focus on? -->
 
 ---
 

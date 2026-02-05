@@ -14,14 +14,8 @@ use RuntimeException;
 /**
  * Thrown when API requests are being rate limited or throttled.
  *
- * Recommended handling steps:
- * 1. Catch this exception in your request handling code
- * 2. Check retryAfter value to determine wait time
- * 3. Implement exponential backoff for retries (e.g., 1s, 2s, 4s, 8s)
- * 4. Use request caching to reduce duplicate checks
- * 5. Queue non-urgent checks for later processing
- * 6. Monitor rate limit exceptions to identify usage patterns
- * 7. Consider upgrading plan if limits are consistently exceeded
+ * Use getRetryAfter() to determine how long to wait before retrying.
+ * Implement exponential backoff if retryAfter is null.
  *
  * Example:
  * try {
