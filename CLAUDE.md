@@ -37,7 +37,7 @@ Base: `https://rest.akismet.com/`
 
 **Response headers**: `X-akismet-pro-tip: discard` (blatant spam), `X-akismet-alert-code`/`X-akismet-alert-msg` (errors), `X-akismet-debug-help` (debugging)
 
-**Test mode**: Set `is_test=1`. Use `akismet-guaranteed-spam@example.com` or `viagra-test-123` for spam, normal content for ham.
+**Test mode**: Set `is_test=1`. Use `akismet-guaranteed-spam@example.com` (email) or `akismet-guaranteed-spam` (author name) for spam, normal content for ham.
 
 ## Coding Standards
 

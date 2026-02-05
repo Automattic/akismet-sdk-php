@@ -103,7 +103,7 @@ $akismet = new Akismet(
 
 In test mode:
 - `akismet-guaranteed-spam@example.com` as author email returns spam
-- `viagra-test-123` in content returns spam
+- `akismet-guaranteed-spam` as author name returns spam
 - Normal content returns ham
 
 ## Documentation
