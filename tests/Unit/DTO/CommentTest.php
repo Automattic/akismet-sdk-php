@@ -200,4 +200,30 @@ final class CommentTest extends TestCase {
 		$this->assertSame( 'https://example.com', $comment->authorUrl );
 		$this->assertSame( 'https://example.com/post/123', $comment->permalink );
 	}
+
+	public function testValidatesUserIp(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'userIp' );
+
+		new Comment( userIp: 'not-a-valid-ip' );
+	}
+
+	public function testValidatesAuthorEmail(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'authorEmail' );
+
+		new Comment(
+			userIp: '192.168.1.1',
+			authorEmail: 'not-a-valid-email',
+		);
+	}
+
+	public function testAcceptsValidAuthorEmail(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			authorEmail: 'user@example.com',
+		);
+
+		$this->assertSame( 'user@example.com', $comment->authorEmail );
+	}
 }

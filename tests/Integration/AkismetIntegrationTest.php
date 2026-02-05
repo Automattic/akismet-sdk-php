@@ -89,14 +89,14 @@ final class AkismetIntegrationTest extends TestCase {
 	}
 
 	public function testCheckHamWithMinimalData(): void {
-		// Only the required field (userIp) is provided.
+		// Minimal data with no spam signals should return ham (not spam).
 		$comment = new Comment( userIp: '192.168.1.1' );
 
 		$result = $this->akismet->check( $comment );
 
-		// With minimal data, Akismet should still return a valid result.
-		$this->assertIsBool( $result->isSpam() );
-		$this->assertIsBool( $result->shouldDiscard() );
+		// Absence of spam signals should bias toward ham.
+		$this->assertFalse( $result->isSpam(), 'Minimal data without spam signals should not be flagged' );
+		$this->assertFalse( $result->shouldDiscard() );
 	}
 
 	public function testCheckHamWithAdministratorRole(): void {
@@ -237,7 +237,8 @@ final class AkismetIntegrationTest extends TestCase {
 
 		$result = $this->akismet->check( $comment );
 
-		$this->assertIsBool( $result->isSpam() );
+		// Legitimate signup with normal email should not be flagged.
+		$this->assertFalse( $result->isSpam(), 'Legitimate signup should not be spam' );
 	}
 
 	// =========================================================================
@@ -281,19 +282,19 @@ final class AkismetIntegrationTest extends TestCase {
 		$usage = $this->akismet->getUsageLimit();
 
 		$this->assertGreaterThanOrEqual( 0, $usage->usage, 'Usage should be non-negative' );
-		$this->assertTrue(
-			is_int( $usage->limit ) || $usage->limit === null,
-			'Limit should be int or null (unlimited)'
-		);
-		$this->assertIsString( $usage->percentage, 'Percentage should be a string' );
-		$this->assertIsBool( $usage->throttled, 'Throttled should be boolean' );
+		$this->assertFalse( $usage->throttled, 'Test account should not be throttled' );
 
-		// Verify percentage is numeric-ish.
+		// Verify percentage is a numeric string (e.g., "45.0" or "0").
 		$this->assertMatchesRegularExpression(
 			'/^\d+(\.\d+)?$/',
 			$usage->percentage,
 			'Percentage should be a numeric string'
 		);
+
+		// Limit is either null (unlimited) or a positive int.
+		if ( $usage->limit !== null ) {
+			$this->assertGreaterThan( 0, $usage->limit, 'Limit should be positive when set' );
+		}
 	}
 
 	public function testGetUsageLimitRemainingCalculation(): void {
@@ -316,12 +317,9 @@ final class AkismetIntegrationTest extends TestCase {
 	public function testGetKeySitesReturnsValidResponse(): void {
 		$response = $this->akismet->getKeySites( limit: 10 );
 
-		$this->assertIsArray( $response->sites, 'Sites should be an array' );
 		$this->assertLessThanOrEqual( 10, count( $response->sites ), 'Should respect limit' );
-
-		// Verify pagination metadata exists.
-		$this->assertIsInt( $response->offset );
-		$this->assertIsInt( $response->limit );
+		$this->assertSame( 0, $response->offset, 'Default offset should be 0' );
+		$this->assertSame( 10, $response->limit, 'Limit should match requested value' );
 	}
 
 	public function testGetKeySitesWithMonthFilter(): void {
@@ -331,7 +329,7 @@ final class AkismetIntegrationTest extends TestCase {
 			limit: 5
 		);
 
-		$this->assertIsArray( $response->sites );
-		// Month filter should return sites active in that month.
+		$this->assertLessThanOrEqual( 5, count( $response->sites ), 'Should respect limit' );
+		$this->assertSame( 5, $response->limit, 'Limit should match requested value' );
 	}
 }
