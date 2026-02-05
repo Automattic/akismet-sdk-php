@@ -12,17 +12,10 @@ namespace Automattic\Akismet\DTO;
 /**
  * Represents API usage statistics and limits.
  *
- * Interpreting Usage Percentage:
- * - < 80%: Normal usage, no action needed
- * - >= 80%: Approaching limit, monitor usage closely
- * - >= 90%: High risk, implement rate limiting or caching
- * - throttled = true: Rate limited, requests will fail or be delayed
+ * The percentage field indicates how much of the monthly limit has been
+ * consumed. When throttled is true, requests may fail or be delayed.
  *
- * When approaching limits, consider:
- * - Implementing request caching to reduce API calls
- * - Adding exponential backoff for retries
- * - Queuing checks during high-traffic periods
- * - Upgrading to a higher-tier plan if consistently near limits
+ * @see RateLimitException For handling rate limit errors.
  */
 final readonly class UsageLimit {
 

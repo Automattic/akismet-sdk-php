@@ -48,7 +48,7 @@ final readonly class Comment {
 	 * @param DateTimeInterface|null  $postModifiedGmt         Date/time the post was last modified.
 	 * @param string|null             $parentId                ID of the parent comment if this is a reply.
 	 * @param string|null             $userRole                Role of the content submitter (e.g., 'administrator').
-	 * @param string|null             $recheckReason           Reason for rechecking previously checked content. Common values: 'edit' (content was modified), 'manual_review' (human-initiated recheck), 'recheck_queue' (scheduled recheck).
+	 * @param string|null             $recheckReason           Reason for rechecking previously checked content (free-form string, e.g., 'edit').
 	 * @param string|null             $honeypotFieldName       Name of a honeypot field if one was used.
 	 * @param string|null             $honeypotFieldValue      Value of the honeypot field (should be empty for humans).
 	 * @param array<string, string>   $serverVariables         Additional server variables to include.
