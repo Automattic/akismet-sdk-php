@@ -53,7 +53,7 @@
     "scripts": {
         "test": "phpunit",
         "test:unit": "phpunit --testsuite=unit",
-        "test:integration": "phpunit --testsuite=integration",
+        "test:integration": "phpunit --testsuite=integration --no-coverage",
         "lint": "phpcs",
         "lint:fix": "phpcbf",
         "analyze": "phpstan analyse",

@@ -12,9 +12,11 @@ namespace Automattic\Akismet\Tests\Unit\DTO;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\SiteStats;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( KeySitesResponse::class )]
+#[UsesClass( SiteStats::class )]
 final class KeySitesResponseTest extends TestCase {
 
 	public function testCreatesWithSites(): void {
