@@ -7,7 +7,9 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Automattic\Akismet\Akismet;
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\Enum\CommentType;
-use Automattic\Akismet\Exception\AkismetException;
+use Automattic\Akismet\Exception\InvalidApiKeyException;
+use Automattic\Akismet\Exception\NetworkException;
+use Automattic\Akismet\Exception\RateLimitException;
 
 // Configuration
 $apiKey = getenv('AKISMET_API_KEY');
@@ -27,11 +29,13 @@ try {
     );
 
     // Step 1: Verify your API key
+    // verifyKey() throws InvalidApiKeyException on invalid keys
     echo "Verifying API key...\n";
-    $isValid = $akismet->verifyKey();
-    echo $isValid ? "✓ API key is valid\n" : "✗ API key is invalid\n";
-
-    if (!$isValid) {
+    try {
+        $akismet->verifyKey();
+        echo "✓ API key is valid\n";
+    } catch (InvalidApiKeyException $e) {
+        echo "✗ API key is invalid: " . $e->getMessage() . "\n";
         exit(1);
     }
 
@@ -67,7 +71,7 @@ try {
     $usage = $akismet->getUsageLimit();
 
     echo sprintf(
-        "Usage: %d/%s (%s%%)\n",
+        "Usage: %d/%s (%s)\n",
         $usage->usage,
         $usage->limit ?? 'unlimited',
         $usage->percentage
@@ -75,6 +79,27 @@ try {
 
     if ($usage->throttled) {
         echo "⚠ Warning: You are being throttled\n";
+    }
+
+    // Step 4: List sites using this API key
+    echo "\nListing sites for this API key...\n";
+    $sitesResponse = $akismet->getKeySites(limit: 10);
+
+    echo sprintf("Showing %d of %d sites:\n", count($sitesResponse->sites), $sitesResponse->total);
+    foreach ($sitesResponse->sites as $site) {
+        echo sprintf(
+            "  - %s: %d calls, %d spam, %d ham\n",
+            $site->site,
+            $site->totalCalls,
+            $site->spam,
+            $site->ham
+        );
+    }
+
+    // Paginate if there are more results
+    if ($sitesResponse->hasMore()) {
+        $nextPage = $akismet->getKeySites(limit: 10, offset: $sitesResponse->getNextOffset());
+        echo sprintf("  ... and %d more sites\n", $nextPage->total - count($sitesResponse->sites));
     }
 
     // Example: Submit spam (if we got it wrong)
@@ -91,7 +116,16 @@ try {
 
     echo "\n✓ Example completed successfully\n";
 
-} catch (AkismetException $e) {
-    echo "Error: " . $e->getMessage() . "\n";
+} catch (RateLimitException $e) {
+    echo "Rate limited: " . $e->getMessage() . "\n";
+    if ($e->getRetryAfter() !== null) {
+        echo "Retry after: " . $e->getRetryAfter() . " seconds\n";
+    }
+    exit(1);
+} catch (NetworkException $e) {
+    echo "Network error: " . $e->getMessage() . "\n";
+    exit(1);
+} catch (InvalidApiKeyException $e) {
+    echo "Invalid API key: " . $e->getMessage() . "\n";
     exit(1);
 }

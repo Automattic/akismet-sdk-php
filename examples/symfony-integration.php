@@ -5,8 +5,9 @@ declare(strict_types=1);
 /**
  * Symfony Integration Example
  *
- * This example shows how to integrate the Akismet SDK into a Symfony application
- * using service configuration and dependency injection.
+ * This file contains multiple snippets representing separate files in a Symfony
+ * application. It is not directly runnable — copy each section into the
+ * corresponding file path shown in the section marker.
  *
  * Installation steps:
  * 1. Add these values to your .env file:
@@ -14,22 +15,12 @@ declare(strict_types=1);
  *    AKISMET_SITE_URL=https://your-site.com
  *    AKISMET_TEST_MODE=true
  *
- * 2. Add the configuration to config/packages/akismet.yaml (see below)
+ * 2. Add the service definitions to config/services.yaml (see below)
  *
- * 3. Add the service definitions to config/services.yaml (see below)
- *
- * 4. Use dependency injection in your controllers/services
+ * 3. Use dependency injection in your controllers/services
  */
 
-// config/packages/akismet.yaml
-/*
-akismet:
-    api_key: '%env(AKISMET_API_KEY)%'
-    site_url: '%env(AKISMET_SITE_URL)%'
-    test_mode: '%env(bool:AKISMET_TEST_MODE)%'
-*/
-
-// config/services.yaml - Add these service definitions
+// FILE: config/services.yaml
 /*
 services:
     # ... existing services
@@ -44,7 +35,7 @@ services:
         alias: Automattic\Akismet\Akismet
 */
 
-// Example Controller Usage:
+// FILE: src/Controller/CommentController.php
 
 namespace App\Controller;
 
@@ -74,6 +65,8 @@ class CommentController extends AbstractController
         }
 
         // Create Akismet comment from request
+        // If symfony/psr-http-message-bridge is installed, you can use
+        // CommentFactory::fromRequest() with a PSR-7 ServerRequest instead.
         $akismetComment = new Comment(
             userIp: $request->getClientIp() ?? '',
             userAgent: $request->headers->get('User-Agent'),
@@ -114,7 +107,7 @@ class CommentController extends AbstractController
     }
 }
 
-// Example Service for handling spam operations:
+// FILE: src/Service/SpamService.php
 
 namespace App\Service;
 
@@ -144,7 +137,7 @@ class SpamService
             content: $commentData['content'] ?? null,
             authorName: $commentData['author'] ?? null,
             authorEmail: $commentData['author_email'] ?? null,
-            type: CommentType::from($commentData['type'] ?? 'comment')
+            type: CommentType::tryFrom($commentData['type'] ?? 'comment') ?? $commentData['type'] ?? 'comment'
         );
 
         $result = $this->akismet->check($akismetComment);
@@ -171,7 +164,7 @@ class SpamService
             content: $commentData['content'] ?? null,
             authorName: $commentData['author'] ?? null,
             authorEmail: $commentData['author_email'] ?? null,
-            type: CommentType::from($commentData['type'] ?? 'comment')
+            type: CommentType::tryFrom($commentData['type'] ?? 'comment') ?? $commentData['type'] ?? 'comment'
         );
 
         $this->akismet->submitSpam($akismetComment);
@@ -192,7 +185,7 @@ class SpamService
             content: $commentData['content'] ?? null,
             authorName: $commentData['author'] ?? null,
             authorEmail: $commentData['author_email'] ?? null,
-            type: CommentType::from($commentData['type'] ?? 'comment')
+            type: CommentType::tryFrom($commentData['type'] ?? 'comment') ?? $commentData['type'] ?? 'comment'
         );
 
         $this->akismet->submitHam($akismetComment);
