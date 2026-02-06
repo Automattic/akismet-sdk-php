@@ -5,8 +5,9 @@ declare(strict_types=1);
 /**
  * Laravel Integration Example
  *
- * This example shows how to integrate the Akismet SDK into a Laravel application
- * using a service provider and dependency injection.
+ * This file contains multiple snippets representing separate files in a Laravel
+ * application. It is not directly runnable — copy each section into the
+ * corresponding file path shown in the section marker.
  *
  * Installation steps:
  * 1. Add these values to your .env file:
@@ -25,10 +26,13 @@ declare(strict_types=1);
  * 4. Use dependency injection in your controllers/services
  */
 
+// FILE: app/Providers/AkismetServiceProvider.php
+
 namespace App\Providers;
 
 use Automattic\Akismet\Akismet;
 use Automattic\Akismet\AkismetInterface;
+use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Illuminate\Support\ServiceProvider;
 
 class AkismetServiceProvider extends ServiceProvider
@@ -58,14 +62,16 @@ class AkismetServiceProvider extends ServiceProvider
         // Optionally verify the API key on boot (only in non-production environments)
         if ($this->app->environment('local') && config('services.akismet.verify_on_boot', false)) {
             $akismet = $this->app->make(AkismetInterface::class);
-            if (!$akismet->verifyKey()) {
-                throw new \RuntimeException('Invalid Akismet API key');
+            try {
+                $akismet->verifyKey();
+            } catch (InvalidApiKeyException $e) {
+                throw new \RuntimeException('Invalid Akismet API key: ' . $e->getMessage());
             }
         }
     }
 }
 
-// Add to config/services.php:
+// FILE: config/services.php (add to existing array)
 /*
 return [
     // ... other services
@@ -79,13 +85,14 @@ return [
 ];
 */
 
-// Example Controller Usage:
+// FILE: app/Http/Controllers/CommentController.php
 
 namespace App\Http\Controllers;
 
 use Automattic\Akismet\AkismetInterface;
-use Automattic\Akismet\DTO\Comment;
+use Automattic\Akismet\DTO\Comment as AkismetComment;
 use Automattic\Akismet\Enum\CommentType;
+use App\Models\Comment;
 use Illuminate\Http\Request;
 
 class CommentController extends Controller
@@ -103,7 +110,7 @@ class CommentController extends Controller
         ]);
 
         // Create Akismet comment from request
-        $akismetComment = new Comment(
+        $akismetComment = new AkismetComment(
             userIp: $request->ip(),
             userAgent: $request->userAgent(),
             content: $validated['content'],
@@ -135,13 +142,12 @@ class CommentController extends Controller
     }
 }
 
-// Example Job for async processing:
+// FILE: app/Jobs/CheckCommentForSpam.php
 
 namespace App\Jobs;
 
 use Automattic\Akismet\AkismetInterface;
-use Automattic\Akismet\DTO\Comment as AkismetComment;
-use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\Factory\CommentFactory;
 use App\Models\Comment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -153,6 +159,10 @@ class CheckCommentForSpam implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /**
+     * @param int                  $commentId   The comment ID to check.
+     * @param array<string, mixed> $akismetData Comment data for Akismet (camelCase or snake_case keys).
+     */
     public function __construct(
         private readonly int $commentId,
         private readonly array $akismetData
@@ -162,7 +172,8 @@ class CheckCommentForSpam implements ShouldQueue
     {
         $comment = Comment::findOrFail($this->commentId);
 
-        $akismetComment = new AkismetComment(...$this->akismetData);
+        // CommentFactory::fromArray() supports both camelCase and snake_case keys
+        $akismetComment = CommentFactory::fromArray($this->akismetData);
         $result = $akismet->check($akismetComment);
 
         $comment->update([

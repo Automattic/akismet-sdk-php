@@ -26,9 +26,12 @@ declare(strict_types=1);
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Automattic\Akismet\Akismet;
+use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\Enum\CommentType;
 use Automattic\Akismet\Exception\AkismetException;
+use Automattic\Akismet\Exception\NetworkException;
+use Automattic\Akismet\Exception\RateLimitException;
 
 /**
  * Example: Queue-based async processing
@@ -64,7 +67,7 @@ class CommentSpamChecker
                 content: $commentData['content'] ?? null,
                 authorName: $commentData['author'] ?? null,
                 authorEmail: $commentData['email'] ?? null,
-                type: CommentType::from($commentData['type'] ?? 'comment'),
+                type: CommentType::tryFrom($commentData['type'] ?? 'comment') ?? $commentData['type'] ?? 'comment',
                 referrer: $commentData['referrer'] ?? null,
                 permalink: $commentData['permalink'] ?? null
             );
@@ -78,14 +81,32 @@ class CommentSpamChecker
                 'verdict' => $result->verdict->value,
             ];
 
-        } catch (AkismetException $e) {
-            // Log error and return failure status for retry
-            error_log("Akismet check failed: " . $e->getMessage());
+        } catch (RateLimitException $e) {
+            error_log("Akismet rate limited: " . $e->getMessage());
 
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
                 'retry' => true,
+                'retry_after' => $e->getRetryAfter(),
+            ];
+
+        } catch (NetworkException $e) {
+            error_log("Akismet network error: " . $e->getMessage());
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'retry' => true,
+            ];
+
+        } catch (AkismetException $e) {
+            error_log("Akismet check failed: " . $e->getMessage());
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'retry' => false,
             ];
         }
     }
@@ -114,6 +135,36 @@ class CommentSpamChecker
 
         return $results;
     }
+}
+
+// Example: Storing and restoring CheckResult via JSON for queue workflows
+function demonstrateCheckResultSerialization(): void
+{
+    // CheckResult implements JsonSerializable for queue storage
+    // After checking a comment, you can serialize the result:
+    //
+    // $result = $akismet->check($comment);
+    // $json = json_encode($result);
+    // $queue->push(['comment_id' => $id, 'check_result' => $json]);
+    //
+    // Later, restore it without calling the API again:
+    // $data = json_decode($json, true);
+    // $result = CheckResult::fromJson($data);
+    // if ($result->isSpam()) { ... }
+
+    echo "CheckResult serialization example:\n";
+
+    // Simulate a result from the API
+    $result = CheckResult::fromResponse('true', ['x-akismet-pro-tip' => 'discard']);
+
+    // Serialize to JSON for queue storage
+    $json = json_encode($result);
+    echo "  Serialized: {$json}\n";
+
+    // Restore from JSON
+    $restored = CheckResult::fromJson(json_decode($json, true));
+    echo "  Restored verdict: {$restored->verdict->value}\n";
+    echo "  Should discard: " . ($restored->shouldDiscard() ? 'yes' : 'no') . "\n";
 }
 
 // Example: Simple queue worker
@@ -163,7 +214,7 @@ function runWorker(): void
         static $checkCount = 0;
         if (++$checkCount % 100 === 0) {
             $usage = $akismet->getUsageLimit();
-            echo "API Usage: {$usage->usage}/{$usage->limit} ({$usage->percentage}%)\n";
+            echo "API Usage: {$usage->usage}/{$usage->limit} ({$usage->percentage})\n";
 
             if ($usage->throttled) {
                 echo "⚠ Warning: Being throttled, slowing down...\n";
@@ -197,9 +248,12 @@ if (php_sapi_name() === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FIL
         exit(1);
     }
 
+    // Demonstrate CheckResult serialization
+    demonstrateCheckResultSerialization();
+
     // Uncomment to run the worker
     // runWorker();
-    echo "Worker example - edit this file to implement your queue integration\n";
+    echo "\nWorker example - edit this file to implement your queue integration\n";
 }
 
 /**

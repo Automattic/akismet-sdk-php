@@ -4,10 +4,11 @@ This directory contains practical examples demonstrating how to integrate the Ak
 
 ## Examples
 
-- **basic-usage.php** - Getting started with the SDK, including verifying your API key, checking comments, and monitoring usage
+- **basic-usage.php** - Getting started with the SDK, including verifying your API key, checking comments, listing sites, and monitoring usage
 - **laravel-integration.php** - Integrating with Laravel using a service provider
 - **symfony-integration.php** - Integrating with Symfony using service configuration
 - **async-processing.php** - Processing spam checks asynchronously with queues
+- **testing-example.php** - Unit testing your Akismet integration with PHPUnit mocks
 
 ## Running Examples
 
@@ -35,10 +36,21 @@ php examples/basic-usage.php
 
 ## Testing
 
-For testing purposes, use `is_test=1` in your Comment data:
-- `akismet-guaranteed-spam@example.com` will always be marked as spam
-- `viagra-test-123` in content will be marked as spam
+Enable test mode by passing `isTest: true` to the Akismet constructor:
+
+```php
+$akismet = new Akismet(
+    apiKey: $apiKey,
+    blog: $siteUrl,
+    isTest: true
+);
+```
+
+In test mode:
+- Use `akismet-guaranteed-spam` as the author name or `akismet-guaranteed-spam@example.com` as the email to trigger a spam result
 - Normal content will be marked as ham
+
+See `testing-example.php` for how to mock `AkismetInterface` in your unit tests.
 
 ## Integration Patterns
 
