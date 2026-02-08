@@ -68,7 +68,7 @@ class CommentController extends AbstractController
         // If symfony/psr-http-message-bridge is installed, you can use
         // CommentFactory::fromRequest() with a PSR-7 ServerRequest instead.
         $akismetComment = new Comment(
-            userIp: $request->getClientIp() ?? '',
+            userIp: $request->getClientIp() ?? throw new \RuntimeException('Could not determine client IP'),
             userAgent: $request->headers->get('User-Agent'),
             content: $data['content'],
             authorName: $data['author'],
@@ -137,7 +137,7 @@ class SpamService
             content: $commentData['content'] ?? null,
             authorName: $commentData['author'] ?? null,
             authorEmail: $commentData['author_email'] ?? null,
-            type: CommentType::tryFrom($commentData['type'] ?? 'comment') ?? $commentData['type'] ?? 'comment'
+            type: $commentData['type'] ?? CommentType::Comment
         );
 
         $result = $this->akismet->check($akismetComment);
@@ -164,7 +164,7 @@ class SpamService
             content: $commentData['content'] ?? null,
             authorName: $commentData['author'] ?? null,
             authorEmail: $commentData['author_email'] ?? null,
-            type: CommentType::tryFrom($commentData['type'] ?? 'comment') ?? $commentData['type'] ?? 'comment'
+            type: $commentData['type'] ?? CommentType::Comment
         );
 
         $this->akismet->submitSpam($akismetComment);
@@ -185,7 +185,7 @@ class SpamService
             content: $commentData['content'] ?? null,
             authorName: $commentData['author'] ?? null,
             authorEmail: $commentData['author_email'] ?? null,
-            type: CommentType::tryFrom($commentData['type'] ?? 'comment') ?? $commentData['type'] ?? 'comment'
+            type: $commentData['type'] ?? CommentType::Comment
         );
 
         $this->akismet->submitHam($akismetComment);
