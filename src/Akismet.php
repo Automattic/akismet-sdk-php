@@ -64,16 +64,7 @@ final class Akismet implements AkismetInterface {
 		?RequestFactoryInterface $requestFactory = null,
 		?StreamFactoryInterface $streamFactory = null,
 	): self {
-		$instance = new self(
-			$config->apiKey,
-			$config->blog,
-			$config->isTest,
-			$httpClient,
-			$requestFactory,
-			$streamFactory,
-		);
-
-		// Replace config to preserve custom baseUrl and timeout
+		$instance             = new self( $config->apiKey, $config->blog );
 		$instance->config     = $config;
 		$instance->httpClient = new HttpClient(
 			$config,
@@ -103,10 +94,8 @@ final class Akismet implements AkismetInterface {
 		}
 
 		if ( $body === 'invalid' ) {
-			$headers   = HttpClient::getHeaders( $response );
-			$debugHelp = $headers['X-akismet-debug-help']
-				?? $headers['x-akismet-debug-help']
-				?? null;
+			$headers   = array_change_key_case( HttpClient::getHeaders( $response ), CASE_LOWER );
+			$debugHelp = $headers['x-akismet-debug-help'] ?? null;
 			throw InvalidApiKeyException::verificationFailed( $debugHelp );
 		}
 
