@@ -38,4 +38,14 @@ final class NetworkExceptionTest extends TestCase {
 		$exception = NetworkException::timeout();
 		$this->assertStringContainsString( 'timed out', $exception->getMessage() );
 	}
+
+	public function testFromEndpointIncludesContext(): void {
+		$exception = NetworkException::fromEndpoint(
+			'/1.1/comment-check',
+			'Connection timeout'
+		);
+
+		$this->assertStringContainsString( '/1.1/comment-check', $exception->getMessage() );
+		$this->assertStringContainsString( 'Connection timeout', $exception->getMessage() );
+	}
 }
