@@ -66,11 +66,9 @@ final class HttpClient {
 	public function post( string $endpoint, array $data ): ResponseInterface {
 		$url = $this->config->baseUrl . $endpoint;
 
-		// Add API key and blog to all requests
 		$data['api_key'] = $this->config->apiKey;
 		$data['blog']    = $this->config->blog;
 
-		// Add test flag if enabled
 		if ( $this->config->isTest ) {
 			$data['is_test'] = '1';
 		}
@@ -98,7 +96,6 @@ final class HttpClient {
 	 * @throws ServerException
 	 */
 	public function get( string $endpoint, array $params = [] ): ResponseInterface {
-		// Add API key to query params
 		$params['api_key'] = $this->config->apiKey;
 
 		$url = $this->config->baseUrl . $endpoint . '?' . http_build_query( $params, '', '&' );

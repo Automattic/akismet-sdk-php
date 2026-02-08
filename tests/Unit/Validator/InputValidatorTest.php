@@ -27,7 +27,7 @@ final class InputValidatorTest extends TestCase {
 	 * @param non-empty-string $url
 	 */
 	#[DataProvider( 'validUrlProvider' )]
-	public function test_validates_valid_urls( string $url ): void {
+	public function testValidatesValidUrls( string $url ): void {
 		$this->expectNotToPerformAssertions();
 		InputValidator::validateUrl( $url );
 	}
@@ -60,7 +60,7 @@ final class InputValidatorTest extends TestCase {
 	 * @param non-empty-string $expectedMessage
 	 */
 	#[DataProvider( 'invalidUrlProvider' )]
-	public function test_rejects_invalid_urls( string $url, string $expectedMessage ): void {
+	public function testRejectsInvalidUrls( string $url, string $expectedMessage ): void {
 		$this->expectException( ValidationException::class );
 		$this->expectExceptionMessage( $expectedMessage );
 		InputValidator::validateUrl( $url );
@@ -84,7 +84,7 @@ final class InputValidatorTest extends TestCase {
 		];
 	}
 
-	public function test_validates_url_with_custom_field_name(): void {
+	public function testValidatesUrlWithCustomFieldName(): void {
 		try {
 			InputValidator::validateUrl( '', 'customField' );
 			$this->fail( 'Expected ValidationException was not thrown' );
@@ -97,7 +97,7 @@ final class InputValidatorTest extends TestCase {
 	 * @param non-empty-string $ip
 	 */
 	#[DataProvider( 'validIpProvider' )]
-	public function test_validates_valid_ip_addresses( string $ip ): void {
+	public function testValidatesValidIpAddresses( string $ip ): void {
 		$this->expectNotToPerformAssertions();
 		InputValidator::validateIp( $ip );
 	}
@@ -127,7 +127,7 @@ final class InputValidatorTest extends TestCase {
 	 * @param non-empty-string $expectedMessage
 	 */
 	#[DataProvider( 'invalidIpProvider' )]
-	public function test_rejects_invalid_ip_addresses( string $ip, string $expectedMessage ): void {
+	public function testRejectsInvalidIpAddresses( string $ip, string $expectedMessage ): void {
 		$this->expectException( ValidationException::class );
 		$this->expectExceptionMessage( $expectedMessage );
 		InputValidator::validateIp( $ip );
@@ -151,7 +151,7 @@ final class InputValidatorTest extends TestCase {
 		];
 	}
 
-	public function test_validates_ip_with_custom_field_name(): void {
+	public function testValidatesIpWithCustomFieldName(): void {
 		try {
 			InputValidator::validateIp( '', 'customIp' );
 			$this->fail( 'Expected ValidationException was not thrown' );
@@ -164,7 +164,7 @@ final class InputValidatorTest extends TestCase {
 	 * @param non-empty-string $email
 	 */
 	#[DataProvider( 'validEmailProvider' )]
-	public function test_validates_valid_email_addresses( string $email ): void {
+	public function testValidatesValidEmailAddresses( string $email ): void {
 		$this->expectNotToPerformAssertions();
 		InputValidator::validateEmail( $email );
 	}
@@ -191,7 +191,7 @@ final class InputValidatorTest extends TestCase {
 	 * @param non-empty-string $expectedMessage
 	 */
 	#[DataProvider( 'invalidEmailProvider' )]
-	public function test_rejects_invalid_email_addresses( string $email, string $expectedMessage ): void {
+	public function testRejectsInvalidEmailAddresses( string $email, string $expectedMessage ): void {
 		$this->expectException( ValidationException::class );
 		$this->expectExceptionMessage( $expectedMessage );
 		InputValidator::validateEmail( $email );
@@ -215,7 +215,7 @@ final class InputValidatorTest extends TestCase {
 		];
 	}
 
-	public function test_validates_email_with_custom_field_name(): void {
+	public function testValidatesEmailWithCustomFieldName(): void {
 		try {
 			InputValidator::validateEmail( '', 'customEmail' );
 			$this->fail( 'Expected ValidationException was not thrown' );
