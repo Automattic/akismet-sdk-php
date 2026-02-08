@@ -56,7 +56,7 @@ class CommentSpamChecker
      * Process a single comment from the queue.
      *
      * @param array<string, mixed> $commentData Comment data from queue.
-     * @return array{success: bool, is_spam?: bool, is_discard?: bool, verdict?: string, error?: string, retry?: bool}
+     * @return array{success: bool, is_spam?: bool, is_discard?: bool, verdict?: string, error?: string, retry?: bool, retry_after?: int|null}
      */
     public function processComment(array $commentData): array
     {
@@ -67,7 +67,7 @@ class CommentSpamChecker
                 content: $commentData['content'] ?? null,
                 authorName: $commentData['author'] ?? null,
                 authorEmail: $commentData['email'] ?? null,
-                type: CommentType::tryFrom($commentData['type'] ?? 'comment') ?? $commentData['type'] ?? 'comment',
+                type: $commentData['type'] ?? CommentType::Comment,
                 referrer: $commentData['referrer'] ?? null,
                 permalink: $commentData['permalink'] ?? null
             );
@@ -214,7 +214,8 @@ function runWorker(): void
         static $checkCount = 0;
         if (++$checkCount % 100 === 0) {
             $usage = $akismet->getUsageLimit();
-            echo "API Usage: {$usage->usage}/{$usage->limit} ({$usage->percentage})\n";
+            $limit = $usage->limit ?? 'unlimited';
+            echo "API Usage: {$usage->usage}/{$limit} ({$usage->percentage})\n";
 
             if ($usage->throttled) {
                 echo "⚠ Warning: Being throttled, slowing down...\n";
