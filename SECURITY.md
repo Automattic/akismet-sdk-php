@@ -90,7 +90,7 @@ Don't expose sensitive information in error messages:
 
 ```php
 try {
-    $result = $akismet->commentCheck($comment);
+    $result = $akismet->check($comment);
 } catch (AkismetException $e) {
     // Good: Log full details for debugging
     error_log($e->getMessage());
@@ -120,7 +120,7 @@ Implement rate limiting to prevent abuse:
 
 ```php
 try {
-    $result = $akismet->commentCheck($comment);
+    $result = $akismet->check($comment);
 } catch (RateLimitException $e) {
     // Handle rate limit gracefully
     // Don't retry immediately
