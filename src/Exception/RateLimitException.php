@@ -13,6 +13,17 @@ use RuntimeException;
 
 /**
  * Thrown when API requests are being rate limited or throttled.
+ *
+ * Use getRetryAfter() to determine how long to wait before retrying.
+ * Implement exponential backoff if retryAfter is null.
+ *
+ * Example:
+ * try {
+ *     $result = $akismet->check($comment);
+ * } catch (RateLimitException $e) {
+ *     $wait = $e->getRetryAfter() ?? 60;
+ *     // Queue for retry after $wait seconds
+ * }
  */
 final class RateLimitException extends RuntimeException implements AkismetException {
 

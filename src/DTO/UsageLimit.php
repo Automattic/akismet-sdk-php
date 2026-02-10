@@ -11,6 +11,11 @@ namespace Automattic\Akismet\DTO;
 
 /**
  * Represents API usage statistics and limits.
+ *
+ * The percentage field indicates how much of the monthly limit has been
+ * consumed. When throttled is true, requests may fail or be delayed.
+ *
+ * @see RateLimitException For handling rate limit errors.
  */
 final readonly class UsageLimit {
 
