@@ -4,7 +4,7 @@ Thank you for your interest in contributing to the Akismet PHP SDK! This documen
 
 ## Code of Conduct
 
-This project adheres to a [Code of Conduct](CODE-OF-CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior by contacting the project team via the [Automattic contact form](https://developer.wordpress.com/contact/?g21-subject=Code%20of%20Conduct) with "Code of Conduct" in the subject line.
+This project adheres to a [Code of Conduct](CODE-OF-CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior by contacting the project team via the [Automattic contact form](https://developer.wordpress.com/contact/?g21-message=Code%20of%20Conduct%20-%20Akismet%20SDK%20PHP) with "Code of Conduct" in the message.
 
 ## Getting Started
 
