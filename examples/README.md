@@ -5,8 +5,6 @@ This directory contains practical examples demonstrating how to integrate the Ak
 ## Examples
 
 - **basic-usage.php** - Getting started with the SDK, including verifying your API key, checking comments, listing sites, and monitoring usage
-- **laravel-integration.php** - Integrating with Laravel using a service provider
-- **symfony-integration.php** - Integrating with Symfony using service configuration
 - **async-processing.php** - Processing spam checks asynchronously with queues
 - **testing-example.php** - Unit testing your Akismet integration with PHPUnit mocks
 
@@ -52,6 +50,6 @@ In test mode:
 
 See `testing-example.php` for how to mock `AkismetInterface` in your unit tests.
 
-## Integration Patterns
+## Framework Integration
 
-These examples demonstrate common integration patterns, but you should adapt them to your specific framework and requirements.
+For framework-specific examples (Laravel, Symfony, etc.), see the [Akismet developer documentation](https://akismet.com/developers/).
