@@ -26,6 +26,7 @@ final readonly class CheckResult implements JsonSerializable {
 		public ?string $debugHelp = null,
 		public ?string $alertCode = null,
 		public ?string $alertMessage = null,
+		public ?string $guid = null,
 	) {
 	}
 
@@ -58,6 +59,7 @@ final readonly class CheckResult implements JsonSerializable {
 		$debugHelp    = $normalizedHeaders['x-akismet-debug-help'] ?? null;
 		$alertCode    = $normalizedHeaders['x-akismet-alert-code'] ?? null;
 		$alertMessage = $normalizedHeaders['x-akismet-alert-msg'] ?? null;
+		$guid         = $normalizedHeaders['x-akismet-guid'] ?? null;
 
 		// Determine verdict
 		if ( $body === 'true' ) {
@@ -66,13 +68,13 @@ final readonly class CheckResult implements JsonSerializable {
 			$verdict = SpamVerdict::Ham;
 		}
 
-		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage );
+		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage, $guid );
 	}
 
 	/**
 	 * Create result from JSON data.
 	 *
-	 * @param array{verdict: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null} $data
+	 * @param array{verdict: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null} $data
 	 */
 	public static function fromJson( array $data ): self {
 		return new self(
@@ -81,11 +83,12 @@ final readonly class CheckResult implements JsonSerializable {
 			$data['debugHelp'] ?? null,
 			$data['alertCode'] ?? null,
 			$data['alertMessage'] ?? null,
+			$data['guid'] ?? null,
 		);
 	}
 
 	/**
-	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null}
+	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null}
 	 */
 	public function jsonSerialize(): array {
 		return [
@@ -94,6 +97,7 @@ final readonly class CheckResult implements JsonSerializable {
 			'debugHelp'    => $this->debugHelp,
 			'alertCode'    => $this->alertCode,
 			'alertMessage' => $this->alertMessage,
+			'guid'         => $this->guid,
 		];
 	}
 }
