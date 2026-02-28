@@ -86,6 +86,7 @@ final class AkismetIntegrationTest extends TestCase {
 
 		$this->assertFalse( $result->isSpam(), 'Normal comment should not be spam' );
 		$this->assertFalse( $result->shouldDiscard(), 'Normal comment should not be discarded' );
+		$this->assertNotNull( $result->guid, 'Akismet should return a GUID for check requests' );
 	}
 
 	public function testCheckHamWithMinimalData(): void {
