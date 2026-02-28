@@ -11,6 +11,7 @@ namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\Enum\SpamVerdict;
+use Automattic\Akismet\Exception\ValidationException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -92,6 +93,24 @@ final class CheckResultTest extends TestCase {
 		$this->assertNull( $result->guid );
 	}
 
+	public function testFromResponseExtractsGuidCaseInsensitively(): void {
+		$result = CheckResult::fromResponse(
+			'true',
+			[ 'x-akismet-guid' => 'lowercase-guid-value' ]
+		);
+
+		$this->assertSame( 'lowercase-guid-value', $result->guid );
+	}
+
+	public function testFromResponseTreatsEmptyGuidAsNull(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[ 'X-Akismet-Guid' => '' ]
+		);
+
+		$this->assertNull( $result->guid );
+	}
+
 	public function testFromResponseHandlesCaseInsensitiveHeaders(): void {
 		$result = CheckResult::fromResponse(
 			'false',
@@ -138,6 +157,13 @@ final class CheckResultTest extends TestCase {
 		$this->assertNull( $result->guid );
 	}
 
+	public function testFromJsonWithInvalidVerdict(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'expected one of: ham, spam, discard; got "unknown"' );
+
+		CheckResult::fromJson( [ 'verdict' => 'unknown' ] );
+	}
+
 	public function testJsonSerializeReturnsCorrectStructure(): void {
 		$result = new CheckResult( SpamVerdict::Ham );
 		$json   = $result->jsonSerialize();
@@ -150,5 +176,6 @@ final class CheckResultTest extends TestCase {
 		$this->assertArrayHasKey( 'guid', $json );
 
 		$this->assertSame( 'ham', $json['verdict'] );
+		$this->assertNull( $json['guid'] );
 	}
 }
