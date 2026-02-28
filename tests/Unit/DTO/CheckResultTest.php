@@ -11,6 +11,7 @@ namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\Enum\SpamVerdict;
+use Automattic\Akismet\Exception\ValidationException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -76,12 +77,38 @@ final class CheckResultTest extends TestCase {
 				'X-Akismet-Debug-Help' => 'Some debug info',
 				'X-Akismet-Alert-Code' => '10001',
 				'X-Akismet-Alert-Msg'  => 'Usage limit warning',
+				'X-Akismet-Guid'       => 'abc123def456',
 			]
 		);
 
 		$this->assertSame( 'Some debug info', $result->debugHelp );
 		$this->assertSame( '10001', $result->alertCode );
 		$this->assertSame( 'Usage limit warning', $result->alertMessage );
+		$this->assertSame( 'abc123def456', $result->guid );
+	}
+
+	public function testFromResponseWithoutGuid(): void {
+		$result = CheckResult::fromResponse( 'false' );
+
+		$this->assertNull( $result->guid );
+	}
+
+	public function testFromResponseExtractsGuidCaseInsensitively(): void {
+		$result = CheckResult::fromResponse(
+			'true',
+			[ 'x-akismet-guid' => 'lowercase-guid-value' ]
+		);
+
+		$this->assertSame( 'lowercase-guid-value', $result->guid );
+	}
+
+	public function testFromResponseTreatsEmptyGuidAsNull(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[ 'X-Akismet-Guid' => '' ]
+		);
+
+		$this->assertNull( $result->guid );
 	}
 
 	public function testFromResponseHandlesCaseInsensitiveHeaders(): void {
@@ -102,6 +129,7 @@ final class CheckResultTest extends TestCase {
 			'debug info',
 			'10001',
 			'alert message',
+			'abc123def456',
 		);
 
 		$json = json_encode( $original );
@@ -115,6 +143,25 @@ final class CheckResultTest extends TestCase {
 		$this->assertSame( $original->debugHelp, $restored->debugHelp );
 		$this->assertSame( $original->alertCode, $restored->alertCode );
 		$this->assertSame( $original->alertMessage, $restored->alertMessage );
+		$this->assertSame( $original->guid, $restored->guid );
+	}
+
+	public function testFromJsonWithoutGuid(): void {
+		$data = [
+			'verdict' => 'ham',
+			'proTip'  => null,
+		];
+
+		$result = CheckResult::fromJson( $data );
+
+		$this->assertNull( $result->guid );
+	}
+
+	public function testFromJsonWithInvalidVerdict(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'expected one of: ham, spam, discard; got "unknown"' );
+
+		CheckResult::fromJson( [ 'verdict' => 'unknown' ] );
 	}
 
 	public function testJsonSerializeReturnsCorrectStructure(): void {
@@ -126,7 +173,9 @@ final class CheckResultTest extends TestCase {
 		$this->assertArrayHasKey( 'debugHelp', $json );
 		$this->assertArrayHasKey( 'alertCode', $json );
 		$this->assertArrayHasKey( 'alertMessage', $json );
+		$this->assertArrayHasKey( 'guid', $json );
 
 		$this->assertSame( 'ham', $json['verdict'] );
+		$this->assertNull( $json['guid'] );
 	}
 }

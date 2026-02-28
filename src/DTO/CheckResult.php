@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Automattic\Akismet\DTO;
 
 use Automattic\Akismet\Enum\SpamVerdict;
+use Automattic\Akismet\Exception\ValidationException;
 use JsonSerializable;
 
 /**
@@ -26,6 +27,7 @@ final readonly class CheckResult implements JsonSerializable {
 		public ?string $debugHelp = null,
 		public ?string $alertCode = null,
 		public ?string $alertMessage = null,
+		public ?string $guid = null,
 	) {
 	}
 
@@ -54,10 +56,13 @@ final readonly class CheckResult implements JsonSerializable {
 	public static function fromResponse( string $body, array $headers = [] ): self {
 		$normalizedHeaders = array_change_key_case( $headers, CASE_LOWER );
 
-		$proTip       = $normalizedHeaders['x-akismet-pro-tip'] ?? null;
-		$debugHelp    = $normalizedHeaders['x-akismet-debug-help'] ?? null;
-		$alertCode    = $normalizedHeaders['x-akismet-alert-code'] ?? null;
-		$alertMessage = $normalizedHeaders['x-akismet-alert-msg'] ?? null;
+		$nullIfEmpty = static fn( ?string $value ): ?string => ( $value !== null && $value !== '' ) ? $value : null;
+
+		$proTip       = $nullIfEmpty( $normalizedHeaders['x-akismet-pro-tip'] ?? null );
+		$debugHelp    = $nullIfEmpty( $normalizedHeaders['x-akismet-debug-help'] ?? null );
+		$alertCode    = $nullIfEmpty( $normalizedHeaders['x-akismet-alert-code'] ?? null );
+		$alertMessage = $nullIfEmpty( $normalizedHeaders['x-akismet-alert-msg'] ?? null );
+		$guid         = $nullIfEmpty( $normalizedHeaders['x-akismet-guid'] ?? null );
 
 		// Determine verdict
 		if ( $body === 'true' ) {
@@ -66,26 +71,35 @@ final readonly class CheckResult implements JsonSerializable {
 			$verdict = SpamVerdict::Ham;
 		}
 
-		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage );
+		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage, $guid );
 	}
 
 	/**
 	 * Create result from JSON data.
 	 *
-	 * @param array{verdict: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null} $data
+	 * @param array{verdict?: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null} $data
 	 */
 	public static function fromJson( array $data ): self {
+		$verdict = SpamVerdict::tryFrom( $data['verdict'] ?? '' );
+		if ( $verdict === null ) {
+			throw ValidationException::invalidValue(
+				'verdict',
+				sprintf( 'expected one of: ham, spam, discard; got "%s"', $data['verdict'] ?? '' )
+			);
+		}
+
 		return new self(
-			SpamVerdict::from( $data['verdict'] ),
+			$verdict,
 			$data['proTip'] ?? null,
 			$data['debugHelp'] ?? null,
 			$data['alertCode'] ?? null,
 			$data['alertMessage'] ?? null,
+			$data['guid'] ?? null,
 		);
 	}
 
 	/**
-	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null}
+	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null}
 	 */
 	public function jsonSerialize(): array {
 		return [
@@ -94,6 +108,7 @@ final readonly class CheckResult implements JsonSerializable {
 			'debugHelp'    => $this->debugHelp,
 			'alertCode'    => $this->alertCode,
 			'alertMessage' => $this->alertMessage,
+			'guid'         => $this->guid,
 		];
 	}
 }
