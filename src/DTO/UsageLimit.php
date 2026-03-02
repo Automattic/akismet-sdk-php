@@ -17,7 +17,7 @@ namespace Automattic\Akismet\DTO;
  *
  * @see RateLimitException For handling rate limit errors.
  */
-final readonly class UsageLimit {
+final class UsageLimit {
 
 	/**
 	 * @param int|null $limit      Monthly API call limit, or null if unlimited.
@@ -26,10 +26,10 @@ final readonly class UsageLimit {
 	 * @param bool     $throttled  Whether requests are being throttled.
 	 */
 	public function __construct(
-		public ?int $limit,
-		public int $usage,
-		public string $percentage,
-		public bool $throttled,
+		public readonly ?int $limit,
+		public readonly int $usage,
+		public readonly string $percentage,
+		public readonly bool $throttled,
 	) {
 	}
 
