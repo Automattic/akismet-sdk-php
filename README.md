@@ -127,6 +127,36 @@ $akismet->submitSpam($comment);
 $akismet->submitHam($comment);
 ```
 
+## Error Handling
+
+All SDK exceptions implement `AkismetException`, so you can catch everything with a single type:
+
+```php
+use Automattic\Akismet\Exception\AkismetException;
+use Automattic\Akismet\Exception\InvalidApiKeyException;
+use Automattic\Akismet\Exception\RateLimitException;
+
+try {
+    $result = $akismet->check($comment);
+} catch (InvalidApiKeyException $e) {
+    // API key is invalid or revoked
+} catch (RateLimitException $e) {
+    // Too many requests — retry after $e->getRetryAfter() seconds
+} catch (AkismetException $e) {
+    // Catch-all for network errors, server errors, validation errors, etc.
+}
+```
+
+| Exception | When |
+|-----------|------|
+| `InvalidApiKeyException` | API key is invalid or revoked |
+| `ValidationException` | Invalid input (e.g., bad IP address, malformed month format) |
+| `RateLimitException` | HTTP 429 — too many requests |
+| `NetworkException` | Connection failures or DNS resolution errors |
+| `ServerException` | HTTP 5xx or unexpected API response body |
+
+API keys are automatically redacted from exception messages to prevent credential leakage in logs.
+
 ## Testing
 
 Use test mode during development to avoid affecting your accuracy metrics:
