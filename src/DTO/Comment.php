@@ -20,6 +20,33 @@ use DateTimeInterface;
 final class Comment {
 
 	/**
+	 * Akismet canonical field names that must not be overwritten by serverVariables.
+	 *
+	 * @var array<string>
+	 */
+	private const RESERVED_KEYS = [
+		'user_ip',
+		'user_agent',
+		'comment_content',
+		'comment_author',
+		'comment_author_email',
+		'comment_author_url',
+		'comment_type',
+		'permalink',
+		'referrer',
+		'comment_date_gmt',
+		'comment_post_modified_gmt',
+		'comment_parent',
+		'user_role',
+		'recheck_reason',
+		'honeypot_field_name',
+		'comment_context',
+		'api_key',
+		'blog',
+		'is_test',
+	];
+
+	/**
 	 * Email of the content author (normalized from empty string to null).
 	 */
 	public readonly ?string $authorEmail;
@@ -170,9 +197,11 @@ final class Comment {
 			$data['comment_context'] = $this->context;
 		}
 
-		// Include additional server variables
+		// Include additional server variables, skipping reserved Akismet fields.
 		foreach ( $this->serverVariables as $key => $value ) {
-			$data[ $key ] = $value;
+			if ( ! in_array( $key, self::RESERVED_KEYS, true ) ) {
+				$data[ $key ] = $value;
+			}
 		}
 
 		return $data;

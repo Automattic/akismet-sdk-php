@@ -89,7 +89,7 @@ interface AkismetInterface {
 	 * @param int         $limit  Maximum number of results (default 500).
 	 * @param int         $offset Pagination offset (default 0).
 	 * @param string|null $order  Sort column: 'total', 'spam', 'ham', 'missed_spam', or 'false_positives'.
-	 * @return KeySitesResponse List of sites with statistics.
+	 * @return KeySitesResponse List of sites with statistics (JSON format only; CSV is not supported).
 	 * @throws AkismetException On network or API errors.
 	 */
 	public function getKeySites(

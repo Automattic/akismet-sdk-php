@@ -183,6 +183,51 @@ final class HttpClientErrorTest extends TestCase {
 		}
 	}
 
+	public function testRateLimitParsesHttpDateRetryAfter(): void {
+		$futureDate = gmdate( 'D, d M Y H:i:s', time() + 120 ) . ' GMT';
+		$mockClient = $this->createMockClient(
+			new Response( 429, [ 'Retry-After' => $futureDate ], 'Too Many Requests' )
+		);
+
+		$httpClient = new HttpClient(
+			$this->config,
+			$mockClient,
+			$this->httpFactory,
+			$this->httpFactory
+		);
+
+		try {
+			$httpClient->post( '/1.1/comment-check', [] );
+			$this->fail( 'Expected RateLimitException' );
+		} catch ( RateLimitException $e ) {
+			$retryAfter = $e->getRetryAfter();
+			$this->assertNotNull( $retryAfter );
+			// Should be roughly 120 seconds (allow some tolerance for test execution time).
+			$this->assertGreaterThan( 100, $retryAfter );
+			$this->assertLessThanOrEqual( 120, $retryAfter );
+		}
+	}
+
+	public function testRateLimitReturnsNullForUnparseableRetryAfter(): void {
+		$mockClient = $this->createMockClient(
+			new Response( 429, [ 'Retry-After' => 'not-a-date-or-number' ], 'Too Many Requests' )
+		);
+
+		$httpClient = new HttpClient(
+			$this->config,
+			$mockClient,
+			$this->httpFactory,
+			$this->httpFactory
+		);
+
+		try {
+			$httpClient->post( '/1.1/comment-check', [] );
+			$this->fail( 'Expected RateLimitException' );
+		} catch ( RateLimitException $e ) {
+			$this->assertNull( $e->getRetryAfter() );
+		}
+	}
+
 	public function testRateLimitWithoutRetryAfterHeader(): void {
 		$mockClient = $this->createMockClient(
 			new Response( 429, [], 'Too Many Requests' )
@@ -265,6 +310,77 @@ final class HttpClientErrorTest extends TestCase {
 			$this->fail( 'Expected NetworkException' );
 		} catch ( NetworkException $e ) {
 			$this->assertSame( $originalException, $e->getPrevious() );
+		}
+	}
+
+	// =========================================================================
+	// API Key Redaction Tests
+	// =========================================================================
+
+	public function testNetworkExceptionRedactsApiKeyFromMessage(): void {
+		$mockClient = $this->createMockClientThatThrows(
+			new class( 'Could not resolve host: rest.akismet.com?api_key=secret123&other=val' ) extends \Exception implements ClientExceptionInterface {
+			}
+		);
+
+		$httpClient = new HttpClient(
+			$this->config,
+			$mockClient,
+			$this->httpFactory,
+			$this->httpFactory
+		);
+
+		try {
+			$httpClient->get( '/1.2/usage-limit', [] );
+			$this->fail( 'Expected NetworkException' );
+		} catch ( NetworkException $e ) {
+			$this->assertStringContainsString( 'api_key=***', $e->getMessage() );
+			$this->assertStringNotContainsString( 'secret123', $e->getMessage() );
+			$this->assertStringNotContainsString( 'test-api-key', $e->getMessage() );
+		}
+	}
+
+	public function testNetworkExceptionRedactsVerifyKeyParam(): void {
+		$mockClient = $this->createMockClientThatThrows(
+			new class( 'Error sending key=my-secret&blog=https://example.com' ) extends \Exception implements ClientExceptionInterface {
+			}
+		);
+
+		$httpClient = new HttpClient(
+			$this->config,
+			$mockClient,
+			$this->httpFactory,
+			$this->httpFactory
+		);
+
+		try {
+			$httpClient->post( '/1.1/verify-key', [] );
+			$this->fail( 'Expected NetworkException' );
+		} catch ( NetworkException $e ) {
+			$this->assertStringContainsString( 'key=***', $e->getMessage() );
+			$this->assertStringNotContainsString( 'my-secret', $e->getMessage() );
+		}
+	}
+
+	public function testNetworkExceptionRedactsApiKeyFromPostError(): void {
+		$mockClient = $this->createMockClientThatThrows(
+			new class( 'Error with api_key=my-secret-key in body' ) extends \Exception implements ClientExceptionInterface {
+			}
+		);
+
+		$httpClient = new HttpClient(
+			$this->config,
+			$mockClient,
+			$this->httpFactory,
+			$this->httpFactory
+		);
+
+		try {
+			$httpClient->post( '/1.1/comment-check', [] );
+			$this->fail( 'Expected NetworkException' );
+		} catch ( NetworkException $e ) {
+			$this->assertStringContainsString( 'api_key=***', $e->getMessage() );
+			$this->assertStringNotContainsString( 'my-secret-key', $e->getMessage() );
 		}
 	}
 

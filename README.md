@@ -75,7 +75,7 @@ if ($result->isSpam()) {
 | `submitSpam($comment)` | Report missed spam (false negative) |
 | `submitHam($comment)` | Report false positive |
 | `getUsageLimit()` | Get API usage stats and limits |
-| `getKeySites()` | Get sites using your API key |
+| `getKeySites()` | Get sites using your API key (JSON format only; CSV is not supported) |
 | `getAccessToken()` | Exchange API key for a scoped access token |
 
 ## Framework Integration
