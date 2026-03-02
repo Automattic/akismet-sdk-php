@@ -201,6 +201,24 @@ final class CommentTest extends TestCase {
 		$this->assertSame( 'https://example.com/post/123', $comment->permalink );
 	}
 
+	public function testContextIncludedInToArray(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			context: 'sidebar-widget',
+		);
+
+		$array = $comment->toArray();
+
+		$this->assertSame( 'sidebar-widget', $array['comment_context'] );
+	}
+
+	public function testContextNullOmittedFromToArray(): void {
+		$comment = new Comment( userIp: '192.168.1.1' );
+
+		$this->assertNull( $comment->context );
+		$this->assertArrayNotHasKey( 'comment_context', $comment->toArray() );
+	}
+
 	public function testValidatesUserIp(): void {
 		$this->expectException( ValidationException::class );
 		$this->expectExceptionMessage( 'userIp' );

@@ -27,7 +27,6 @@ final class ConfigurationTest extends TestCase {
 		$this->assertSame( 'test-api-key', $config->apiKey );
 		$this->assertSame( 'https://example.com', $config->blog );
 		$this->assertSame( Configuration::DEFAULT_BASE_URL, $config->baseUrl );
-		$this->assertSame( Configuration::DEFAULT_TIMEOUT, $config->timeout );
 		$this->assertFalse( $config->isTest );
 	}
 
@@ -36,12 +35,10 @@ final class ConfigurationTest extends TestCase {
 			'test-api-key',
 			'https://example.com',
 			'https://custom.api.com',
-			30,
 			true,
 		);
 
 		$this->assertSame( 'https://custom.api.com', $config->baseUrl );
-		$this->assertSame( 30, $config->timeout );
 		$this->assertTrue( $config->isTest );
 	}
 
@@ -76,13 +73,6 @@ final class ConfigurationTest extends TestCase {
 		new Configuration( 'key', 'not-a-url' );
 	}
 
-	public function testThrowsOnZeroTimeout(): void {
-		$this->expectException( ValidationException::class );
-		$this->expectExceptionMessage( 'timeout' );
-
-		new Configuration( 'key', 'https://example.com', Configuration::DEFAULT_BASE_URL, 0 );
-	}
-
 	public function testWithTestModeReturnsNewInstance(): void {
 		$config     = new Configuration( 'key', 'https://example.com' );
 		$testConfig = $config->withTestMode();
@@ -90,14 +80,5 @@ final class ConfigurationTest extends TestCase {
 		$this->assertNotSame( $config, $testConfig );
 		$this->assertFalse( $config->isTest );
 		$this->assertTrue( $testConfig->isTest );
-	}
-
-	public function testWithTimeoutReturnsNewInstance(): void {
-		$config    = new Configuration( 'key', 'https://example.com' );
-		$newConfig = $config->withTimeout( 60 );
-
-		$this->assertNotSame( $config, $newConfig );
-		$this->assertSame( Configuration::DEFAULT_TIMEOUT, $config->timeout );
-		$this->assertSame( 60, $newConfig->timeout );
 	}
 }
