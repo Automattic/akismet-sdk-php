@@ -79,7 +79,9 @@ final class Comment {
 	 * @param string|null             $honeypotFieldName       Name of a honeypot field if one was used.
 	 * @param string|null             $honeypotFieldValue      Value of the honeypot field (should be empty for humans).
 	 * @param string|null             $context                 The context or location of the comment within the website.
-	 * @param array<string, string>   $serverVariables         Additional server variables to include.
+	 * @param array<string, string>   $serverVariables         Additional server variables to include. Keys matching
+	 *                                                          RESERVED_KEYS are silently skipped in toArray() to
+	 *                                                          prevent overwriting canonical Akismet fields.
 	 * @throws ValidationException If userIp, authorEmail, authorUrl, or permalink is invalid.
 	 */
 	public function __construct(
@@ -124,6 +126,9 @@ final class Comment {
 
 	/**
 	 * Convert to array for API request.
+	 *
+	 * Server variables matching RESERVED_KEYS (e.g., 'user_ip', 'blog', 'api_key')
+	 * are silently skipped to prevent overwriting canonical Akismet fields.
 	 *
 	 * @return array<string, string>
 	 */

@@ -14,6 +14,9 @@ use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Exception\AkismetException;
+use Automattic\Akismet\Exception\InvalidApiKeyException;
+use Automattic\Akismet\Exception\ServerException;
+use Automattic\Akismet\Exception\ValidationException;
 
 /**
  * Interface for the Akismet client.
@@ -52,6 +55,8 @@ interface AkismetInterface {
 	 * - Do not submit based solely on automated rules without verification
 	 *
 	 * @param Comment $comment The spam content.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns an unexpected response body.
 	 * @throws AkismetException On network or API errors.
 	 */
 	public function submitSpam( Comment $comment ): void;
@@ -69,6 +74,8 @@ interface AkismetInterface {
 	 * - Track and monitor false positive rates to identify patterns
 	 *
 	 * @param Comment $comment The legitimate content.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns an unexpected response body.
 	 * @throws AkismetException On network or API errors.
 	 */
 	public function submitHam( Comment $comment ): void;
@@ -84,12 +91,15 @@ interface AkismetInterface {
 	/**
 	 * Get sites using this API key with their statistics.
 	 *
-	 * @param string|null $month  Month to get stats for (YYYY-MM format). Defaults to current month.
+	 * @param string|null $month  Month to get stats for (YYYY-MM format, month 01-12). Defaults to current month.
 	 * @param string|null $filter Filter results by site URL or partial URL.
-	 * @param int         $limit  Maximum number of results (default 500).
-	 * @param int         $offset Pagination offset (default 0).
+	 * @param int         $limit  Maximum number of results (must be > 0, default 500).
+	 * @param int         $offset Pagination offset (must be >= 0, default 0).
 	 * @param string|null $order  Sort column: 'total', 'spam', 'ham', 'missed_spam', or 'false_positives'.
 	 * @return KeySitesResponse List of sites with statistics (JSON format only; CSV is not supported).
+	 * @throws ValidationException If month format, order value, limit, or offset is invalid.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns malformed JSON.
 	 * @throws AkismetException On network or API errors.
 	 */
 	public function getKeySites(
