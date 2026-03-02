@@ -97,4 +97,16 @@ interface AkismetInterface {
 		int $limit = 500,
 		int $offset = 0,
 	): KeySitesResponse;
+
+	/**
+	 * Exchange the API key for a scoped access token.
+	 *
+	 * The token can only be used to authenticate requests to
+	 * tools.akismet.com stats pages. It cannot be used for
+	 * comment-check, submit-spam, submit-ham, or other API calls.
+	 *
+	 * @return string Opaque access token string.
+	 * @throws AkismetException On network or API errors.
+	 */
+	public function getAccessToken(): string;
 }
