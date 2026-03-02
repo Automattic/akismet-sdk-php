@@ -18,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass( CheckResult::class )]
 #[UsesClass( SpamVerdict::class )]
+#[UsesClass( ValidationException::class )]
 final class CheckResultTest extends TestCase {
 
 	public function testIsSpamReturnsTrueForSpamVerdict(): void {

@@ -1,15 +1,13 @@
 ## Unreleased
 ### Added
-- `getAccessToken()` method on `AkismetInterface` to exchange the API key for a scoped access token for stats iframes.
 - `guid` property on `CheckResult` DTO, extracted from the `X-akismet-guid` response header.
-- `order` parameter on `getKeySites()` for sorting results by column (`'total'`, `'spam'`, `'ham'`, `'missed_spam'`, `'false_positives'`).
 - `ServerException::unexpectedResponse()` factory for malformed API responses.
 - `context` property on `Comment` DTO, sent as `comment_context` to the API.
-- `trustedProxies` parameter on `CommentFactory::fromRequest()` for safe proxy header handling.
 
 ### Changed
+- **Breaking:** Added `getAccessToken()` and `$order` param on `getKeySites()` to `AkismetInterface`. Implementors must update their signatures.
+- **Breaking:** Added `$trustedProxies` param to `CommentFactory::fromRequest()`. Forwarded headers (`X-Forwarded-For`, `X-Real-IP`, etc.) are now only consulted when `trustedProxies` is provided; default is `REMOTE_ADDR` only.
 - **Breaking:** Removed `Configuration::$timeout`, `Configuration::DEFAULT_TIMEOUT`, and `Configuration::withTimeout()`. PSR-18 does not define a timeout concept; configure timeouts on your HTTP client directly.
-- **Breaking:** `CommentFactory::fromRequest()` now uses `REMOTE_ADDR` by default. Forwarded headers (`X-Forwarded-For`, `X-Real-IP`, etc.) are only consulted when `trustedProxies` is provided.
 
 ### Fixed
 - `check()` now throws `InvalidApiKeyException` when the API returns `"invalid"` instead of silently classifying it as ham.
