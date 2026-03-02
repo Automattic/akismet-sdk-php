@@ -76,6 +76,44 @@ if ($result->isSpam()) {
 | `submitHam($comment)` | Report false positive |
 | `getUsageLimit()` | Get API usage stats and limits |
 | `getKeySites()` | Get sites using your API key |
+| `getAccessToken()` | Exchange API key for a scoped access token |
+
+## Framework Integration
+
+Use `CommentFactory` to create `Comment` objects from PSR-7 requests with automatic IP and user agent extraction:
+
+```php
+use Automattic\Akismet\Factory\CommentFactory;
+use Automattic\Akismet\Enum\CommentType;
+
+$comment = CommentFactory::fromRequest(
+    request: $psr7Request,
+    content: $formData['message'],
+    authorName: $formData['name'],
+    authorEmail: $formData['email'],
+    type: CommentType::ContactForm,
+);
+```
+
+### Trusted Proxies
+
+By default, `CommentFactory::fromRequest()` uses `REMOTE_ADDR` as the client IP. If your application runs behind a reverse proxy or load balancer, pass the proxy IPs to trust forwarded headers (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, `True-Client-IP`):
+
+```php
+// Trust specific proxy IPs
+$comment = CommentFactory::fromRequest(
+    request: $psr7Request,
+    content: $formData['message'],
+    trustedProxies: ['10.0.0.1', '10.0.0.2'],
+);
+
+// Trust all proxies (use only in controlled environments)
+$comment = CommentFactory::fromRequest(
+    request: $psr7Request,
+    content: $formData['message'],
+    trustedProxies: ['*'],
+);
+```
 
 ## Submitting Feedback
 

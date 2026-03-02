@@ -45,4 +45,33 @@ final class ServerExceptionTest extends TestCase {
 		$this->assertStringContainsString( '504', $exception->getMessage() );
 		$this->assertStringContainsString( 'Gateway timeout', $exception->getMessage() );
 	}
+
+	public function testUnexpectedResponseIncludesBody(): void {
+		$exception = ServerException::unexpectedResponse( 'some weird body' );
+		$this->assertSame(
+			'Unexpected Akismet API response: some weird body',
+			$exception->getMessage()
+		);
+	}
+
+	public function testUnexpectedResponseTruncatesLongBody(): void {
+		$longBody  = str_repeat( 'x', 300 );
+		$exception = ServerException::unexpectedResponse( $longBody );
+
+		$this->assertStringContainsString( '...', $exception->getMessage() );
+		// Message should be: "Unexpected Akismet API response: " (33 chars) + 200 chars + "..." (3 chars)
+		$this->assertLessThanOrEqual( 236, strlen( $exception->getMessage() ) );
+	}
+
+	public function testUnexpectedResponseDoesNotTruncateShortBody(): void {
+		$shortBody = str_repeat( 'x', 200 );
+		$exception = ServerException::unexpectedResponse( $shortBody );
+
+		$this->assertStringNotContainsString( '...', $exception->getMessage() );
+	}
+
+	public function testUnexpectedResponseWithEmptyBody(): void {
+		$exception = ServerException::unexpectedResponse( '' );
+		$this->assertSame( 'Unexpected Akismet API response: ', $exception->getMessage() );
+	}
 }

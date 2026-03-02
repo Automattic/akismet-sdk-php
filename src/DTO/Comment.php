@@ -51,6 +51,7 @@ final class Comment {
 	 * @param string|null             $recheckReason           Reason for rechecking previously checked content (free-form string, e.g., 'edit').
 	 * @param string|null             $honeypotFieldName       Name of a honeypot field if one was used.
 	 * @param string|null             $honeypotFieldValue      Value of the honeypot field (should be empty for humans).
+	 * @param string|null             $context                 The context or location of the comment within the website.
 	 * @param array<string, string>   $serverVariables         Additional server variables to include.
 	 * @throws ValidationException If userIp, authorEmail, authorUrl, or permalink is invalid.
 	 */
@@ -71,6 +72,7 @@ final class Comment {
 		public readonly ?string $recheckReason = null,
 		public readonly ?string $honeypotFieldName = null,
 		public readonly ?string $honeypotFieldValue = null,
+		public readonly ?string $context = null,
 		public readonly array $serverVariables = [],
 	) {
 		// Normalize empty strings to null for optional validated fields.
@@ -162,6 +164,10 @@ final class Comment {
 			if ( $this->honeypotFieldValue !== null ) {
 				$data[ $this->honeypotFieldName ] = $this->honeypotFieldValue;
 			}
+		}
+
+		if ( $this->context !== null ) {
+			$data['comment_context'] = $this->context;
 		}
 
 		// Include additional server variables

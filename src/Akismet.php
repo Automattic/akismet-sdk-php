@@ -16,6 +16,7 @@ use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
+use Automattic\Akismet\Exception\ServerException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -73,7 +74,7 @@ final class Akismet implements AkismetInterface {
 			$streamFactory,
 		);
 
-		// Overwrite to preserve custom baseUrl and timeout from Configuration
+		// Overwrite to preserve custom baseUrl from Configuration
 		$instance->config     = $config;
 		$instance->httpClient = new HttpClient(
 			$config,
@@ -108,7 +109,7 @@ final class Akismet implements AkismetInterface {
 			throw InvalidApiKeyException::verificationFailed( $debugHelp );
 		}
 
-		return false;
+		throw ServerException::unexpectedResponse( $body );
 	}
 
 	/**
@@ -116,9 +117,16 @@ final class Akismet implements AkismetInterface {
 	 */
 	public function check( Comment $comment ): CheckResult {
 		$response = $this->httpClient->post( '/1.1/comment-check', $comment->toArray() );
+		$body     = HttpClient::getBody( $response );
+
+		if ( $body === 'invalid' ) {
+			$headers   = array_change_key_case( HttpClient::getHeaders( $response ), CASE_LOWER );
+			$debugHelp = $headers['x-akismet-debug-help'] ?? null;
+			throw InvalidApiKeyException::verificationFailed( $debugHelp );
+		}
 
 		return CheckResult::fromResponse(
-			HttpClient::getBody( $response ),
+			$body,
 			HttpClient::getHeaders( $response ),
 		);
 	}
@@ -127,14 +135,24 @@ final class Akismet implements AkismetInterface {
 	 * @inheritDoc
 	 */
 	public function submitSpam( Comment $comment ): void {
-		$this->httpClient->post( '/1.1/submit-spam', $comment->toArray() );
+		$response = $this->httpClient->post( '/1.1/submit-spam', $comment->toArray() );
+		$body     = HttpClient::getBody( $response );
+
+		if ( $body === 'invalid' ) {
+			throw InvalidApiKeyException::verificationFailed();
+		}
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 	public function submitHam( Comment $comment ): void {
-		$this->httpClient->post( '/1.1/submit-ham', $comment->toArray() );
+		$response = $this->httpClient->post( '/1.1/submit-ham', $comment->toArray() );
+		$body     = HttpClient::getBody( $response );
+
+		if ( $body === 'invalid' ) {
+			throw InvalidApiKeyException::verificationFailed();
+		}
 	}
 
 	/**
@@ -142,7 +160,17 @@ final class Akismet implements AkismetInterface {
 	 */
 	public function getUsageLimit(): UsageLimit {
 		$response = $this->httpClient->get( '/1.2/usage-limit' );
-		$data     = json_decode( HttpClient::getBody( $response ), true );
+		$body     = HttpClient::getBody( $response );
+
+		if ( $body === 'invalid' ) {
+			throw InvalidApiKeyException::verificationFailed();
+		}
+
+		try {
+			$data = json_decode( $body, true, 512, JSON_THROW_ON_ERROR );
+		} catch ( \JsonException ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
 
 		/** @var array{limit: int|string, usage: int, percentage: string, throttled: bool} $data */
 		return UsageLimit::fromResponse( $data );
@@ -156,6 +184,7 @@ final class Akismet implements AkismetInterface {
 		?string $filter = null,
 		int $limit = 500,
 		int $offset = 0,
+		?string $order = null,
 	): KeySitesResponse {
 		$params = [
 			'limit'  => (string) $limit,
@@ -170,8 +199,22 @@ final class Akismet implements AkismetInterface {
 			$params['filter'] = $filter;
 		}
 
+		if ( $order !== null ) {
+			$params['order'] = $order;
+		}
+
 		$response = $this->httpClient->get( '/1.2/key-sites', $params );
-		$data     = json_decode( HttpClient::getBody( $response ), true );
+		$body     = HttpClient::getBody( $response );
+
+		if ( $body === 'invalid' ) {
+			throw InvalidApiKeyException::verificationFailed();
+		}
+
+		try {
+			$data = json_decode( $body, true, 512, JSON_THROW_ON_ERROR );
+		} catch ( \JsonException ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
 
 		/** @var array<string, mixed> $data */
 		return KeySitesResponse::fromResponse( $data );

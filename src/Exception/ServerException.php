@@ -35,4 +35,16 @@ final class ServerException extends RuntimeException implements AkismetException
 
 		return new self( $message );
 	}
+
+	/**
+	 * Create exception for an unexpected API response body.
+	 *
+	 * @param string $body The unexpected response body.
+	 * @return self
+	 */
+	public static function unexpectedResponse( string $body ): self {
+		$truncated = strlen( $body ) > 200 ? substr( $body, 0, 200 ) . '...' : $body;
+
+		return new self( sprintf( 'Unexpected Akismet API response: %s', $truncated ) );
+	}
 }
