@@ -178,6 +178,21 @@ final class Akismet implements AkismetInterface {
 	}
 
 	/**
+	 * @inheritDoc
+	 */
+	public function getAccessToken(): string {
+		$response = $this->httpClient->post( '/1.1/token', [] );
+
+		$token = HttpClient::getBody( $response );
+
+		if ( $token === '' || $token === 'invalid' ) {
+			throw new InvalidApiKeyException( 'Failed to exchange API key for access token.' );
+		}
+
+		return $token;
+	}
+
+	/**
 	 * Get the current configuration.
 	 */
 	public function getConfiguration(): Configuration {
