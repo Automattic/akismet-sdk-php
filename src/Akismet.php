@@ -33,22 +33,24 @@ final class Akismet implements AkismetInterface {
 	/**
 	 * Create a new Akismet client.
 	 *
-	 * @param string                       $apiKey         Your Akismet API key.
-	 * @param string                       $blog           Your site's homepage URL.
-	 * @param bool                         $isTest         Enable test mode.
-	 * @param ClientInterface|null         $httpClient     Custom PSR-18 HTTP client.
-	 * @param RequestFactoryInterface|null $requestFactory Custom PSR-17 request factory.
-	 * @param StreamFactoryInterface|null  $streamFactory  Custom PSR-17 stream factory.
+	 * @param string                       $apiKey               Your Akismet API key.
+	 * @param string                       $blog                 Your site's homepage URL.
+	 * @param bool                         $isTest               Enable test mode.
+	 * @param string|null                  $applicationUserAgent Integration identifier prepended to the SDK User-Agent header.
+	 * @param ClientInterface|null         $httpClient           Custom PSR-18 HTTP client.
+	 * @param RequestFactoryInterface|null $requestFactory       Custom PSR-17 request factory.
+	 * @param StreamFactoryInterface|null  $streamFactory        Custom PSR-17 stream factory.
 	 */
 	public function __construct(
 		string $apiKey,
 		string $blog,
 		bool $isTest = false,
+		?string $applicationUserAgent = null,
 		?ClientInterface $httpClient = null,
 		?RequestFactoryInterface $requestFactory = null,
 		?StreamFactoryInterface $streamFactory = null,
 	) {
-		$this->config     = new Configuration( $apiKey, $blog, isTest: $isTest );
+		$this->config     = new Configuration( $apiKey, $blog, isTest: $isTest, applicationUserAgent: $applicationUserAgent );
 		$this->httpClient = new HttpClient(
 			$this->config,
 			$httpClient,
@@ -70,6 +72,7 @@ final class Akismet implements AkismetInterface {
 			$config->apiKey,
 			$config->blog,
 			$config->isTest,
+			$config->applicationUserAgent,
 			$httpClient,
 			$requestFactory,
 			$streamFactory,
