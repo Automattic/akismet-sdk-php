@@ -12,7 +12,7 @@ namespace Automattic\Akismet\DTO;
 /**
  * Represents the response from the key-sites endpoint.
  */
-final readonly class KeySitesResponse {
+final class KeySitesResponse {
 
 	/**
 	 * @param array<SiteStats> $sites  List of sites with their statistics.
@@ -21,10 +21,10 @@ final readonly class KeySitesResponse {
 	 * @param int              $total  Total number of sites available.
 	 */
 	public function __construct(
-		public array $sites,
-		public int $limit,
-		public int $offset,
-		public int $total,
+		public readonly array $sites,
+		public readonly int $limit,
+		public readonly int $offset,
+		public readonly int $total,
 	) {
 	}
 

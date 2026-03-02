@@ -15,16 +15,16 @@ use Automattic\Akismet\Validator\InputValidator;
 /**
  * Immutable configuration for the Akismet client.
  */
-final readonly class Configuration {
+final class Configuration {
 
 	public const DEFAULT_BASE_URL = 'https://rest.akismet.com';
 	public const DEFAULT_TIMEOUT  = 10;
 
-	public string $apiKey;
-	public string $blog;
-	public string $baseUrl;
-	public int $timeout;
-	public bool $isTest;
+	public readonly string $apiKey;
+	public readonly string $blog;
+	public readonly string $baseUrl;
+	public readonly int $timeout;
+	public readonly bool $isTest;
 
 	/**
 	 * @param string $apiKey  Akismet API key.
