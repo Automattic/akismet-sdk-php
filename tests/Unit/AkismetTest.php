@@ -17,6 +17,7 @@ use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\SiteStats;
 use Automattic\Akismet\DTO\UsageLimit;
+use Automattic\Akismet\Enum\SpamVerdict;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
 use Automattic\Akismet\Validator\InputValidator;
@@ -35,6 +36,7 @@ use Psr\Http\Message\ResponseInterface;
 #[UsesClass( InvalidApiKeyException::class )]
 #[UsesClass( ServerException::class )]
 #[UsesClass( CheckResult::class )]
+#[UsesClass( SpamVerdict::class )]
 #[UsesClass( Comment::class )]
 #[UsesClass( UsageLimit::class )]
 #[UsesClass( KeySitesResponse::class )]
@@ -107,6 +109,17 @@ final class AkismetTest extends TestCase {
 		$result = $akismet->check( $this->createComment() );
 
 		$this->assertTrue( $result->shouldDiscard() );
+	}
+
+	public function testCheckThrowsOnUnexpectedBody(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], 'something-unexpected' )
+		);
+
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
+
+		$akismet->check( $this->createComment() );
 	}
 
 	public function testCheckThrowsOnInvalidBody(): void {
@@ -202,6 +215,17 @@ final class AkismetTest extends TestCase {
 		$akismet->getUsageLimit();
 	}
 
+	public function testGetUsageLimitThrowsOnJsonScalar(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], 'null' )
+		);
+
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
+
+		$akismet->getUsageLimit();
+	}
+
 	public function testGetUsageLimitThrowsOnMalformedJson(): void {
 		$akismet = $this->createAkismetWithResponse(
 			new Response( 200, [], 'not-json{' )
@@ -249,6 +273,17 @@ final class AkismetTest extends TestCase {
 		);
 
 		$this->expectException( InvalidApiKeyException::class );
+
+		$akismet->getKeySites();
+	}
+
+	public function testGetKeySitesThrowsOnJsonScalar(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], '42' )
+		);
+
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
 
 		$akismet->getKeySites();
 	}

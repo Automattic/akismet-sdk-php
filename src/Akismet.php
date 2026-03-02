@@ -125,6 +125,10 @@ final class Akismet implements AkismetInterface {
 			throw InvalidApiKeyException::verificationFailed( $debugHelp );
 		}
 
+		if ( $body !== 'true' && $body !== 'false' ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
+
 		return CheckResult::fromResponse(
 			$body,
 			HttpClient::getHeaders( $response ),
@@ -172,6 +176,10 @@ final class Akismet implements AkismetInterface {
 			throw ServerException::unexpectedResponse( $body );
 		}
 
+		if ( ! is_array( $data ) ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
+
 		/** @var array{limit: int|string, usage: int, percentage: string, throttled: bool} $data */
 		return UsageLimit::fromResponse( $data );
 	}
@@ -213,6 +221,10 @@ final class Akismet implements AkismetInterface {
 		try {
 			$data = json_decode( $body, true, 512, JSON_THROW_ON_ERROR );
 		} catch ( \JsonException ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
+
+		if ( ! is_array( $data ) ) {
 			throw ServerException::unexpectedResponse( $body );
 		}
 
