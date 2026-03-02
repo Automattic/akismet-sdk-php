@@ -1,5 +1,6 @@
 ## Unreleased
 ### Added
+- `getAccessToken()` method on `AkismetInterface` to exchange the API key for a scoped access token for stats iframes.
 - `guid` property on `CheckResult` DTO, extracted from the `X-akismet-guid` response header.
 
 ### Fixed
