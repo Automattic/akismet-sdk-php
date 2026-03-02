@@ -88,6 +88,7 @@ interface AkismetInterface {
 	 * @param string|null $filter Filter results by site URL or partial URL.
 	 * @param int         $limit  Maximum number of results (default 500).
 	 * @param int         $offset Pagination offset (default 0).
+	 * @param string|null $order  Sort column: 'total', 'spam', 'ham', 'missed_spam', or 'false_positives'.
 	 * @return KeySitesResponse List of sites with statistics.
 	 * @throws AkismetException On network or API errors.
 	 */
@@ -96,6 +97,7 @@ interface AkismetInterface {
 		?string $filter = null,
 		int $limit = 500,
 		int $offset = 0,
+		?string $order = null,
 	): KeySitesResponse;
 
 	/**

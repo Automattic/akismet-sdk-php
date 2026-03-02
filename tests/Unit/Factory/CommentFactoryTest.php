@@ -42,27 +42,49 @@ final class CommentFactoryTest extends TestCase {
 		$this->assertSame( 'https://google.com/search', $comment->referrer );
 	}
 
-	public function testFromRequestExtractsForwardedIp(): void {
+	public function testFromRequestExtractsForwardedIpWithTrustedProxy(): void {
 		$request = $this->createMockRequest(
 			serverParams: [ 'REMOTE_ADDR' => '10.0.0.1' ],
 			headers: [ 'X-Forwarded-For' => '203.0.113.50, 70.41.3.18, 150.172.238.178' ],
 		);
 
-		$comment = CommentFactory::fromRequest( $request );
+		$comment = CommentFactory::fromRequest( $request, trustedProxies: [ '10.0.0.1' ] );
 
 		// Should use the first IP from X-Forwarded-For
 		$this->assertSame( '203.0.113.50', $comment->userIp );
 	}
 
-	public function testFromRequestExtractsCloudflareIp(): void {
+	public function testFromRequestExtractsCloudflareIpWithTrustedProxy(): void {
 		$request = $this->createMockRequest(
 			serverParams: [ 'REMOTE_ADDR' => '10.0.0.1' ],
 			headers: [ 'CF-Connecting-IP' => '198.51.100.25' ],
 		);
 
-		$comment = CommentFactory::fromRequest( $request );
+		$comment = CommentFactory::fromRequest( $request, trustedProxies: [ '10.0.0.1' ] );
 
 		$this->assertSame( '198.51.100.25', $comment->userIp );
+	}
+
+	public function testFromRequestIgnoresForwardedHeadersWithoutTrustedProxies(): void {
+		$request = $this->createMockRequest(
+			serverParams: [ 'REMOTE_ADDR' => '10.0.0.1' ],
+			headers: [ 'X-Forwarded-For' => '203.0.113.50' ],
+		);
+
+		$comment = CommentFactory::fromRequest( $request );
+
+		$this->assertSame( '10.0.0.1', $comment->userIp );
+	}
+
+	public function testFromRequestTrustsForwardedHeadersWithWildcard(): void {
+		$request = $this->createMockRequest(
+			serverParams: [ 'REMOTE_ADDR' => '10.0.0.1' ],
+			headers: [ 'X-Forwarded-For' => '203.0.113.50' ],
+		);
+
+		$comment = CommentFactory::fromRequest( $request, trustedProxies: [ '*' ] );
+
+		$this->assertSame( '203.0.113.50', $comment->userIp );
 	}
 
 	public function testFromRequestWithAllParameters(): void {
@@ -97,6 +119,20 @@ final class CommentFactoryTest extends TestCase {
 		$this->assertSame( $date, $comment->dateGmt );
 		$this->assertSame( 'guest', $comment->userRole );
 		$this->assertSame( 'website', $comment->honeypotFieldName );
+	}
+
+	public function testFromRequestPassesContext(): void {
+		$request = $this->createMockRequest(
+			serverParams: [ 'REMOTE_ADDR' => '192.168.1.1' ],
+			headers: [],
+		);
+
+		$comment = CommentFactory::fromRequest(
+			request: $request,
+			context: 'sidebar-widget',
+		);
+
+		$this->assertSame( 'sidebar-widget', $comment->context );
 	}
 
 	public function testFromRequestExtractsServerVariables(): void {
@@ -190,6 +226,28 @@ final class CommentFactoryTest extends TestCase {
 		$this->assertSame( 'Jane Doe', $comment->authorName );
 		$this->assertSame( 'jane@example.com', $comment->authorEmail );
 		$this->assertSame( 'https://jane.example.com', $comment->authorUrl );
+	}
+
+	public function testFromArrayReadsContext(): void {
+		$data = [
+			'userIp'  => '192.168.1.1',
+			'context' => 'footer-form',
+		];
+
+		$comment = CommentFactory::fromArray( $data );
+
+		$this->assertSame( 'footer-form', $comment->context );
+	}
+
+	public function testFromArrayReadsCommentContextKey(): void {
+		$data = [
+			'user_ip'         => '192.168.1.1',
+			'comment_context' => 'footer-form',
+		];
+
+		$comment = CommentFactory::fromArray( $data );
+
+		$this->assertSame( 'footer-form', $comment->context );
 	}
 
 	public function testFromArrayWithCustomCommentType(): void {

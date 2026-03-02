@@ -49,6 +49,8 @@ final class CommentFactory {
 	 * @param string|null              $recheckReason Reason for rechecking content.
 	 * @param string|null              $honeypotFieldName  Name of honeypot field.
 	 * @param string|null              $honeypotFieldValue Value of honeypot field.
+	 * @param string|null              $context            The context or location of the comment.
+	 * @param array<string>           $trustedProxies     List of trusted proxy IPs. Use ['*'] to trust all proxies.
 	 */
 	public static function fromRequest(
 		ServerRequestInterface $request,
@@ -63,12 +65,14 @@ final class CommentFactory {
 		?string $recheckReason = null,
 		?string $honeypotFieldName = null,
 		?string $honeypotFieldValue = null,
+		?string $context = null,
+		array $trustedProxies = [],
 	): Comment {
 		/** @var array<string, mixed> $serverParams */
 		$serverParams = $request->getServerParams();
 
-		// Extract IP address (check common proxy headers first)
-		$userIp = self::extractIpAddress( $request, $serverParams );
+		// Extract IP address (only consult forwarded headers when behind trusted proxies)
+		$userIp = self::extractIpAddress( $request, $serverParams, $trustedProxies );
 
 		// Extract user agent
 		$userAgentHeader = $request->getHeaderLine( 'User-Agent' );
@@ -96,6 +100,7 @@ final class CommentFactory {
 			recheckReason: $recheckReason,
 			honeypotFieldName: $honeypotFieldName,
 			honeypotFieldValue: $honeypotFieldValue,
+			context: $context,
 			serverVariables: $serverVariables,
 		);
 	}
@@ -132,6 +137,7 @@ final class CommentFactory {
 			recheckReason: self::getString( $data, 'recheckReason', 'recheck_reason' ),
 			honeypotFieldName: self::getString( $data, 'honeypotFieldName', 'honeypot_field_name' ),
 			honeypotFieldValue: self::getString( $data, 'honeypotFieldValue' ),
+			context: self::getString( $data, 'context', 'comment_context' ),
 			serverVariables: $serverVariables,
 		);
 	}
@@ -183,35 +189,45 @@ final class CommentFactory {
 	/**
 	 * Extract the client IP address from the request.
 	 *
-	 * Checks common proxy headers before falling back to REMOTE_ADDR.
+	 * Uses REMOTE_ADDR by default. Only consults forwarded headers when the
+	 * direct client (REMOTE_ADDR) is in the trusted proxies list.
 	 *
-	 * @param ServerRequestInterface $request      The HTTP request.
-	 * @param array<string, mixed>   $serverParams Server parameters.
+	 * @param ServerRequestInterface $request        The HTTP request.
+	 * @param array<string, mixed>   $serverParams   Server parameters.
+	 * @param array<string>          $trustedProxies List of trusted proxy IPs, or ['*'] for wildcard.
 	 * @return string The client IP address.
 	 */
 	private static function extractIpAddress(
 		ServerRequestInterface $request,
 		array $serverParams,
+		array $trustedProxies,
 	): string {
-		// Check X-Forwarded-For header (may contain multiple IPs)
-		$forwardedFor = $request->getHeaderLine( 'X-Forwarded-For' );
-		if ( $forwardedFor !== '' ) {
-			$ips = array_map( 'trim', explode( ',', $forwardedFor ) );
-			return $ips[0];
-		}
+		$remoteAddr = $serverParams['REMOTE_ADDR'] ?? '';
+		$remoteAddr = is_string( $remoteAddr ) ? $remoteAddr : '';
 
-		// Check other common proxy headers
-		$proxyHeaders = [ 'X-Real-IP', 'CF-Connecting-IP', 'True-Client-IP' ];
-		foreach ( $proxyHeaders as $header ) {
-			$ip = $request->getHeaderLine( $header );
-			if ( $ip !== '' ) {
-				return $ip;
+		// Only consult forwarded headers when REMOTE_ADDR is a trusted proxy.
+		$isTrusted = in_array( '*', $trustedProxies, true )
+			|| in_array( $remoteAddr, $trustedProxies, true );
+
+		if ( $isTrusted ) {
+			// Check X-Forwarded-For header (may contain multiple IPs)
+			$forwardedFor = $request->getHeaderLine( 'X-Forwarded-For' );
+			if ( $forwardedFor !== '' ) {
+				$ips = array_map( 'trim', explode( ',', $forwardedFor ) );
+				return $ips[0];
+			}
+
+			// Check other common proxy headers
+			$proxyHeaders = [ 'X-Real-IP', 'CF-Connecting-IP', 'True-Client-IP' ];
+			foreach ( $proxyHeaders as $header ) {
+				$ip = $request->getHeaderLine( $header );
+				if ( $ip !== '' ) {
+					return $ip;
+				}
 			}
 		}
 
-		// Fall back to REMOTE_ADDR
-		$remoteAddr = $serverParams['REMOTE_ADDR'] ?? '';
-		return is_string( $remoteAddr ) ? $remoteAddr : '';
+		return $remoteAddr;
 	}
 
 	/**
