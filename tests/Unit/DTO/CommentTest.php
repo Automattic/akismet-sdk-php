@@ -219,6 +219,40 @@ final class CommentTest extends TestCase {
 		$this->assertArrayNotHasKey( 'comment_context', $comment->toArray() );
 	}
 
+	public function testServerVariablesCannotOverrideReservedKeys(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			userAgent: 'Mozilla/5.0',
+			content: 'Legit comment',
+			serverVariables: [
+				'user_ip'         => '10.0.0.1',
+				'user_agent'      => 'EvilBot',
+				'comment_content' => 'Buy cheap stuff',
+				'api_key'         => 'stolen-key',
+				'blog'            => 'https://evil.com',
+				'is_test'         => '0',
+				'HTTP_ACCEPT'     => 'text/html',
+				'REMOTE_ADDR'     => '172.16.0.1',
+			],
+		);
+
+		$array = $comment->toArray();
+
+		// Reserved keys retain their original values.
+		$this->assertSame( '192.168.1.1', $array['user_ip'] );
+		$this->assertSame( 'Mozilla/5.0', $array['user_agent'] );
+		$this->assertSame( 'Legit comment', $array['comment_content'] );
+
+		// Injected reserved keys must not appear.
+		$this->assertArrayNotHasKey( 'api_key', $array );
+		$this->assertArrayNotHasKey( 'blog', $array );
+		$this->assertArrayNotHasKey( 'is_test', $array );
+
+		// Non-reserved server variables are included.
+		$this->assertSame( 'text/html', $array['HTTP_ACCEPT'] );
+		$this->assertSame( '172.16.0.1', $array['REMOTE_ADDR'] );
+	}
+
 	public function testValidatesUserIp(): void {
 		$this->expectException( ValidationException::class );
 		$this->expectExceptionMessage( 'userIp' );
