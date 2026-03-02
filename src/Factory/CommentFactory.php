@@ -20,26 +20,16 @@ use Psr\Http\Message\ServerRequestInterface;
 final class CommentFactory {
 
 	/**
-	 * Server variables to include in spam checks.
+	 * Server variables to exclude from spam checks.
 	 *
-	 * These provide additional context for Akismet's spam detection.
+	 * The Akismet API benefits from receiving as much server environment data
+	 * as possible. Rather than an allowlist, we exclude only sensitive values
+	 * that should never be sent — matching the approach used by the WP plugin.
 	 */
-	private const SERVER_VARS_TO_INCLUDE = [
-		'CONTENT_LENGTH',
-		'HTTP_ACCEPT',
-		'HTTP_ACCEPT_CHARSET',
-		'HTTP_ACCEPT_ENCODING',
-		'HTTP_ACCEPT_LANGUAGE',
-		'HTTP_CONNECTION',
-		'HTTP_HOST',
-		'REMOTE_ADDR',
-		'REMOTE_HOST',
-		'REMOTE_PORT',
-		'REQUEST_URI',
-		'SERVER_ADDR',
-		'SERVER_NAME',
-		'SERVER_PORT',
-		'SERVER_SOFTWARE',
+	private const SERVER_VARS_TO_EXCLUDE = [
+		'HTTP_COOKIE',
+		'HTTP_COOKIE2',
+		'PHP_AUTH_PW',
 	];
 
 	/**
@@ -220,8 +210,8 @@ final class CommentFactory {
 		}
 
 		// Fall back to REMOTE_ADDR
-		$remoteAddr = $serverParams['REMOTE_ADDR'] ?? '127.0.0.1';
-		return is_string( $remoteAddr ) ? $remoteAddr : '127.0.0.1';
+		$remoteAddr = $serverParams['REMOTE_ADDR'] ?? '';
+		return is_string( $remoteAddr ) ? $remoteAddr : '';
 	}
 
 	/**
@@ -233,9 +223,9 @@ final class CommentFactory {
 	private static function extractServerVariables( array $serverParams ): array {
 		$variables = [];
 
-		foreach ( self::SERVER_VARS_TO_INCLUDE as $key ) {
-			if ( isset( $serverParams[ $key ] ) && is_string( $serverParams[ $key ] ) ) {
-				$variables[ $key ] = $serverParams[ $key ];
+		foreach ( $serverParams as $key => $value ) {
+			if ( is_string( $value ) && ! in_array( $key, self::SERVER_VARS_TO_EXCLUDE, true ) ) {
+				$variables[ $key ] = $value;
 			}
 		}
 

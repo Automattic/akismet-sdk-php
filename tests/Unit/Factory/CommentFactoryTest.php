@@ -11,6 +11,7 @@ namespace Automattic\Akismet\Tests\Unit\Factory;
 
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\Exception\ValidationException;
 use Automattic\Akismet\Factory\CommentFactory;
 use Automattic\Akismet\Validator\InputValidator;
 use DateTimeImmutable;
@@ -22,6 +23,7 @@ use Psr\Http\Message\ServerRequestInterface;
 #[CoversClass( CommentFactory::class )]
 #[UsesClass( Comment::class )]
 #[UsesClass( InputValidator::class )]
+#[UsesClass( ValidationException::class )]
 final class CommentFactoryTest extends TestCase {
 
 	public function testFromRequestExtractsBasicInfo(): void {
@@ -105,7 +107,7 @@ final class CommentFactoryTest extends TestCase {
 				'HTTP_ACCEPT_ENCODING' => 'gzip, deflate',
 				'SERVER_NAME'          => 'example.com',
 				'REQUEST_URI'          => '/contact',
-				'SOME_OTHER_VAR'       => 'should not be included',
+				'SOME_OTHER_VAR'       => 'should be included now',
 			],
 			headers: [],
 		);
@@ -116,7 +118,38 @@ final class CommentFactoryTest extends TestCase {
 		$this->assertArrayHasKey( 'HTTP_ACCEPT_ENCODING', $comment->serverVariables );
 		$this->assertArrayHasKey( 'SERVER_NAME', $comment->serverVariables );
 		$this->assertArrayHasKey( 'REQUEST_URI', $comment->serverVariables );
-		$this->assertArrayNotHasKey( 'SOME_OTHER_VAR', $comment->serverVariables );
+		$this->assertArrayHasKey( 'SOME_OTHER_VAR', $comment->serverVariables );
+	}
+
+	public function testFromRequestExcludesSensitiveServerVariables(): void {
+		$request = $this->createMockRequest(
+			serverParams: [
+				'REMOTE_ADDR'  => '192.168.1.1',
+				'SERVER_NAME'  => 'example.com',
+				'HTTP_COOKIE'  => 'session=abc123',
+				'HTTP_COOKIE2' => 'old_cookie=xyz',
+				'PHP_AUTH_PW'  => 'secret_password',
+			],
+			headers: [],
+		);
+
+		$comment = CommentFactory::fromRequest( $request );
+
+		$this->assertArrayHasKey( 'SERVER_NAME', $comment->serverVariables );
+		$this->assertArrayNotHasKey( 'HTTP_COOKIE', $comment->serverVariables );
+		$this->assertArrayNotHasKey( 'HTTP_COOKIE2', $comment->serverVariables );
+		$this->assertArrayNotHasKey( 'PHP_AUTH_PW', $comment->serverVariables );
+	}
+
+	public function testFromRequestWithMissingIpThrowsValidationException(): void {
+		$request = $this->createMockRequest(
+			serverParams: [],
+			headers: [],
+		);
+
+		$this->expectException( ValidationException::class );
+
+		CommentFactory::fromRequest( $request );
 	}
 
 	public function testFromArrayWithCamelCaseKeys(): void {
