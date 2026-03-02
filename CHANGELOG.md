@@ -1,9 +1,19 @@
 ## Unreleased
 ### Added
-- `getAccessToken()` method on `AkismetInterface` to exchange the API key for a scoped access token for stats iframes.
 - `guid` property on `CheckResult` DTO, extracted from the `X-akismet-guid` response header.
+- `ServerException::unexpectedResponse()` factory for malformed API responses.
+- `context` property on `Comment` DTO, sent as `comment_context` to the API.
+
+### Changed
+- **Breaking:** Added `getAccessToken()` and `$order` param on `getKeySites()` to `AkismetInterface`. Implementors must update their signatures.
+- **Breaking:** Added `$trustedProxies` param to `CommentFactory::fromRequest()`. Forwarded headers (`X-Forwarded-For`, `X-Real-IP`, etc.) are now only consulted when `trustedProxies` is provided; default is `REMOTE_ADDR` only.
+- **Breaking:** Removed `Configuration::$timeout`, `Configuration::DEFAULT_TIMEOUT`, and `Configuration::withTimeout()`. PSR-18 does not define a timeout concept; configure timeouts on your HTTP client directly.
 
 ### Fixed
+- `check()` now throws `InvalidApiKeyException` when the API returns `"invalid"` instead of silently classifying it as ham.
+- `submitSpam()` and `submitHam()` now throw `InvalidApiKeyException` on `"invalid"` response instead of silently succeeding.
+- `getUsageLimit()` and `getKeySites()` now throw `InvalidApiKeyException` on `"invalid"` response and `ServerException` on malformed JSON instead of crashing on null.
+- `verifyKey()` now throws `ServerException` on unexpected response body instead of returning `false`.
 - Normalize empty response header values to `null` in `CheckResult::fromResponse()`.
 - `CheckResult::fromJson()` now throws `ValidationException` instead of a raw `ValueError` for invalid verdict values.
 
