@@ -4,6 +4,7 @@
 - `ServerException::unexpectedResponse()` factory for malformed API responses.
 - `context` property on `Comment` DTO, sent as `comment_context` to the API.
 - `Comment::RESERVED_KEYS` filtering prevents `serverVariables` from overwriting canonical Akismet fields in `toArray()`.
+- `applicationUserAgent` option on `Configuration` and `Akismet` constructor for integration identification in the User-Agent header.
 
 ### Changed
 - **Breaking:** Added `getAccessToken()` and `$order` param on `getKeySites()` to `AkismetInterface`. Implementors must update their signatures.

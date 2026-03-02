@@ -23,12 +23,14 @@ final class Configuration {
 	public readonly string $blog;
 	public readonly string $baseUrl;
 	public readonly bool $isTest;
+	public readonly ?string $applicationUserAgent;
 
 	/**
-	 * @param string $apiKey  Akismet API key.
-	 * @param string $blog    Blog URL.
-	 * @param string $baseUrl Base URL for API requests.
-	 * @param bool   $isTest  Whether to enable test mode.
+	 * @param string      $apiKey               Akismet API key.
+	 * @param string      $blog                 Blog URL.
+	 * @param string      $baseUrl              Base URL for API requests.
+	 * @param bool        $isTest               Whether to enable test mode.
+	 * @param string|null $applicationUserAgent  Integration identifier prepended to the SDK User-Agent header.
 	 * @throws ValidationException If any parameter is invalid.
 	 */
 	public function __construct(
@@ -36,6 +38,7 @@ final class Configuration {
 		string $blog,
 		string $baseUrl = self::DEFAULT_BASE_URL,
 		bool $isTest = false,
+		?string $applicationUserAgent = null,
 	) {
 		if ( $apiKey === '' ) {
 			throw ValidationException::invalidValue( 'apiKey', 'cannot be empty' );
@@ -44,10 +47,11 @@ final class Configuration {
 		InputValidator::validateUrl( $blog, 'blog' );
 		InputValidator::validateUrl( $baseUrl, 'baseUrl' );
 
-		$this->apiKey  = $apiKey;
-		$this->blog    = rtrim( $blog, '/' );
-		$this->baseUrl = rtrim( $baseUrl, '/' );
-		$this->isTest  = $isTest;
+		$this->apiKey               = $apiKey;
+		$this->blog                 = rtrim( $blog, '/' );
+		$this->baseUrl              = rtrim( $baseUrl, '/' );
+		$this->isTest               = $isTest;
+		$this->applicationUserAgent = $applicationUserAgent;
 	}
 
 	/**
@@ -62,6 +66,7 @@ final class Configuration {
 			$this->blog,
 			$this->baseUrl,
 			$isTest,
+			$this->applicationUserAgent,
 		);
 	}
 }
