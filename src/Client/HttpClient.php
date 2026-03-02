@@ -78,7 +78,7 @@ final class HttpClient {
 		$request = $this->requestFactory
 			->createRequest( 'POST', $url )
 			->withHeader( 'Content-Type', 'application/x-www-form-urlencoded' )
-			->withHeader( 'User-Agent', self::USER_AGENT )
+			->withHeader( 'User-Agent', $this->getUserAgent() )
 			->withBody( $this->streamFactory->createStream( $body ) );
 
 		return $this->send( $request );
@@ -102,7 +102,7 @@ final class HttpClient {
 
 		$request = $this->requestFactory
 			->createRequest( 'GET', $url )
-			->withHeader( 'User-Agent', self::USER_AGENT );
+			->withHeader( 'User-Agent', $this->getUserAgent() );
 
 		return $this->send( $request );
 	}
@@ -176,6 +176,21 @@ final class HttpClient {
 	 */
 	private static function redactApiKey( string $message ): string {
 		return preg_replace( '/\b(api_key|key)=[^&\s]+/i', '$1=***', $message ) ?? $message;
+	}
+
+	/**
+	 * Build the User-Agent header value.
+	 *
+	 * If an application User-Agent is configured, it is prepended to the SDK identifier.
+	 *
+	 * @return string The User-Agent header value.
+	 */
+	private function getUserAgent(): string {
+		if ( $this->config->applicationUserAgent !== null ) {
+			return $this->config->applicationUserAgent . ' | ' . self::USER_AGENT;
+		}
+
+		return self::USER_AGENT;
 	}
 
 	/**

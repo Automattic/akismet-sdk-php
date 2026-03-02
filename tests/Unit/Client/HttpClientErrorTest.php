@@ -497,6 +497,106 @@ final class HttpClientErrorTest extends TestCase {
 	}
 
 	// =========================================================================
+	// User-Agent Header Tests
+	// =========================================================================
+
+	public function testPostRequestSendsDefaultUserAgent(): void {
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], 'true' ),
+			$capturedRequest
+		);
+
+		$httpClient = new HttpClient(
+			$this->config,
+			$mockClient,
+			$this->httpFactory,
+			$this->httpFactory
+		);
+
+		$httpClient->post( '/1.1/comment-check', [] );
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertSame( 'Automattic-Akismet-SDK/1.0', $capturedRequest->getHeaderLine( 'User-Agent' ) );
+	}
+
+	public function testGetRequestSendsDefaultUserAgent(): void {
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], '{}' ),
+			$capturedRequest
+		);
+
+		$httpClient = new HttpClient(
+			$this->config,
+			$mockClient,
+			$this->httpFactory,
+			$this->httpFactory
+		);
+
+		$httpClient->get( '/1.2/usage-limit', [] );
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertSame( 'Automattic-Akismet-SDK/1.0', $capturedRequest->getHeaderLine( 'User-Agent' ) );
+	}
+
+	public function testPostRequestSendsCustomUserAgent(): void {
+		$config          = new Configuration(
+			apiKey: 'test-api-key',
+			blog: 'https://example.com',
+			applicationUserAgent: 'Akismet-Drupal/1.0 | Drupal/11.0',
+		);
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], 'true' ),
+			$capturedRequest
+		);
+
+		$httpClient = new HttpClient(
+			$config,
+			$mockClient,
+			$this->httpFactory,
+			$this->httpFactory
+		);
+
+		$httpClient->post( '/1.1/comment-check', [] );
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertSame(
+			'Akismet-Drupal/1.0 | Drupal/11.0 | Automattic-Akismet-SDK/1.0',
+			$capturedRequest->getHeaderLine( 'User-Agent' )
+		);
+	}
+
+	public function testGetRequestSendsCustomUserAgent(): void {
+		$config          = new Configuration(
+			apiKey: 'test-api-key',
+			blog: 'https://example.com',
+			applicationUserAgent: 'MyApp/2.0',
+		);
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], '{}' ),
+			$capturedRequest
+		);
+
+		$httpClient = new HttpClient(
+			$config,
+			$mockClient,
+			$this->httpFactory,
+			$this->httpFactory
+		);
+
+		$httpClient->get( '/1.2/usage-limit', [] );
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertSame(
+			'MyApp/2.0 | Automattic-Akismet-SDK/1.0',
+			$capturedRequest->getHeaderLine( 'User-Agent' )
+		);
+	}
+
+	// =========================================================================
 	// Helper Methods
 	// =========================================================================
 

@@ -81,4 +81,30 @@ final class ConfigurationTest extends TestCase {
 		$this->assertFalse( $config->isTest );
 		$this->assertTrue( $testConfig->isTest );
 	}
+
+	public function testApplicationUserAgentDefaultsToNull(): void {
+		$config = new Configuration( 'key', 'https://example.com' );
+		$this->assertNull( $config->applicationUserAgent );
+	}
+
+	public function testApplicationUserAgentPreservedThroughConstruction(): void {
+		$config = new Configuration(
+			'key',
+			'https://example.com',
+			applicationUserAgent: 'Akismet-Drupal/1.0 | Drupal/11.0',
+		);
+		$this->assertSame( 'Akismet-Drupal/1.0 | Drupal/11.0', $config->applicationUserAgent );
+	}
+
+	public function testWithTestModePreservesApplicationUserAgent(): void {
+		$config     = new Configuration(
+			'key',
+			'https://example.com',
+			applicationUserAgent: 'MyApp/2.0',
+		);
+		$testConfig = $config->withTestMode();
+
+		$this->assertSame( 'MyApp/2.0', $testConfig->applicationUserAgent );
+		$this->assertTrue( $testConfig->isTest );
+	}
 }
