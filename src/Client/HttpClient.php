@@ -122,7 +122,8 @@ final class HttpClient {
 			$response = $this->client->sendRequest( $request );
 		} catch ( ClientExceptionInterface $e ) {
 			$endpoint = parse_url( (string) $request->getUri(), PHP_URL_PATH );
-			throw NetworkException::fromEndpoint( $endpoint ? $endpoint : 'unknown', $e->getMessage(), $e );
+			$message  = self::redactApiKey( $e->getMessage() );
+			throw NetworkException::fromEndpoint( $endpoint ? $endpoint : 'unknown', $message, $e );
 		}
 
 		$statusCode = $response->getStatusCode();
@@ -133,7 +134,7 @@ final class HttpClient {
 
 		if ( $statusCode === 429 ) {
 			$retryAfter = $response->hasHeader( 'Retry-After' )
-				? (int) $response->getHeaderLine( 'Retry-After' )
+				? self::parseRetryAfter( $response->getHeaderLine( 'Retry-After' ) )
 				: null;
 			throw RateLimitException::fromResponse( $retryAfter );
 		}
@@ -143,6 +144,38 @@ final class HttpClient {
 		}
 
 		return $response;
+	}
+
+	/**
+	 * Parse a Retry-After header value (integer seconds or HTTP-date).
+	 *
+	 * @param string $value The header value.
+	 * @return int|null Seconds to wait, or null if unparseable.
+	 */
+	private static function parseRetryAfter( string $value ): ?int {
+		if ( ctype_digit( $value ) ) {
+			return (int) $value;
+		}
+
+		$timestamp = strtotime( $value );
+		if ( $timestamp !== false ) {
+			return max( 0, $timestamp - time() );
+		}
+
+		return null;
+	}
+
+	/**
+	 * Redact API key values from a string to prevent credential leakage in logs.
+	 *
+	 * Covers both `api_key` (comment-check, submit, GET endpoints) and `key`
+	 * (verify-key), case-insensitively, in query strings and form bodies.
+	 *
+	 * @param string $message The string that may contain API key values.
+	 * @return string The string with API key values replaced.
+	 */
+	private static function redactApiKey( string $message ): string {
+		return preg_replace( '/\b(api_key|key)=[^&\s]+/i', '$1=***', $message ) ?? $message;
 	}
 
 	/**

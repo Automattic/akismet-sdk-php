@@ -17,6 +17,7 @@ use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
+use Automattic\Akismet\Exception\ValidationException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -145,6 +146,10 @@ final class Akismet implements AkismetInterface {
 		if ( $body === 'invalid' ) {
 			throw InvalidApiKeyException::verificationFailed();
 		}
+
+		if ( $body !== 'Thanks for making the web a better place.' ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
 	}
 
 	/**
@@ -156,6 +161,10 @@ final class Akismet implements AkismetInterface {
 
 		if ( $body === 'invalid' ) {
 			throw InvalidApiKeyException::verificationFailed();
+		}
+
+		if ( $body !== 'Thanks for making the web a better place.' ) {
+			throw ServerException::unexpectedResponse( $body );
 		}
 	}
 
@@ -194,6 +203,23 @@ final class Akismet implements AkismetInterface {
 		int $offset = 0,
 		?string $order = null,
 	): KeySitesResponse {
+		if ( $month !== null && ! preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $month ) ) {
+			throw ValidationException::invalidValue( 'month', 'must be in YYYY-MM format (01-12)' );
+		}
+
+		$validOrders = [ 'total', 'spam', 'ham', 'missed_spam', 'false_positives' ];
+		if ( $order !== null && ! in_array( $order, $validOrders, true ) ) {
+			throw ValidationException::invalidValue( 'order', 'must be one of: ' . implode( ', ', $validOrders ) );
+		}
+
+		if ( $limit <= 0 ) {
+			throw ValidationException::invalidValue( 'limit', 'must be a positive integer' );
+		}
+
+		if ( $offset < 0 ) {
+			throw ValidationException::invalidValue( 'offset', 'must be a non-negative integer' );
+		}
+
 		$params = [
 			'limit'  => (string) $limit,
 			'offset' => (string) $offset,

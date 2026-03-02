@@ -20,9 +20,11 @@ use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\SpamVerdict;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
+use Automattic\Akismet\Exception\ValidationException;
 use Automattic\Akismet\Validator\InputValidator;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientInterface;
@@ -41,6 +43,7 @@ use Psr\Http\Message\ResponseInterface;
 #[UsesClass( UsageLimit::class )]
 #[UsesClass( KeySitesResponse::class )]
 #[UsesClass( SiteStats::class )]
+#[UsesClass( ValidationException::class )]
 final class AkismetTest extends TestCase {
 
 	// =========================================================================
@@ -147,6 +150,17 @@ final class AkismetTest extends TestCase {
 		$this->addToAssertionCount( 1 );
 	}
 
+	public function testSubmitSpamThrowsOnUnexpectedBody(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], 'something-unexpected' )
+		);
+
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
+
+		$akismet->submitSpam( $this->createComment() );
+	}
+
 	public function testSubmitSpamThrowsOnInvalidBody(): void {
 		$akismet = $this->createAkismetWithResponse(
 			new Response( 200, [], 'invalid' )
@@ -169,6 +183,17 @@ final class AkismetTest extends TestCase {
 		$akismet->submitHam( $this->createComment() );
 
 		$this->addToAssertionCount( 1 );
+	}
+
+	public function testSubmitHamThrowsOnUnexpectedBody(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], 'something-unexpected' )
+		);
+
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
+
+		$akismet->submitHam( $this->createComment() );
 	}
 
 	public function testSubmitHamThrowsOnInvalidBody(): void {
@@ -323,6 +348,114 @@ final class AkismetTest extends TestCase {
 
 		$this->assertNotNull( $capturedRequest );
 		$this->assertStringContainsString( 'order=spam', (string) $capturedRequest->getUri() );
+	}
+
+	// =========================================================================
+	// getKeySites Validation Tests
+	// =========================================================================
+
+	#[DataProvider( 'invalidMonthProvider' )]
+	public function testGetKeySitesRejectsInvalidMonth( string $month ): void {
+		$akismet = $this->createAkismetWithResponse( new Response( 200, [], '{}' ) );
+
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'month' );
+
+		$akismet->getKeySites( month: $month );
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function invalidMonthProvider(): array {
+		return [
+			'no dash'         => [ '202401' ],
+			'wrong separator' => [ '2024/01' ],
+			'just a year'     => [ '2024' ],
+			'day included'    => [ '2024-01-15' ],
+			'letters'         => [ 'January' ],
+			'month 00'        => [ '2024-00' ],
+			'month 13'        => [ '2024-13' ],
+			'month 99'        => [ '2024-99' ],
+		];
+	}
+
+	public function testGetKeySitesAcceptsValidMonth(): void {
+		$json    = json_encode(
+			[
+				'limit'  => 500,
+				'offset' => 0,
+				'total'  => 0,
+			]
+		);
+		$akismet = $this->createAkismetWithResponse( new Response( 200, [], $json ) );
+
+		$result = $akismet->getKeySites( month: '2024-01' );
+
+		$this->assertSame( 0, $result->total );
+	}
+
+	#[DataProvider( 'invalidOrderProvider' )]
+	public function testGetKeySitesRejectsInvalidOrder( string $order ): void {
+		$akismet = $this->createAkismetWithResponse( new Response( 200, [], '{}' ) );
+
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'order' );
+
+		$akismet->getKeySites( order: $order );
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function invalidOrderProvider(): array {
+		return [
+			'unknown column' => [ 'date' ],
+			'mixed case'     => [ 'Spam' ],
+			'empty string'   => [ '' ],
+		];
+	}
+
+	public function testGetKeySitesRejectsNonPositiveLimit(): void {
+		$akismet = $this->createAkismetWithResponse( new Response( 200, [], '{}' ) );
+
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'limit' );
+
+		$akismet->getKeySites( limit: 0 );
+	}
+
+	public function testGetKeySitesRejectsNegativeLimit(): void {
+		$akismet = $this->createAkismetWithResponse( new Response( 200, [], '{}' ) );
+
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'limit' );
+
+		$akismet->getKeySites( limit: -1 );
+	}
+
+	public function testGetKeySitesRejectsNegativeOffset(): void {
+		$akismet = $this->createAkismetWithResponse( new Response( 200, [], '{}' ) );
+
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'offset' );
+
+		$akismet->getKeySites( offset: -1 );
+	}
+
+	public function testGetKeySitesAcceptsZeroOffset(): void {
+		$json    = json_encode(
+			[
+				'limit'  => 500,
+				'offset' => 0,
+				'total'  => 0,
+			]
+		);
+		$akismet = $this->createAkismetWithResponse( new Response( 200, [], $json ) );
+
+		$result = $akismet->getKeySites( offset: 0 );
+
+		$this->assertSame( 0, $result->total );
 	}
 
 	// =========================================================================
