@@ -12,16 +12,16 @@ namespace Automattic\Akismet\DTO;
 /**
  * Represents usage statistics for a single site.
  */
-final readonly class SiteStats {
+final class SiteStats {
 
 	public function __construct(
-		public string $site,
-		public int $totalCalls,
-		public int $spam,
-		public int $ham,
-		public int $missedSpam,
-		public int $falsePositives,
-		public bool $isRevoked,
+		public readonly string $site,
+		public readonly int $totalCalls,
+		public readonly int $spam,
+		public readonly int $ham,
+		public readonly int $missedSpam,
+		public readonly int $falsePositives,
+		public readonly bool $isRevoked,
 	) {
 	}
 

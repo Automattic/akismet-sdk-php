@@ -17,22 +17,22 @@ use DateTimeInterface;
 /**
  * Immutable data transfer object representing content to check for spam.
  */
-final readonly class Comment {
+final class Comment {
 
 	/**
 	 * Email of the content author (normalized from empty string to null).
 	 */
-	public ?string $authorEmail;
+	public readonly ?string $authorEmail;
 
 	/**
 	 * URL/website of the content author (normalized from empty string to null).
 	 */
-	public ?string $authorUrl;
+	public readonly ?string $authorUrl;
 
 	/**
 	 * Permanent URL of the entry being commented on (normalized from empty string to null).
 	 */
-	public ?string $permalink;
+	public readonly ?string $permalink;
 
 	/**
 	 * @param string                  $userIp                  IP address of the content submitter (required).
@@ -55,23 +55,23 @@ final readonly class Comment {
 	 * @throws ValidationException If userIp, authorEmail, authorUrl, or permalink is invalid.
 	 */
 	public function __construct(
-		public string $userIp,
-		public ?string $userAgent = null,
-		public ?string $content = null,
-		public ?string $authorName = null,
+		public readonly string $userIp,
+		public readonly ?string $userAgent = null,
+		public readonly ?string $content = null,
+		public readonly ?string $authorName = null,
 		?string $authorEmail = null,
 		?string $authorUrl = null,
-		public CommentType|string|null $type = null,
+		public readonly CommentType|string|null $type = null,
 		?string $permalink = null,
-		public ?string $referrer = null,
-		public ?DateTimeInterface $dateGmt = null,
-		public ?DateTimeInterface $postModifiedGmt = null,
-		public ?string $parentId = null,
-		public ?string $userRole = null,
-		public ?string $recheckReason = null,
-		public ?string $honeypotFieldName = null,
-		public ?string $honeypotFieldValue = null,
-		public array $serverVariables = [],
+		public readonly ?string $referrer = null,
+		public readonly ?DateTimeInterface $dateGmt = null,
+		public readonly ?DateTimeInterface $postModifiedGmt = null,
+		public readonly ?string $parentId = null,
+		public readonly ?string $userRole = null,
+		public readonly ?string $recheckReason = null,
+		public readonly ?string $honeypotFieldName = null,
+		public readonly ?string $honeypotFieldValue = null,
+		public readonly array $serverVariables = [],
 	) {
 		// Normalize empty strings to null for optional validated fields.
 		$this->authorEmail = $authorEmail === '' ? null : $authorEmail;

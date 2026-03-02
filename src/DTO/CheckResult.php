@@ -19,15 +19,15 @@ use JsonSerializable;
  * Implements JsonSerializable to allow storing results in moderation queues
  * for later feedback submission.
  */
-final readonly class CheckResult implements JsonSerializable {
+final class CheckResult implements JsonSerializable {
 
 	public function __construct(
-		public SpamVerdict $verdict,
-		public ?string $proTip = null,
-		public ?string $debugHelp = null,
-		public ?string $alertCode = null,
-		public ?string $alertMessage = null,
-		public ?string $guid = null,
+		public readonly SpamVerdict $verdict,
+		public readonly ?string $proTip = null,
+		public readonly ?string $debugHelp = null,
+		public readonly ?string $alertCode = null,
+		public readonly ?string $alertMessage = null,
+		public readonly ?string $guid = null,
 	) {
 	}
 
