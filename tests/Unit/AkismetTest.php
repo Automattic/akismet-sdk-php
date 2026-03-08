@@ -12,6 +12,7 @@ namespace Automattic\Akismet\Tests\Unit;
 use Automattic\Akismet\Akismet;
 use Automattic\Akismet\Client\HttpClient;
 use Automattic\Akismet\Config\Configuration;
+use Automattic\Akismet\DTO\AlertMetadata;
 use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\DTO\KeySitesResponse;
@@ -37,6 +38,7 @@ use Psr\Http\Message\ResponseInterface;
 #[UsesClass( InputValidator::class )]
 #[UsesClass( InvalidApiKeyException::class )]
 #[UsesClass( ServerException::class )]
+#[UsesClass( AlertMetadata::class )]
 #[UsesClass( CheckResult::class )]
 #[UsesClass( SpamVerdict::class )]
 #[UsesClass( Comment::class )]
@@ -511,6 +513,44 @@ final class AkismetTest extends TestCase {
 		$this->assertNotNull( $capturedRequest );
 		$this->assertSame( 'POST', $capturedRequest->getMethod() );
 		$this->assertStringContainsString( '/1.1/token', (string) $capturedRequest->getUri() );
+	}
+
+	// =========================================================================
+	// fromConfiguration Tests
+	// =========================================================================
+
+	public function testFromConfigurationPreservesCustomBaseUrl(): void {
+		$config = new Configuration(
+			apiKey: 'test-key',
+			blog: 'https://example.com',
+			baseUrl: 'https://custom-api.example.com',
+		);
+
+		$mockClient = $this->createMock( ClientInterface::class );
+		$mockClient->method( 'sendRequest' )->willReturn(
+			new Response( 200, [], 'valid' )
+		);
+
+		$akismet = Akismet::fromConfiguration( $config, httpClient: $mockClient );
+
+		$this->assertSame( $config, $akismet->getConfiguration() );
+	}
+
+	public function testFromConfigurationIsFunctional(): void {
+		$config = new Configuration(
+			apiKey: 'test-key',
+			blog: 'https://example.com',
+		);
+
+		$mockClient = $this->createMock( ClientInterface::class );
+		$mockClient->method( 'sendRequest' )->willReturn(
+			new Response( 200, [], 'valid' )
+		);
+
+		$akismet = Akismet::fromConfiguration( $config, httpClient: $mockClient );
+
+		$this->assertTrue( $akismet->verifyKey() );
+		$this->assertSame( $config, $akismet->getConfiguration() );
 	}
 
 	// =========================================================================

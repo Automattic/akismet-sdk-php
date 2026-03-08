@@ -219,6 +219,45 @@ final class CommentTest extends TestCase {
 		$this->assertArrayNotHasKey( 'comment_context', $comment->toArray() );
 	}
 
+	public function testToArrayIncludesFeedbackFields(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			reporter: 'admin-user',
+			commentCheckResponse: 'true',
+		);
+
+		$array = $comment->toArray();
+
+		$this->assertSame( 'admin-user', $array['reporter'] );
+		$this->assertSame( 'true', $array['comment_check_response'] );
+	}
+
+	public function testFeedbackFieldsNullByDefault(): void {
+		$comment = new Comment( userIp: '192.168.1.1' );
+
+		$this->assertNull( $comment->reporter );
+		$this->assertNull( $comment->commentCheckResponse );
+		$this->assertArrayNotHasKey( 'reporter', $comment->toArray() );
+		$this->assertArrayNotHasKey( 'comment_check_response', $comment->toArray() );
+	}
+
+	public function testServerVariablesCannotOverrideFeedbackReservedKeys(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			reporter: 'admin-user',
+			commentCheckResponse: 'true',
+			serverVariables: [
+				'reporter'               => 'evil-user',
+				'comment_check_response' => 'false',
+			],
+		);
+
+		$array = $comment->toArray();
+
+		$this->assertSame( 'admin-user', $array['reporter'] );
+		$this->assertSame( 'true', $array['comment_check_response'] );
+	}
+
 	public function testServerVariablesCannotOverrideReservedKeys(): void {
 		$comment = new Comment(
 			userIp: '192.168.1.1',
@@ -277,5 +316,59 @@ final class CommentTest extends TestCase {
 		);
 
 		$this->assertSame( 'user@example.com', $comment->authorEmail );
+	}
+
+	public function testValidatesCommentCheckResponse(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'commentCheckResponse' );
+
+		new Comment(
+			userIp: '192.168.1.1',
+			commentCheckResponse: 'maybe',
+		);
+	}
+
+	public function testAcceptsValidCommentCheckResponse(): void {
+		$true = new Comment( userIp: '192.168.1.1', commentCheckResponse: 'true' );
+		$this->assertSame( 'true', $true->commentCheckResponse );
+
+		$false = new Comment( userIp: '192.168.1.1', commentCheckResponse: 'false' );
+		$this->assertSame( 'false', $false->commentCheckResponse );
+	}
+
+	public function testWithFeedbackReturnsNewInstanceWithFeedbackFields(): void {
+		$original = new Comment(
+			userIp: '192.168.1.1',
+			userAgent: 'Mozilla/5.0',
+			content: 'Test comment',
+			authorName: 'John Doe',
+			authorEmail: 'john@example.com',
+		);
+
+		$feedback = $original->withFeedback( 'admin', 'true' );
+
+		// Feedback fields are set.
+		$this->assertSame( 'admin', $feedback->reporter );
+		$this->assertSame( 'true', $feedback->commentCheckResponse );
+
+		// Original fields are preserved.
+		$this->assertSame( '192.168.1.1', $feedback->userIp );
+		$this->assertSame( 'Mozilla/5.0', $feedback->userAgent );
+		$this->assertSame( 'Test comment', $feedback->content );
+		$this->assertSame( 'John Doe', $feedback->authorName );
+		$this->assertSame( 'john@example.com', $feedback->authorEmail );
+
+		// Original is unchanged.
+		$this->assertNull( $original->reporter );
+		$this->assertNull( $original->commentCheckResponse );
+	}
+
+	public function testWithFeedbackValidatesCommentCheckResponse(): void {
+		$comment = new Comment( userIp: '192.168.1.1' );
+
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'commentCheckResponse' );
+
+		$comment->withFeedback( 'admin', 'invalid' );
 	}
 }
