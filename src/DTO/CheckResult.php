@@ -28,6 +28,7 @@ final class CheckResult implements JsonSerializable {
 		public readonly ?string $alertCode = null,
 		public readonly ?string $alertMessage = null,
 		public readonly ?string $guid = null,
+		public readonly ?AlertMetadata $alertMetadata = null,
 	) {
 	}
 
@@ -71,13 +72,15 @@ final class CheckResult implements JsonSerializable {
 			$verdict = SpamVerdict::Ham;
 		}
 
-		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage, $guid );
+		$alertMetadata = AlertMetadata::fromHeaders( $normalizedHeaders );
+
+		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage, $guid, $alertMetadata );
 	}
 
 	/**
 	 * Create result from JSON data.
 	 *
-	 * @param array{verdict?: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null} $data
+	 * @param array{verdict?: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null, alertMetadata?: mixed} $data
 	 */
 	public static function fromJson( array $data ): self {
 		$verdict = SpamVerdict::tryFrom( $data['verdict'] ?? '' );
@@ -88,6 +91,10 @@ final class CheckResult implements JsonSerializable {
 			);
 		}
 
+		$alertMetadata = isset( $data['alertMetadata'] ) && is_array( $data['alertMetadata'] )
+			? AlertMetadata::fromJson( $data['alertMetadata'] )
+			: null;
+
 		return new self(
 			$verdict,
 			$data['proTip'] ?? null,
@@ -95,20 +102,22 @@ final class CheckResult implements JsonSerializable {
 			$data['alertCode'] ?? null,
 			$data['alertMessage'] ?? null,
 			$data['guid'] ?? null,
+			$alertMetadata,
 		);
 	}
 
 	/**
-	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null}
+	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array<string, mixed>|null}
 	 */
 	public function jsonSerialize(): array {
 		return [
-			'verdict'      => $this->verdict->value,
-			'proTip'       => $this->proTip,
-			'debugHelp'    => $this->debugHelp,
-			'alertCode'    => $this->alertCode,
-			'alertMessage' => $this->alertMessage,
-			'guid'         => $this->guid,
+			'verdict'       => $this->verdict->value,
+			'proTip'        => $this->proTip,
+			'debugHelp'     => $this->debugHelp,
+			'alertCode'     => $this->alertCode,
+			'alertMessage'  => $this->alertMessage,
+			'guid'          => $this->guid,
+			'alertMetadata' => $this->alertMetadata?->jsonSerialize(),
 		];
 	}
 }

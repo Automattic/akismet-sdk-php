@@ -27,7 +27,9 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class HttpClient {
 
-	private const USER_AGENT = 'Automattic-Akismet-SDK/1.0';
+	private const SDK_USER_AGENT_PREFIX = 'Automattic-Akismet-SDK/';
+
+	private static ?string $sdkVersion = null;
 
 	private ClientInterface $client;
 	private RequestFactoryInterface $requestFactory;
@@ -179,6 +181,16 @@ final class HttpClient {
 	}
 
 	/**
+	 * Get the SDK version from Composer's installed package data.
+	 */
+	private static function getSdkVersion(): string {
+		if ( self::$sdkVersion === null ) {
+			self::$sdkVersion = \Composer\InstalledVersions::getPrettyVersion( 'automattic/akismet-sdk' ) ?? 'dev';
+		}
+		return self::$sdkVersion;
+	}
+
+	/**
 	 * Build the User-Agent header value.
 	 *
 	 * If an application User-Agent is configured, it is prepended to the SDK identifier.
@@ -186,11 +198,13 @@ final class HttpClient {
 	 * @return string The User-Agent header value.
 	 */
 	private function getUserAgent(): string {
+		$sdkAgent = self::SDK_USER_AGENT_PREFIX . self::getSdkVersion();
+
 		if ( $this->config->applicationUserAgent !== null ) {
-			return $this->config->applicationUserAgent . ' | ' . self::USER_AGENT;
+			return $this->config->applicationUserAgent . ' | ' . $sdkAgent;
 		}
 
-		return self::USER_AGENT;
+		return $sdkAgent;
 	}
 
 	/**

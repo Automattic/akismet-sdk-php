@@ -44,6 +44,8 @@ final class Comment {
 		'api_key',
 		'blog',
 		'is_test',
+		'reporter',
+		'comment_check_response',
 	];
 
 	/**
@@ -79,6 +81,8 @@ final class Comment {
 	 * @param string|null             $honeypotFieldName       Name of a honeypot field if one was used.
 	 * @param string|null             $honeypotFieldValue      Value of the honeypot field (should be empty for humans).
 	 * @param string|null             $context                 The context or location of the comment within the website.
+	 * @param string|null             $reporter                Who reported the content (e.g., current user name).
+	 * @param string|null             $commentCheckResponse    The original comment-check result ('true' or 'false').
 	 * @param array<string, string>   $serverVariables         Additional server variables to include. Keys matching
 	 *                                                          RESERVED_KEYS are silently skipped in toArray() to
 	 *                                                          prevent overwriting canonical Akismet fields.
@@ -102,6 +106,8 @@ final class Comment {
 		public readonly ?string $honeypotFieldName = null,
 		public readonly ?string $honeypotFieldValue = null,
 		public readonly ?string $context = null,
+		public readonly ?string $reporter = null,
+		public readonly ?string $commentCheckResponse = null,
 		public readonly array $serverVariables = [],
 	) {
 		// Normalize empty strings to null for optional validated fields.
@@ -191,6 +197,11 @@ final class Comment {
 			$data['recheck_reason'] = $this->recheckReason;
 		}
 
+		// Edge case: the honeypot value is written under the dynamic field name key
+		// (e.g., 'website_url'). This key is not in RESERVED_KEYS, so if a serverVariable
+		// shares the same key, it will overwrite the honeypot value in the loop below.
+		// In practice this is unlikely since honeypot names are form fields and server
+		// variables are typically HTTP headers (e.g., HTTP_ACCEPT, REMOTE_ADDR).
 		if ( $this->honeypotFieldName !== null ) {
 			$data['honeypot_field_name'] = $this->honeypotFieldName;
 			if ( $this->honeypotFieldValue !== null ) {
@@ -200,6 +211,14 @@ final class Comment {
 
 		if ( $this->context !== null ) {
 			$data['comment_context'] = $this->context;
+		}
+
+		if ( $this->reporter !== null ) {
+			$data['reporter'] = $this->reporter;
+		}
+
+		if ( $this->commentCheckResponse !== null ) {
+			$data['comment_check_response'] = $this->commentCheckResponse;
 		}
 
 		// Include additional server variables, skipping reserved Akismet fields.
