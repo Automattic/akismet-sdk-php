@@ -185,7 +185,13 @@ final class HttpClient {
 	 */
 	private static function getSdkVersion(): string {
 		if ( self::$sdkVersion === null ) {
-			self::$sdkVersion = \Composer\InstalledVersions::getPrettyVersion( 'automattic/akismet-sdk' ) ?? 'dev';
+			try {
+				self::$sdkVersion = class_exists( \Composer\InstalledVersions::class )
+					? ( \Composer\InstalledVersions::getPrettyVersion( 'automattic/akismet-sdk' ) ?? 'dev' )
+					: 'dev';
+			} catch ( \Throwable ) {
+				self::$sdkVersion = 'dev';
+			}
 		}
 		return self::$sdkVersion;
 	}
