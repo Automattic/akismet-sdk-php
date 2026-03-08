@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet\Tests\Unit\DTO;
 
+use Automattic\Akismet\DTO\AlertMetadata;
 use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\Enum\SpamVerdict;
 use Automattic\Akismet\Exception\ValidationException;
@@ -17,6 +18,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( CheckResult::class )]
+#[UsesClass( AlertMetadata::class )]
 #[UsesClass( SpamVerdict::class )]
 #[UsesClass( ValidationException::class )]
 final class CheckResultTest extends TestCase {
@@ -175,8 +177,74 @@ final class CheckResultTest extends TestCase {
 		$this->assertArrayHasKey( 'alertCode', $json );
 		$this->assertArrayHasKey( 'alertMessage', $json );
 		$this->assertArrayHasKey( 'guid', $json );
+		$this->assertArrayHasKey( 'alertMetadata', $json );
 
 		$this->assertSame( 'ham', $json['verdict'] );
 		$this->assertNull( $json['guid'] );
+		$this->assertNull( $json['alertMetadata'] );
+	}
+
+	public function testFromResponseParsesAlertMetadata(): void {
+		$result = CheckResult::fromResponse(
+			'true',
+			[
+				'X-Akismet-Alert-Code'                  => '10502',
+				'X-Akismet-Alert-Msg'                   => 'Usage limit warning',
+				'X-Akismet-Alert-Api-Calls'             => '15000',
+				'X-Akismet-Alert-Usage-Limit'           => '10000',
+				'X-Akismet-Alert-Upgrade-Plan'          => 'Enterprise',
+				'X-Akismet-Alert-Upgrade-Url'           => 'https://akismet.com/account/',
+				'X-Akismet-Alert-Upgrade-Type'          => 'qty',
+				'X-Akismet-Alert-Upgrade-Via-Support'   => 'false',
+				'X-Akismet-Alert-Recommended-Plan-Name' => 'Akismet Pro (500)',
+			]
+		);
+
+		$this->assertSame( '10502', $result->alertCode );
+		$this->assertSame( 'Usage limit warning', $result->alertMessage );
+
+		$this->assertNotNull( $result->alertMetadata );
+		$this->assertSame( 15000, $result->alertMetadata->apiCalls );
+		$this->assertSame( 10000, $result->alertMetadata->usageLimit );
+		$this->assertSame( 'Enterprise', $result->alertMetadata->upgradePlan );
+		$this->assertSame( 'https://akismet.com/account/', $result->alertMetadata->upgradeUrl );
+		$this->assertSame( 'qty', $result->alertMetadata->upgradeType );
+		$this->assertFalse( $result->alertMetadata->upgradeViaSupport );
+		$this->assertSame( 'Akismet Pro (500)', $result->alertMetadata->recommendedPlanName );
+	}
+
+	public function testFromResponseAlertMetadataNullWithoutExtendedHeaders(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[
+				'X-Akismet-Alert-Code' => '10001',
+				'X-Akismet-Alert-Msg'  => 'Some alert',
+			]
+		);
+
+		$this->assertSame( '10001', $result->alertCode );
+		$this->assertNull( $result->alertMetadata );
+	}
+
+	public function testJsonRoundTripWithAlertMetadata(): void {
+		$original = CheckResult::fromResponse(
+			'true',
+			[
+				'X-Akismet-Alert-Code'        => '10502',
+				'X-Akismet-Alert-Msg'         => 'Usage limit',
+				'X-Akismet-Alert-Upgrade-Url' => 'https://akismet.com/account/',
+				'X-Akismet-Alert-Api-Calls'   => '15000',
+				'X-Akismet-Alert-Usage-Limit' => '10000',
+			]
+		);
+
+		$json     = json_encode( $original );
+		$decoded  = json_decode( $json, true );
+		$restored = CheckResult::fromJson( $decoded );
+
+		$this->assertNotNull( $restored->alertMetadata );
+		$this->assertSame( $original->alertMetadata->upgradeUrl, $restored->alertMetadata->upgradeUrl );
+		$this->assertSame( $original->alertMetadata->apiCalls, $restored->alertMetadata->apiCalls );
+		$this->assertSame( $original->alertMetadata->usageLimit, $restored->alertMetadata->usageLimit );
 	}
 }

@@ -68,17 +68,9 @@ final class Akismet implements AkismetInterface {
 		?RequestFactoryInterface $requestFactory = null,
 		?StreamFactoryInterface $streamFactory = null,
 	): self {
-		$instance = new self(
-			$config->apiKey,
-			$config->blog,
-			$config->isTest,
-			$config->applicationUserAgent,
-			$httpClient,
-			$requestFactory,
-			$streamFactory,
-		);
+		/** @var self $instance */
+		$instance = ( new \ReflectionClass( self::class ) )->newInstanceWithoutConstructor();
 
-		// Overwrite to preserve custom baseUrl from Configuration
 		$instance->config     = $config;
 		$instance->httpClient = new HttpClient(
 			$config,

@@ -219,6 +219,45 @@ final class CommentTest extends TestCase {
 		$this->assertArrayNotHasKey( 'comment_context', $comment->toArray() );
 	}
 
+	public function testToArrayIncludesFeedbackFields(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			reporter: 'admin-user',
+			commentCheckResponse: 'true',
+		);
+
+		$array = $comment->toArray();
+
+		$this->assertSame( 'admin-user', $array['reporter'] );
+		$this->assertSame( 'true', $array['comment_check_response'] );
+	}
+
+	public function testFeedbackFieldsNullByDefault(): void {
+		$comment = new Comment( userIp: '192.168.1.1' );
+
+		$this->assertNull( $comment->reporter );
+		$this->assertNull( $comment->commentCheckResponse );
+		$this->assertArrayNotHasKey( 'reporter', $comment->toArray() );
+		$this->assertArrayNotHasKey( 'comment_check_response', $comment->toArray() );
+	}
+
+	public function testServerVariablesCannotOverrideFeedbackReservedKeys(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			reporter: 'admin-user',
+			commentCheckResponse: 'true',
+			serverVariables: [
+				'reporter'               => 'evil-user',
+				'comment_check_response' => 'false',
+			],
+		);
+
+		$array = $comment->toArray();
+
+		$this->assertSame( 'admin-user', $array['reporter'] );
+		$this->assertSame( 'true', $array['comment_check_response'] );
+	}
+
 	public function testServerVariablesCannotOverrideReservedKeys(): void {
 		$comment = new Comment(
 			userIp: '192.168.1.1',

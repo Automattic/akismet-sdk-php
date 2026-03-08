@@ -250,6 +250,30 @@ final class CommentFactoryTest extends TestCase {
 		$this->assertSame( 'footer-form', $comment->context );
 	}
 
+	public function testFromArrayReadsFeedbackFields(): void {
+		$camelCase = CommentFactory::fromArray(
+			[
+				'userIp'               => '192.168.1.1',
+				'reporter'             => 'admin-user',
+				'commentCheckResponse' => 'true',
+			]
+		);
+
+		$this->assertSame( 'admin-user', $camelCase->reporter );
+		$this->assertSame( 'true', $camelCase->commentCheckResponse );
+
+		$snakeCase = CommentFactory::fromArray(
+			[
+				'user_ip'                => '192.168.1.1',
+				'reporter'               => 'moderator',
+				'comment_check_response' => 'false',
+			]
+		);
+
+		$this->assertSame( 'moderator', $snakeCase->reporter );
+		$this->assertSame( 'false', $snakeCase->commentCheckResponse );
+	}
+
 	public function testFromArrayWithCustomCommentType(): void {
 		$data = [
 			'userIp' => '192.168.1.1',
@@ -270,6 +294,78 @@ final class CommentFactoryTest extends TestCase {
 		$comment = CommentFactory::fromArray( $data );
 
 		$this->assertSame( CommentType::Signup, $comment->type );
+	}
+
+	public function testFromArrayAcceptsIso8601DateStrings(): void {
+		$data = [
+			'userIp'          => '192.168.1.1',
+			'dateGmt'         => '2024-01-15T10:30:00+00:00',
+			'postModifiedGmt' => '2024-02-20T14:00:00+00:00',
+		];
+
+		$comment = CommentFactory::fromArray( $data );
+
+		$this->assertNotNull( $comment->dateGmt );
+		$this->assertSame( '2024-01-15T10:30:00+00:00', $comment->dateGmt->format( 'c' ) );
+		$this->assertNotNull( $comment->postModifiedGmt );
+		$this->assertSame( '2024-02-20T14:00:00+00:00', $comment->postModifiedGmt->format( 'c' ) );
+	}
+
+	public function testFromArrayReturnsNullForInvalidDateStrings(): void {
+		$data = [
+			'userIp'  => '192.168.1.1',
+			'dateGmt' => 'not-a-date',
+		];
+
+		$comment = CommentFactory::fromArray( $data );
+
+		$this->assertNull( $comment->dateGmt );
+	}
+
+	public function testFromArrayRoundTripsDateCorrectly(): void {
+		$date         = new DateTimeImmutable( '2024-06-15T12:00:00+00:00' );
+		$postModified = new DateTimeImmutable( '2024-06-10T08:30:00+00:00' );
+
+		$original = new Comment(
+			userIp: '192.168.1.1',
+			dateGmt: $date,
+			postModifiedGmt: $postModified,
+		);
+
+		$array         = $original->toArray();
+		$reconstructed = CommentFactory::fromArray( $array );
+
+		$this->assertNotNull( $reconstructed->dateGmt );
+		$this->assertSame( $date->format( 'c' ), $reconstructed->dateGmt->format( 'c' ) );
+		$this->assertNotNull( $reconstructed->postModifiedGmt );
+		$this->assertSame( $postModified->format( 'c' ), $reconstructed->postModifiedGmt->format( 'c' ) );
+	}
+
+	public function testFromArrayRoundTripsHoneypotCorrectly(): void {
+		$original = new Comment(
+			userIp: '192.168.1.1',
+			honeypotFieldName: 'website_url',
+			honeypotFieldValue: 'sneaky-bot-value',
+		);
+
+		$array         = $original->toArray();
+		$reconstructed = CommentFactory::fromArray( $array );
+
+		$this->assertSame( 'website_url', $reconstructed->honeypotFieldName );
+		$this->assertSame( 'sneaky-bot-value', $reconstructed->honeypotFieldValue );
+	}
+
+	public function testFromArrayReadsHoneypotValueFromSnakeCaseKey(): void {
+		$data = [
+			'userIp'               => '192.168.1.1',
+			'honeypotFieldName'    => 'website_url',
+			'honeypot_field_value' => 'bot-input',
+		];
+
+		$comment = CommentFactory::fromArray( $data );
+
+		$this->assertSame( 'website_url', $comment->honeypotFieldName );
+		$this->assertSame( 'bot-input', $comment->honeypotFieldValue );
 	}
 
 	/**
