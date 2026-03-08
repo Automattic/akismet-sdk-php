@@ -317,4 +317,58 @@ final class CommentTest extends TestCase {
 
 		$this->assertSame( 'user@example.com', $comment->authorEmail );
 	}
+
+	public function testValidatesCommentCheckResponse(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'commentCheckResponse' );
+
+		new Comment(
+			userIp: '192.168.1.1',
+			commentCheckResponse: 'maybe',
+		);
+	}
+
+	public function testAcceptsValidCommentCheckResponse(): void {
+		$true = new Comment( userIp: '192.168.1.1', commentCheckResponse: 'true' );
+		$this->assertSame( 'true', $true->commentCheckResponse );
+
+		$false = new Comment( userIp: '192.168.1.1', commentCheckResponse: 'false' );
+		$this->assertSame( 'false', $false->commentCheckResponse );
+	}
+
+	public function testWithFeedbackReturnsNewInstanceWithFeedbackFields(): void {
+		$original = new Comment(
+			userIp: '192.168.1.1',
+			userAgent: 'Mozilla/5.0',
+			content: 'Test comment',
+			authorName: 'John Doe',
+			authorEmail: 'john@example.com',
+		);
+
+		$feedback = $original->withFeedback( 'admin', 'true' );
+
+		// Feedback fields are set.
+		$this->assertSame( 'admin', $feedback->reporter );
+		$this->assertSame( 'true', $feedback->commentCheckResponse );
+
+		// Original fields are preserved.
+		$this->assertSame( '192.168.1.1', $feedback->userIp );
+		$this->assertSame( 'Mozilla/5.0', $feedback->userAgent );
+		$this->assertSame( 'Test comment', $feedback->content );
+		$this->assertSame( 'John Doe', $feedback->authorName );
+		$this->assertSame( 'john@example.com', $feedback->authorEmail );
+
+		// Original is unchanged.
+		$this->assertNull( $original->reporter );
+		$this->assertNull( $original->commentCheckResponse );
+	}
+
+	public function testWithFeedbackValidatesCommentCheckResponse(): void {
+		$comment = new Comment( userIp: '192.168.1.1' );
+
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'commentCheckResponse' );
+
+		$comment->withFeedback( 'admin', 'invalid' );
+	}
 }

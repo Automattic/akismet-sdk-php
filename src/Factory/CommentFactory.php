@@ -171,7 +171,7 @@ final class CommentFactory {
 		if ( is_string( $value ) && $value !== '' ) {
 			try {
 				return new \DateTimeImmutable( $value );
-			} catch ( \Exception ) {
+			} catch ( \Throwable ) {
 				return null;
 			}
 		}
