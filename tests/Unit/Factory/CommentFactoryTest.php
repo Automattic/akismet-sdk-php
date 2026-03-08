@@ -368,6 +368,28 @@ final class CommentFactoryTest extends TestCase {
 		$this->assertSame( 'bot-input', $comment->honeypotFieldValue );
 	}
 
+	public function testFromArrayReturnsNullForEmptyStringDate(): void {
+		$comment = CommentFactory::fromArray(
+			[
+				'userIp'  => '192.168.1.1',
+				'dateGmt' => '',
+			]
+		);
+
+		$this->assertNull( $comment->dateGmt );
+	}
+
+	public function testFromArrayReturnsNullForNonStringDate(): void {
+		$comment = CommentFactory::fromArray(
+			[
+				'userIp'  => '192.168.1.1',
+				'dateGmt' => 42,
+			]
+		);
+
+		$this->assertNull( $comment->dateGmt );
+	}
+
 	/**
 	 * Create a mock ServerRequestInterface.
 	 *

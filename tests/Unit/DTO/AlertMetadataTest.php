@@ -123,6 +123,32 @@ final class AlertMetadataTest extends TestCase {
 		$this->assertTrue( $meta->upgradeViaSupport );
 	}
 
+	public function testFromJsonNonNumericApiCallsReturnsNull(): void {
+		$meta = AlertMetadata::fromJson(
+			[
+				'apiCalls'   => 'not-a-number',
+				'usageLimit' => 'unlimited',
+			]
+		);
+
+		$this->assertNull( $meta->apiCalls );
+		$this->assertNull( $meta->usageLimit );
+	}
+
+	public function testFromJsonWrongTypeStringFieldsReturnNull(): void {
+		$meta = AlertMetadata::fromJson(
+			[
+				'upgradePlan' => 123,
+				'upgradeUrl'  => true,
+				'upgradeType' => [ 'array' ],
+			]
+		);
+
+		$this->assertNull( $meta->upgradePlan );
+		$this->assertNull( $meta->upgradeUrl );
+		$this->assertNull( $meta->upgradeType );
+	}
+
 	public function testJsonRoundTrip(): void {
 		$original = new AlertMetadata(
 			apiCalls: 15000,

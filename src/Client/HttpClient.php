@@ -189,7 +189,7 @@ final class HttpClient {
 				self::$sdkVersion = class_exists( \Composer\InstalledVersions::class )
 					? ( \Composer\InstalledVersions::getPrettyVersion( 'automattic/akismet-sdk' ) ?? 'dev' )
 					: 'dev';
-			} catch ( \Throwable ) {
+			} catch ( \OutOfRangeException ) {
 				self::$sdkVersion = 'dev';
 			}
 		}

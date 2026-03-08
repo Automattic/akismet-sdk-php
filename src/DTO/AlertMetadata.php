@@ -25,16 +25,16 @@ use JsonSerializable;
  *
  * @see https://akismet.com/developers/errors/
  */
-final class AlertMetadata implements JsonSerializable {
+final readonly class AlertMetadata implements JsonSerializable {
 
 	public function __construct(
-		public readonly ?int $apiCalls = null,
-		public readonly ?int $usageLimit = null,
-		public readonly ?string $upgradePlan = null,
-		public readonly ?string $upgradeUrl = null,
-		public readonly ?string $upgradeType = null,
-		public readonly bool $upgradeViaSupport = false,
-		public readonly ?string $recommendedPlanName = null,
+		public ?int $apiCalls = null,
+		public ?int $usageLimit = null,
+		public ?string $upgradePlan = null,
+		public ?string $upgradeUrl = null,
+		public ?string $upgradeType = null,
+		public bool $upgradeViaSupport = false,
+		public ?string $recommendedPlanName = null,
 	) {
 	}
 
@@ -43,9 +43,10 @@ final class AlertMetadata implements JsonSerializable {
 	 *
 	 * Returns null if no extended alert headers are present.
 	 *
-	 * @param array<string, string> $headers Lowercased response headers.
+	 * @param array<string, string> $headers Response headers (lowercased automatically).
 	 */
 	public static function fromHeaders( array $headers ): ?self {
+		$headers     = array_change_key_case( $headers, CASE_LOWER );
 		$nullIfEmpty = static fn( ?string $value ): ?string => ( $value !== null && $value !== '' ) ? $value : null;
 
 		$apiCalls            = $nullIfEmpty( $headers['x-akismet-alert-api-calls'] ?? null );

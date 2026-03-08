@@ -128,6 +128,40 @@ final class Comment {
 		if ( $this->permalink !== null ) {
 			InputValidator::validateUrl( $this->permalink, 'permalink' );
 		}
+		if ( $this->commentCheckResponse !== null && ! in_array( $this->commentCheckResponse, [ 'true', 'false' ], true ) ) {
+			throw ValidationException::invalidValue( 'commentCheckResponse', "expected 'true' or 'false'" );
+		}
+	}
+
+	/**
+	 * Create a copy with feedback fields set for submit-spam/submit-ham requests.
+	 *
+	 * @param string $reporter              Who reported the content (e.g., current user name).
+	 * @param string $commentCheckResponse  The original comment-check result ('true' or 'false').
+	 */
+	public function withFeedback( string $reporter, string $commentCheckResponse ): self {
+		return new self(
+			userIp: $this->userIp,
+			userAgent: $this->userAgent,
+			content: $this->content,
+			authorName: $this->authorName,
+			authorEmail: $this->authorEmail,
+			authorUrl: $this->authorUrl,
+			type: $this->type,
+			permalink: $this->permalink,
+			referrer: $this->referrer,
+			dateGmt: $this->dateGmt,
+			postModifiedGmt: $this->postModifiedGmt,
+			parentId: $this->parentId,
+			userRole: $this->userRole,
+			recheckReason: $this->recheckReason,
+			honeypotFieldName: $this->honeypotFieldName,
+			honeypotFieldValue: $this->honeypotFieldValue,
+			context: $this->context,
+			reporter: $reporter,
+			commentCheckResponse: $commentCheckResponse,
+			serverVariables: $this->serverVariables,
+		);
 	}
 
 	/**

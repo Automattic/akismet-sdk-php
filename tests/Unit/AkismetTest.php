@@ -536,7 +536,7 @@ final class AkismetTest extends TestCase {
 		$this->assertSame( $config, $akismet->getConfiguration() );
 	}
 
-	public function testFromConfigurationDoesNotDoubleConstruct(): void {
+	public function testFromConfigurationIsFunctional(): void {
 		$config = new Configuration(
 			apiKey: 'test-key',
 			blog: 'https://example.com',
