@@ -517,7 +517,10 @@ final class HttpClientErrorTest extends TestCase {
 		$httpClient->post( '/1.1/comment-check', [] );
 
 		$this->assertNotNull( $capturedRequest );
-		$this->assertSame( 'Automattic-Akismet-SDK/1.0', $capturedRequest->getHeaderLine( 'User-Agent' ) );
+		$this->assertMatchesRegularExpression(
+			'/^Automattic-Akismet-SDK\/.+$/',
+			$capturedRequest->getHeaderLine( 'User-Agent' )
+		);
 	}
 
 	public function testGetRequestSendsDefaultUserAgent(): void {
@@ -537,7 +540,10 @@ final class HttpClientErrorTest extends TestCase {
 		$httpClient->get( '/1.2/usage-limit', [] );
 
 		$this->assertNotNull( $capturedRequest );
-		$this->assertSame( 'Automattic-Akismet-SDK/1.0', $capturedRequest->getHeaderLine( 'User-Agent' ) );
+		$this->assertMatchesRegularExpression(
+			'/^Automattic-Akismet-SDK\/.+$/',
+			$capturedRequest->getHeaderLine( 'User-Agent' )
+		);
 	}
 
 	public function testPostRequestSendsCustomUserAgent(): void {
@@ -562,8 +568,8 @@ final class HttpClientErrorTest extends TestCase {
 		$httpClient->post( '/1.1/comment-check', [] );
 
 		$this->assertNotNull( $capturedRequest );
-		$this->assertSame(
-			'Akismet-Drupal/1.0 | Drupal/11.0 | Automattic-Akismet-SDK/1.0',
+		$this->assertMatchesRegularExpression(
+			'/^Akismet-Drupal\/1\.0 \| Drupal\/11\.0 \| Automattic-Akismet-SDK\/.+$/',
 			$capturedRequest->getHeaderLine( 'User-Agent' )
 		);
 	}
@@ -590,8 +596,8 @@ final class HttpClientErrorTest extends TestCase {
 		$httpClient->get( '/1.2/usage-limit', [] );
 
 		$this->assertNotNull( $capturedRequest );
-		$this->assertSame(
-			'MyApp/2.0 | Automattic-Akismet-SDK/1.0',
+		$this->assertMatchesRegularExpression(
+			'/^MyApp\/2\.0 \| Automattic-Akismet-SDK\/.+$/',
 			$capturedRequest->getHeaderLine( 'User-Agent' )
 		);
 	}

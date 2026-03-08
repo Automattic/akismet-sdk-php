@@ -136,8 +136,10 @@ final class CommentFactory {
 			userRole: self::getString( $data, 'userRole', 'user_role' ),
 			recheckReason: self::getString( $data, 'recheckReason', 'recheck_reason' ),
 			honeypotFieldName: self::getString( $data, 'honeypotFieldName', 'honeypot_field_name' ),
-			honeypotFieldValue: self::getString( $data, 'honeypotFieldValue' ),
+			honeypotFieldValue: self::getHoneypotValue( $data, self::getString( $data, 'honeypotFieldName', 'honeypot_field_name' ) ),
 			context: self::getString( $data, 'context', 'comment_context' ),
+			reporter: self::getString( $data, 'reporter' ),
+			commentCheckResponse: self::getString( $data, 'commentCheckResponse', 'comment_check_response' ),
 			serverVariables: $serverVariables,
 		);
 	}
@@ -163,7 +165,38 @@ final class CommentFactory {
 	 */
 	private static function getDateTime( array $data, string $key, ?string $fallbackKey = null ): ?DateTimeInterface {
 		$value = $data[ $key ] ?? ( $fallbackKey !== null ? ( $data[ $fallbackKey ] ?? null ) : null );
-		return $value instanceof DateTimeInterface ? $value : null;
+		if ( $value instanceof DateTimeInterface ) {
+			return $value;
+		}
+		if ( is_string( $value ) && $value !== '' ) {
+			try {
+				return new \DateTimeImmutable( $value );
+			} catch ( \Throwable ) {
+				return null;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Get the honeypot field value, checking multiple possible keys.
+	 *
+	 * @param array<string, mixed> $data              Source data.
+	 * @param string|null          $honeypotFieldName The honeypot field name, if set.
+	 */
+	private static function getHoneypotValue( array $data, ?string $honeypotFieldName ): ?string {
+		// Check canonical keys first.
+		$value = self::getString( $data, 'honeypotFieldValue', 'honeypot_field_value' );
+		if ( $value !== null ) {
+			return $value;
+		}
+
+		// Fall back to the dynamic key used by toArray().
+		if ( $honeypotFieldName !== null ) {
+			return self::getString( $data, $honeypotFieldName );
+		}
+
+		return null;
 	}
 
 	/**

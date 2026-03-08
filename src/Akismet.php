@@ -78,7 +78,7 @@ final class Akismet implements AkismetInterface {
 			$streamFactory,
 		);
 
-		// Overwrite to preserve custom baseUrl from Configuration
+		// Overwrite to preserve custom baseUrl from Configuration.
 		$instance->config     = $config;
 		$instance->httpClient = new HttpClient(
 			$config,
