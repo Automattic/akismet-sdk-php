@@ -25,16 +25,16 @@ use JsonSerializable;
  *
  * @see https://akismet.com/developers/errors/
  */
-final readonly class AlertMetadata implements JsonSerializable {
+final class AlertMetadata implements JsonSerializable {
 
 	public function __construct(
-		public ?int $apiCalls = null,
-		public ?int $usageLimit = null,
-		public ?string $upgradePlan = null,
-		public ?string $upgradeUrl = null,
-		public ?string $upgradeType = null,
-		public bool $upgradeViaSupport = false,
-		public ?string $recommendedPlanName = null,
+		public readonly ?int $apiCalls = null,
+		public readonly ?int $usageLimit = null,
+		public readonly ?string $upgradePlan = null,
+		public readonly ?string $upgradeUrl = null,
+		public readonly ?string $upgradeType = null,
+		public readonly bool $upgradeViaSupport = false,
+		public readonly ?string $recommendedPlanName = null,
 	) {
 	}
 
