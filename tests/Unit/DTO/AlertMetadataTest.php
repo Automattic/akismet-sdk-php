@@ -90,6 +90,39 @@ final class AlertMetadataTest extends TestCase {
 		$this->assertFalse( $meta->upgradeViaSupport );
 	}
 
+	public function testFromHeadersNonNumericApiCallsReturnsNull(): void {
+		$meta = AlertMetadata::fromHeaders(
+			[
+				'x-akismet-alert-api-calls'   => 'unknown',
+				'x-akismet-alert-usage-limit' => 'unlimited',
+			]
+		);
+
+		$this->assertNotNull( $meta );
+		$this->assertNull( $meta->apiCalls );
+		$this->assertNull( $meta->usageLimit );
+	}
+
+	public function testFromJsonStringFalseIsNotTruthy(): void {
+		$meta = AlertMetadata::fromJson(
+			[
+				'upgradeViaSupport' => 'false',
+			]
+		);
+
+		$this->assertFalse( $meta->upgradeViaSupport );
+	}
+
+	public function testFromJsonBoolTruePreserved(): void {
+		$meta = AlertMetadata::fromJson(
+			[
+				'upgradeViaSupport' => true,
+			]
+		);
+
+		$this->assertTrue( $meta->upgradeViaSupport );
+	}
+
 	public function testJsonRoundTrip(): void {
 		$original = new AlertMetadata(
 			apiCalls: 15000,

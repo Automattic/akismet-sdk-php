@@ -70,8 +70,8 @@ final class AlertMetadata implements JsonSerializable {
 		}
 
 		return new self(
-			apiCalls: $apiCalls !== null ? (int) $apiCalls : null,
-			usageLimit: $usageLimit !== null ? (int) $usageLimit : null,
+			apiCalls: $apiCalls !== null && is_numeric( $apiCalls ) ? (int) $apiCalls : null,
+			usageLimit: $usageLimit !== null && is_numeric( $usageLimit ) ? (int) $usageLimit : null,
 			upgradePlan: $upgradePlan,
 			upgradeUrl: $upgradeUrl,
 			upgradeType: $upgradeType,
@@ -92,7 +92,7 @@ final class AlertMetadata implements JsonSerializable {
 			upgradePlan: isset( $data['upgradePlan'] ) && is_string( $data['upgradePlan'] ) ? $data['upgradePlan'] : null,
 			upgradeUrl: isset( $data['upgradeUrl'] ) && is_string( $data['upgradeUrl'] ) ? $data['upgradeUrl'] : null,
 			upgradeType: isset( $data['upgradeType'] ) && is_string( $data['upgradeType'] ) ? $data['upgradeType'] : null,
-			upgradeViaSupport: (bool) ( $data['upgradeViaSupport'] ?? false ),
+			upgradeViaSupport: isset( $data['upgradeViaSupport'] ) && ( $data['upgradeViaSupport'] === true || $data['upgradeViaSupport'] === 'true' ),
 			recommendedPlanName: isset( $data['recommendedPlanName'] ) && is_string( $data['recommendedPlanName'] ) ? $data['recommendedPlanName'] : null,
 		);
 	}
