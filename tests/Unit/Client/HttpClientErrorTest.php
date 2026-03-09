@@ -60,12 +60,7 @@ final class HttpClientErrorTest extends TestCase {
 			new Response( $statusCode, [], 'Internal Server Error' )
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		$this->expectException( ServerException::class );
 		$this->expectExceptionMessageMatches( '/server error.*' . $statusCode . '/i' );
@@ -91,12 +86,7 @@ final class HttpClientErrorTest extends TestCase {
 			new Response( 500, [], $errorBody )
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		try {
 			$httpClient->post( '/1.1/comment-check', [] );
@@ -116,12 +106,7 @@ final class HttpClientErrorTest extends TestCase {
 			new Response( $statusCode, [], 'Bad Request' )
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		$this->expectException( ClientErrorException::class );
 		$this->expectExceptionMessageMatches( '/client error.*' . $statusCode . '/i' );
@@ -145,35 +130,13 @@ final class HttpClientErrorTest extends TestCase {
 	// Rate Limit Tests (429)
 	// =========================================================================
 
-	public function testRateLimitThrowsRateLimitException(): void {
-		$mockClient = $this->createMockClient(
-			new Response( 429, [], 'Too Many Requests' )
-		);
-
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
-
-		$this->expectException( RateLimitException::class );
-
-		$httpClient->post( '/1.1/comment-check', [] );
-	}
-
 	public function testRateLimitIncludesRetryAfterHeader(): void {
 		$retryAfter = 60;
 		$mockClient = $this->createMockClient(
 			new Response( 429, [ 'Retry-After' => (string) $retryAfter ], 'Too Many Requests' )
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		try {
 			$httpClient->post( '/1.1/comment-check', [] );
@@ -189,12 +152,7 @@ final class HttpClientErrorTest extends TestCase {
 			new Response( 429, [ 'Retry-After' => $futureDate ], 'Too Many Requests' )
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		try {
 			$httpClient->post( '/1.1/comment-check', [] );
@@ -213,12 +171,7 @@ final class HttpClientErrorTest extends TestCase {
 			new Response( 429, [ 'Retry-After' => 'not-a-date-or-number' ], 'Too Many Requests' )
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		try {
 			$httpClient->post( '/1.1/comment-check', [] );
@@ -233,12 +186,7 @@ final class HttpClientErrorTest extends TestCase {
 			new Response( 429, [], 'Too Many Requests' )
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		try {
 			$httpClient->post( '/1.1/comment-check', [] );
@@ -258,12 +206,7 @@ final class HttpClientErrorTest extends TestCase {
 			}
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		$this->expectException( NetworkException::class );
 
@@ -276,12 +219,7 @@ final class HttpClientErrorTest extends TestCase {
 			}
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		try {
 			$httpClient->post( '/1.1/comment-check', [] );
@@ -298,12 +236,7 @@ final class HttpClientErrorTest extends TestCase {
 
 		$mockClient = $this->createMockClientThatThrows( $originalException );
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		try {
 			$httpClient->post( '/1.1/comment-check', [] );
@@ -323,12 +256,7 @@ final class HttpClientErrorTest extends TestCase {
 			}
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		try {
 			$httpClient->get( '/1.2/usage-limit', [] );
@@ -346,12 +274,7 @@ final class HttpClientErrorTest extends TestCase {
 			}
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		try {
 			$httpClient->post( '/1.1/verify-key', [] );
@@ -368,12 +291,7 @@ final class HttpClientErrorTest extends TestCase {
 			}
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		try {
 			$httpClient->post( '/1.1/comment-check', [] );
@@ -393,12 +311,7 @@ final class HttpClientErrorTest extends TestCase {
 			new Response( 200, [], 'true' )
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		$response = $httpClient->post( '/1.1/comment-check', [] );
 
@@ -413,12 +326,7 @@ final class HttpClientErrorTest extends TestCase {
 			$capturedRequest
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		$httpClient->post( '/1.1/comment-check', [ 'user_ip' => '127.0.0.1' ] );
 
@@ -440,12 +348,7 @@ final class HttpClientErrorTest extends TestCase {
 			$capturedRequest
 		);
 
-		$httpClient = new HttpClient(
-			$config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient, $config );
 
 		$httpClient->post( '/1.1/comment-check', [] );
 
@@ -465,12 +368,7 @@ final class HttpClientErrorTest extends TestCase {
 			$capturedRequest
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		$httpClient->get( '/1.2/usage-limit', [] );
 
@@ -484,12 +382,7 @@ final class HttpClientErrorTest extends TestCase {
 			new Response( 503, [], 'Service Unavailable' )
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		$this->expectException( ServerException::class );
 
@@ -507,12 +400,7 @@ final class HttpClientErrorTest extends TestCase {
 			$capturedRequest
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		$httpClient->post( '/1.1/comment-check', [] );
 
@@ -530,12 +418,7 @@ final class HttpClientErrorTest extends TestCase {
 			$capturedRequest
 		);
 
-		$httpClient = new HttpClient(
-			$this->config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient );
 
 		$httpClient->get( '/1.2/usage-limit', [] );
 
@@ -558,12 +441,7 @@ final class HttpClientErrorTest extends TestCase {
 			$capturedRequest
 		);
 
-		$httpClient = new HttpClient(
-			$config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient, $config );
 
 		$httpClient->post( '/1.1/comment-check', [] );
 
@@ -586,12 +464,7 @@ final class HttpClientErrorTest extends TestCase {
 			$capturedRequest
 		);
 
-		$httpClient = new HttpClient(
-			$config,
-			$mockClient,
-			$this->httpFactory,
-			$this->httpFactory
-		);
+		$httpClient = $this->createHttpClient( $mockClient, $config );
 
 		$httpClient->get( '/1.2/usage-limit', [] );
 
@@ -605,6 +478,15 @@ final class HttpClientErrorTest extends TestCase {
 	// =========================================================================
 	// Helper Methods
 	// =========================================================================
+
+	private function createHttpClient( ClientInterface $mockClient, ?Configuration $config = null ): HttpClient {
+		return new HttpClient(
+			$config ?? $this->config,
+			$mockClient,
+			$this->httpFactory,
+			$this->httpFactory
+		);
+	}
 
 	private function createMockClient( ResponseInterface $response ): ClientInterface {
 		$mock = $this->createMock( ClientInterface::class );
