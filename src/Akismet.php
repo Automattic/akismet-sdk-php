@@ -21,6 +21,7 @@ use Automattic\Akismet\Exception\ServerException;
 use Automattic\Akismet\Exception\ValidationException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
 /**
@@ -96,9 +97,7 @@ final class Akismet implements AkismetInterface {
 		}
 
 		if ( $body === 'invalid' ) {
-			$headers   = array_change_key_case( HttpClient::getHeaders( $response ), CASE_LOWER );
-			$debugHelp = $headers['x-akismet-debug-help'] ?? null;
-			throw InvalidApiKeyException::verificationFailed( $debugHelp );
+			$this->throwInvalidKey( $response );
 		}
 
 		throw ServerException::unexpectedResponse( $body );
@@ -112,19 +111,14 @@ final class Akismet implements AkismetInterface {
 		$body     = HttpClient::getBody( $response );
 
 		if ( $body === 'invalid' ) {
-			$headers   = array_change_key_case( HttpClient::getHeaders( $response ), CASE_LOWER );
-			$debugHelp = $headers['x-akismet-debug-help'] ?? null;
-			throw InvalidApiKeyException::verificationFailed( $debugHelp );
+			$this->throwInvalidKey( $response );
 		}
 
 		if ( $body !== 'true' && $body !== 'false' ) {
 			throw ServerException::unexpectedResponse( $body );
 		}
 
-		return CheckResult::fromResponse(
-			$body,
-			HttpClient::getHeaders( $response ),
-		);
+		return CheckResult::fromResponse( $body, HttpClient::getHeaders( $response ) );
 	}
 
 	/**
@@ -218,6 +212,17 @@ final class Akismet implements AkismetInterface {
 	 */
 	public function getConfiguration(): Configuration {
 		return $this->config;
+	}
+
+	/**
+	 * Throw an InvalidApiKeyException, including any debug help from the response.
+	 *
+	 * @throws InvalidApiKeyException Always.
+	 */
+	private function throwInvalidKey( ResponseInterface $response ): never {
+		$headers   = HttpClient::getHeaders( $response );
+		$debugHelp = $headers['x-akismet-debug-help'] ?? null;
+		throw InvalidApiKeyException::verificationFailed( $debugHelp );
 	}
 
 	private const FEEDBACK_SUCCESS_BODY = 'Thanks for making the web a better place.';

@@ -213,15 +213,18 @@ final class HttpClient {
 	}
 
 	/**
-	 * Get response headers as associative array.
+	 * Get response headers as associative array with lowercase keys.
+	 *
+	 * Header names are case-insensitive per RFC 7230; this normalizes
+	 * them to lowercase so callers can look up values directly.
 	 *
 	 * @param ResponseInterface $response The response.
-	 * @return array<string, string> Headers as key-value pairs.
+	 * @return array<string, string> Headers as key-value pairs (lowercase keys).
 	 */
 	public static function getHeaders( ResponseInterface $response ): array {
 		$headers = [];
 		foreach ( $response->getHeaders() as $name => $values ) {
-			$headers[ (string) $name ] = implode( ', ', $values );
+			$headers[ strtolower( (string) $name ) ] = implode( ', ', $values );
 		}
 		return $headers;
 	}
