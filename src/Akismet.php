@@ -61,6 +61,9 @@ final class Akismet implements AkismetInterface {
 
 	/**
 	 * Create a client from an existing Configuration object.
+	 *
+	 * Unlike the constructor, this preserves all Configuration properties
+	 * including a custom baseUrl.
 	 */
 	public static function fromConfiguration(
 		Configuration $config,
@@ -78,14 +81,9 @@ final class Akismet implements AkismetInterface {
 			$streamFactory,
 		);
 
-		// Overwrite to preserve custom baseUrl from Configuration.
+		// Overwrite to preserve custom baseUrl from the Configuration object.
 		$instance->config     = $config;
-		$instance->httpClient = new HttpClient(
-			$config,
-			$httpClient,
-			$requestFactory,
-			$streamFactory,
-		);
+		$instance->httpClient = new HttpClient( $config, $httpClient, $requestFactory, $streamFactory );
 
 		return $instance;
 	}
@@ -143,32 +141,14 @@ final class Akismet implements AkismetInterface {
 	 * @inheritDoc
 	 */
 	public function submitSpam( Comment $comment ): void {
-		$response = $this->httpClient->post( '/1.1/submit-spam', $comment->toArray() );
-		$body     = HttpClient::getBody( $response );
-
-		if ( $body === 'invalid' ) {
-			throw InvalidApiKeyException::verificationFailed();
-		}
-
-		if ( $body !== 'Thanks for making the web a better place.' ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
+		$this->submitFeedback( '/1.1/submit-spam', $comment );
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 	public function submitHam( Comment $comment ): void {
-		$response = $this->httpClient->post( '/1.1/submit-ham', $comment->toArray() );
-		$body     = HttpClient::getBody( $response );
-
-		if ( $body === 'invalid' ) {
-			throw InvalidApiKeyException::verificationFailed();
-		}
-
-		if ( $body !== 'Thanks for making the web a better place.' ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
+		$this->submitFeedback( '/1.1/submit-ham', $comment );
 	}
 
 	/**
@@ -176,21 +156,7 @@ final class Akismet implements AkismetInterface {
 	 */
 	public function getUsageLimit(): UsageLimit {
 		$response = $this->httpClient->get( '/1.2/usage-limit' );
-		$body     = HttpClient::getBody( $response );
-
-		if ( $body === 'invalid' ) {
-			throw InvalidApiKeyException::verificationFailed();
-		}
-
-		try {
-			$data = json_decode( $body, true, 512, JSON_THROW_ON_ERROR );
-		} catch ( \JsonException ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
-
-		if ( ! is_array( $data ) ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
+		$data     = $this->decodeJsonResponse( HttpClient::getBody( $response ) );
 
 		/** @var array{limit: int|string, usage: int, percentage: string, throttled: bool} $data */
 		return UsageLimit::fromResponse( $data );
@@ -241,21 +207,7 @@ final class Akismet implements AkismetInterface {
 		}
 
 		$response = $this->httpClient->get( '/1.2/key-sites', $params );
-		$body     = HttpClient::getBody( $response );
-
-		if ( $body === 'invalid' ) {
-			throw InvalidApiKeyException::verificationFailed();
-		}
-
-		try {
-			$data = json_decode( $body, true, 512, JSON_THROW_ON_ERROR );
-		} catch ( \JsonException ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
-
-		if ( ! is_array( $data ) ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
+		$data     = $this->decodeJsonResponse( HttpClient::getBody( $response ) );
 
 		/** @var array<string, mixed> $data */
 		return KeySitesResponse::fromResponse( $data );
@@ -281,5 +233,54 @@ final class Akismet implements AkismetInterface {
 	 */
 	public function getConfiguration(): Configuration {
 		return $this->config;
+	}
+
+	private const FEEDBACK_SUCCESS_BODY = 'Thanks for making the web a better place.';
+
+	/**
+	 * Submit spam or ham feedback to the API.
+	 *
+	 * @param string  $endpoint API endpoint path.
+	 * @param Comment $comment  The comment to submit feedback for.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the response is unexpected.
+	 */
+	private function submitFeedback( string $endpoint, Comment $comment ): void {
+		$response = $this->httpClient->post( $endpoint, $comment->toArray() );
+		$body     = HttpClient::getBody( $response );
+
+		if ( $body === 'invalid' ) {
+			throw InvalidApiKeyException::verificationFailed();
+		}
+
+		if ( $body !== self::FEEDBACK_SUCCESS_BODY ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
+	}
+
+	/**
+	 * Decode a JSON response body into an array.
+	 *
+	 * @param string $body The response body.
+	 * @return array<mixed, mixed> The decoded data.
+	 * @throws InvalidApiKeyException If the body is 'invalid'.
+	 * @throws ServerException If the body is not valid JSON or not an array.
+	 */
+	private function decodeJsonResponse( string $body ): array {
+		if ( $body === 'invalid' ) {
+			throw InvalidApiKeyException::verificationFailed();
+		}
+
+		try {
+			$data = json_decode( $body, true, 512, JSON_THROW_ON_ERROR );
+		} catch ( \JsonException ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
+
+		if ( ! is_array( $data ) ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
+
+		return $data;
 	}
 }

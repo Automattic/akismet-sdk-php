@@ -35,6 +35,7 @@ final class HttpClient {
 	private RequestFactoryInterface $requestFactory;
 	private StreamFactoryInterface $streamFactory;
 	private Configuration $config;
+	private string $userAgent;
 
 	/**
 	 * @param Configuration                 $config         SDK configuration.
@@ -52,6 +53,11 @@ final class HttpClient {
 		$this->client         = $client ?? Psr18ClientDiscovery::find();
 		$this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
 		$this->streamFactory  = $streamFactory ?? Psr17FactoryDiscovery::findStreamFactory();
+
+		$sdkAgent        = self::SDK_USER_AGENT_PREFIX . self::getSdkVersion();
+		$this->userAgent = $config->applicationUserAgent !== null
+			? $config->applicationUserAgent . ' | ' . $sdkAgent
+			: $sdkAgent;
 	}
 
 	/**
@@ -80,7 +86,7 @@ final class HttpClient {
 		$request = $this->requestFactory
 			->createRequest( 'POST', $url )
 			->withHeader( 'Content-Type', 'application/x-www-form-urlencoded' )
-			->withHeader( 'User-Agent', $this->getUserAgent() )
+			->withHeader( 'User-Agent', $this->userAgent )
 			->withBody( $this->streamFactory->createStream( $body ) );
 
 		return $this->send( $request );
@@ -104,7 +110,7 @@ final class HttpClient {
 
 		$request = $this->requestFactory
 			->createRequest( 'GET', $url )
-			->withHeader( 'User-Agent', $this->getUserAgent() );
+			->withHeader( 'User-Agent', $this->userAgent );
 
 		return $this->send( $request );
 	}
@@ -194,23 +200,6 @@ final class HttpClient {
 			}
 		}
 		return self::$sdkVersion;
-	}
-
-	/**
-	 * Build the User-Agent header value.
-	 *
-	 * If an application User-Agent is configured, it is prepended to the SDK identifier.
-	 *
-	 * @return string The User-Agent header value.
-	 */
-	private function getUserAgent(): string {
-		$sdkAgent = self::SDK_USER_AGENT_PREFIX . self::getSdkVersion();
-
-		if ( $this->config->applicationUserAgent !== null ) {
-			return $this->config->applicationUserAgent . ' | ' . $sdkAgent;
-		}
-
-		return $sdkAgent;
 	}
 
 	/**
