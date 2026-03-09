@@ -40,6 +40,7 @@ final class Configuration {
 		bool $isTest = false,
 		?string $applicationUserAgent = null,
 	) {
+		$apiKey = trim( $apiKey );
 		if ( $apiKey === '' ) {
 			throw ValidationException::invalidValue( 'apiKey', 'cannot be empty' );
 		}

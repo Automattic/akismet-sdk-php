@@ -183,7 +183,7 @@ final class HttpClient {
 	 * @return string The string with API key values replaced.
 	 */
 	private static function redactApiKey( string $message ): string {
-		return preg_replace( '/\b(api_key|key)=[^&\s]+/i', '$1=***', $message ) ?? $message;
+		return preg_replace( '/\b(api_key|key)=[^&\s]+/i', '$1=***', $message ) ?? '[redacted - regex failure]';
 	}
 
 	/**

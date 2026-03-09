@@ -476,6 +476,30 @@ final class HttpClientErrorTest extends TestCase {
 	}
 
 	// =========================================================================
+	// Header Normalization Tests
+	// =========================================================================
+
+	public function testGetHeadersNormalizesKeysToLowercase(): void {
+		$response = new Response(
+			200,
+			[
+				'X-Akismet-Debug-Help' => 'Some debug info',
+				'X-AKISMET-PRO-TIP'    => 'discard',
+				'Content-Type'         => 'text/plain',
+			],
+			'true'
+		);
+
+		$headers = HttpClient::getHeaders( $response );
+
+		$this->assertArrayHasKey( 'x-akismet-debug-help', $headers );
+		$this->assertArrayHasKey( 'x-akismet-pro-tip', $headers );
+		$this->assertArrayHasKey( 'content-type', $headers );
+		$this->assertSame( 'Some debug info', $headers['x-akismet-debug-help'] );
+		$this->assertSame( 'discard', $headers['x-akismet-pro-tip'] );
+	}
+
+	// =========================================================================
 	// Helper Methods
 	// =========================================================================
 

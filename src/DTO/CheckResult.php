@@ -55,8 +55,7 @@ final class CheckResult implements JsonSerializable {
 	 * @param array<string, string> $headers     Response headers.
 	 */
 	public static function fromResponse( string $body, array $headers = [] ): self {
-		$headers = array_change_key_case( $headers, CASE_LOWER );
-
+		$headers     = array_change_key_case( $headers, CASE_LOWER );
 		$nullIfEmpty = static fn( ?string $value ): ?string => ( $value !== null && $value !== '' ) ? $value : null;
 
 		$proTip       = $nullIfEmpty( $headers['x-akismet-pro-tip'] ?? null );

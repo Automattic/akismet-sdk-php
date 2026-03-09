@@ -64,6 +64,13 @@ final class Comment {
 	public readonly ?string $permalink;
 
 	/**
+	 * Additional server variables with reserved keys and honeypot collisions filtered out.
+	 *
+	 * @var array<string, string>
+	 */
+	public readonly array $serverVariables;
+
+	/**
 	 * @param string                  $userIp                  IP address of the content submitter (required).
 	 * @param string|null             $userAgent               User agent of the content submitter.
 	 * @param string|null             $content                 The content to check.
@@ -84,8 +91,8 @@ final class Comment {
 	 * @param string|null             $reporter                Who reported the content (e.g., current user name).
 	 * @param string|null             $commentCheckResponse    The original comment-check result ('true' or 'false').
 	 * @param array<string, string>   $serverVariables         Additional server variables to include. Keys matching
-	 *                                                          RESERVED_KEYS are silently skipped in toArray() to
-	 *                                                          prevent overwriting canonical Akismet fields.
+	 *                                                          RESERVED_KEYS and the honeypot field name are filtered
+	 *                                                          out at construction time.
 	 * @throws ValidationException If userIp, authorEmail, authorUrl, or permalink is invalid.
 	 */
 	public function __construct(
@@ -108,7 +115,7 @@ final class Comment {
 		public readonly ?string $context = null,
 		public readonly ?string $reporter = null,
 		public readonly ?string $commentCheckResponse = null,
-		public readonly array $serverVariables = [],
+		array $serverVariables = [],
 	) {
 		// Normalize empty strings to null for optional validated fields.
 		$this->authorEmail = $authorEmail === '' ? null : $authorEmail;
@@ -131,6 +138,16 @@ final class Comment {
 		if ( $this->commentCheckResponse !== null && ! in_array( $this->commentCheckResponse, [ 'true', 'false' ], true ) ) {
 			throw ValidationException::invalidValue( 'commentCheckResponse', "expected 'true' or 'false'" );
 		}
+		if ( $this->honeypotFieldValue !== null && $this->honeypotFieldName === null ) {
+			throw ValidationException::invalidValue( 'honeypotFieldValue', 'requires honeypotFieldName to be set' );
+		}
+
+		// Filter reserved keys and honeypot field name collisions at construction time.
+		$excludeKeys = self::RESERVED_KEYS;
+		if ( $this->honeypotFieldName !== null ) {
+			$excludeKeys[ $this->honeypotFieldName ] = true;
+		}
+		$this->serverVariables = array_diff_key( $serverVariables, $excludeKeys );
 	}
 
 	/**
@@ -250,12 +267,9 @@ final class Comment {
 			$data['comment_check_response'] = $this->commentCheckResponse;
 		}
 
-		// Include additional server variables, skipping reserved Akismet fields
-		// and the dynamic honeypot key to prevent overwriting honeypot data.
+		// Server variables are pre-filtered at construction time.
 		foreach ( $this->serverVariables as $key => $value ) {
-			if ( ! isset( self::RESERVED_KEYS[ $key ] ) && $key !== $this->honeypotFieldName ) {
-				$data[ $key ] = $value;
-			}
+			$data[ $key ] = $value;
 		}
 
 		return $data;

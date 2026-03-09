@@ -82,7 +82,7 @@ final class Akismet implements AkismetInterface {
 	/**
 	 * @inheritDoc
 	 */
-	public function verifyKey(): bool {
+	public function verifyKey(): void {
 		$response = $this->httpClient->post(
 			'/1.1/verify-key',
 			[
@@ -93,7 +93,7 @@ final class Akismet implements AkismetInterface {
 		$body = HttpClient::getBody( $response );
 
 		if ( $body === 'valid' ) {
-			return true;
+			return;
 		}
 
 		if ( $body === 'invalid' ) {
@@ -140,7 +140,7 @@ final class Akismet implements AkismetInterface {
 	 */
 	public function getUsageLimit(): UsageLimit {
 		$response = $this->httpClient->get( '/1.2/usage-limit' );
-		$data     = $this->decodeJsonResponse( HttpClient::getBody( $response ) );
+		$data     = $this->decodeJsonResponse( $response );
 
 		/** @var array{limit: int|string, usage: int, percentage: string, throttled: bool} $data */
 		return UsageLimit::fromResponse( $data );
@@ -186,7 +186,7 @@ final class Akismet implements AkismetInterface {
 		}
 
 		$response = $this->httpClient->get( '/1.2/key-sites', $params );
-		$data     = $this->decodeJsonResponse( HttpClient::getBody( $response ) );
+		$data     = $this->decodeJsonResponse( $response );
 
 		/** @var array<string, mixed> $data */
 		return KeySitesResponse::fromResponse( $data );
@@ -240,7 +240,7 @@ final class Akismet implements AkismetInterface {
 		$body     = HttpClient::getBody( $response );
 
 		if ( $body === 'invalid' ) {
-			throw InvalidApiKeyException::verificationFailed();
+			$this->throwInvalidKey( $response );
 		}
 
 		if ( $body !== self::FEEDBACK_SUCCESS_BODY ) {
@@ -251,14 +251,16 @@ final class Akismet implements AkismetInterface {
 	/**
 	 * Decode a JSON response body into an array.
 	 *
-	 * @param string $body The response body.
+	 * @param ResponseInterface $response The HTTP response.
 	 * @return array<mixed, mixed> The decoded data.
 	 * @throws InvalidApiKeyException If the body is 'invalid'.
 	 * @throws ServerException If the body is not valid JSON or not an array.
 	 */
-	private function decodeJsonResponse( string $body ): array {
+	private function decodeJsonResponse( ResponseInterface $response ): array {
+		$body = HttpClient::getBody( $response );
+
 		if ( $body === 'invalid' ) {
-			throw InvalidApiKeyException::verificationFailed();
+			$this->throwInvalidKey( $response );
 		}
 
 		try {
