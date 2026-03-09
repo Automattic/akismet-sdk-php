@@ -15,6 +15,7 @@ use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\UsageLimit;
+use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
 use Automattic\Akismet\Exception\ValidationException;
@@ -33,6 +34,29 @@ final class Akismet implements AkismetInterface {
 	/**
 	 * Create a new Akismet client.
 	 *
+	 * @param Configuration                $config         SDK configuration.
+	 * @param ClientInterface|null         $httpClient     Custom PSR-18 HTTP client (auto-discovered if null).
+	 * @param RequestFactoryInterface|null $requestFactory Custom PSR-17 request factory (auto-discovered if null).
+	 * @param StreamFactoryInterface|null  $streamFactory  Custom PSR-17 stream factory (auto-discovered if null).
+	 */
+	public function __construct(
+		Configuration $config,
+		?ClientInterface $httpClient = null,
+		?RequestFactoryInterface $requestFactory = null,
+		?StreamFactoryInterface $streamFactory = null,
+	) {
+		$this->config     = $config;
+		$this->httpClient = new HttpClient(
+			$config,
+			$httpClient,
+			$requestFactory,
+			$streamFactory,
+		);
+	}
+
+	/**
+	 * Convenience factory for quick initialization from scalar values.
+	 *
 	 * @param string                       $apiKey               Your Akismet API key.
 	 * @param string                       $blog                 Your site's homepage URL.
 	 * @param bool                         $isTest               Enable test mode.
@@ -41,7 +65,7 @@ final class Akismet implements AkismetInterface {
 	 * @param RequestFactoryInterface|null $requestFactory       Custom PSR-17 request factory.
 	 * @param StreamFactoryInterface|null  $streamFactory        Custom PSR-17 stream factory.
 	 */
-	public function __construct(
+	public static function create(
 		string $apiKey,
 		string $blog,
 		bool $isTest = false,
@@ -49,43 +73,9 @@ final class Akismet implements AkismetInterface {
 		?ClientInterface $httpClient = null,
 		?RequestFactoryInterface $requestFactory = null,
 		?StreamFactoryInterface $streamFactory = null,
-	) {
-		$this->config     = new Configuration( $apiKey, $blog, isTest: $isTest, applicationUserAgent: $applicationUserAgent );
-		$this->httpClient = new HttpClient(
-			$this->config,
-			$httpClient,
-			$requestFactory,
-			$streamFactory,
-		);
-	}
-
-	/**
-	 * Create a client from an existing Configuration object.
-	 *
-	 * Unlike the constructor, this preserves all Configuration properties
-	 * including a custom baseUrl.
-	 */
-	public static function fromConfiguration(
-		Configuration $config,
-		?ClientInterface $httpClient = null,
-		?RequestFactoryInterface $requestFactory = null,
-		?StreamFactoryInterface $streamFactory = null,
 	): self {
-		$instance = new self(
-			$config->apiKey,
-			$config->blog,
-			$config->isTest,
-			$config->applicationUserAgent,
-			$httpClient,
-			$requestFactory,
-			$streamFactory,
-		);
-
-		// Overwrite to preserve custom baseUrl from the Configuration object.
-		$instance->config     = $config;
-		$instance->httpClient = new HttpClient( $config, $httpClient, $requestFactory, $streamFactory );
-
-		return $instance;
+		$config = new Configuration( $apiKey, $blog, isTest: $isTest, applicationUserAgent: $applicationUserAgent );
+		return new self( $config, $httpClient, $requestFactory, $streamFactory );
 	}
 
 	/**
@@ -170,15 +160,10 @@ final class Akismet implements AkismetInterface {
 		?string $filter = null,
 		int $limit = 500,
 		int $offset = 0,
-		?string $order = null,
+		?KeySitesOrder $order = null,
 	): KeySitesResponse {
 		if ( $month !== null && ! preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $month ) ) {
 			throw ValidationException::invalidValue( 'month', 'must be in YYYY-MM format (01-12)' );
-		}
-
-		$validOrders = [ 'total', 'spam', 'ham', 'missed_spam', 'false_positives' ];
-		if ( $order !== null && ! in_array( $order, $validOrders, true ) ) {
-			throw ValidationException::invalidValue( 'order', 'must be one of: ' . implode( ', ', $validOrders ) );
 		}
 
 		if ( $limit <= 0 ) {
@@ -203,7 +188,7 @@ final class Akismet implements AkismetInterface {
 		}
 
 		if ( $order !== null ) {
-			$params['order'] = $order;
+			$params['order'] = $order->value;
 		}
 
 		$response = $this->httpClient->get( '/1.2/key-sites', $params );

@@ -22,7 +22,7 @@ if (!$apiKey || !$siteUrl) {
 
 try {
     // Initialize the SDK
-    $akismet = new Akismet(
+    $akismet = Akismet::create(
         apiKey: $apiKey,
         blog: $siteUrl,
         isTest: true // Enable test mode

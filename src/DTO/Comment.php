@@ -231,11 +231,6 @@ final class Comment {
 			$data['recheck_reason'] = $this->recheckReason;
 		}
 
-		// Edge case: the honeypot value is written under the dynamic field name key
-		// (e.g., 'website_url'). This key is not in RESERVED_KEYS, so if a serverVariable
-		// shares the same key, it will overwrite the honeypot value in the loop below.
-		// In practice this is unlikely since honeypot names are form fields and server
-		// variables are typically HTTP headers (e.g., HTTP_ACCEPT, REMOTE_ADDR).
 		if ( $this->honeypotFieldName !== null ) {
 			$data['honeypot_field_name'] = $this->honeypotFieldName;
 			if ( $this->honeypotFieldValue !== null ) {
@@ -255,9 +250,10 @@ final class Comment {
 			$data['comment_check_response'] = $this->commentCheckResponse;
 		}
 
-		// Include additional server variables, skipping reserved Akismet fields.
+		// Include additional server variables, skipping reserved Akismet fields
+		// and the dynamic honeypot key to prevent overwriting honeypot data.
 		foreach ( $this->serverVariables as $key => $value ) {
-			if ( ! isset( self::RESERVED_KEYS[ $key ] ) ) {
+			if ( ! isset( self::RESERVED_KEYS[ $key ] ) && $key !== $this->honeypotFieldName ) {
 				$data[ $key ] = $value;
 			}
 		}
