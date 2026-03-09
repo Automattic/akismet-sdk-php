@@ -29,10 +29,12 @@ interface AkismetInterface {
 	/**
 	 * Verify that the API key is valid.
 	 *
-	 * @return bool True if the key is valid.
+	 * Returns normally if the key is valid; throws InvalidApiKeyException otherwise.
+	 *
+	 * @throws InvalidApiKeyException If the API key is invalid.
 	 * @throws AkismetException On network or API errors.
 	 */
-	public function verifyKey(): bool;
+	public function verifyKey(): void;
 
 	/**
 	 * Check if content is spam.

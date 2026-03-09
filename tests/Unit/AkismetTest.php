@@ -54,12 +54,14 @@ final class AkismetTest extends TestCase {
 	// verifyKey Tests
 	// =========================================================================
 
-	public function testVerifyKeyReturnsTrueForValid(): void {
+	public function testVerifyKeyReturnsForValid(): void {
 		$akismet = $this->createAkismetWithResponse(
 			new Response( 200, [], 'valid' )
 		);
 
-		$this->assertTrue( $akismet->verifyKey() );
+		$akismet->verifyKey();
+
+		$this->addToAssertionCount( 1 );
 	}
 
 	public function testVerifyKeyThrowsOnInvalid(): void {
@@ -180,10 +182,11 @@ final class AkismetTest extends TestCase {
 	#[DataProvider( 'submitMethodProvider' )]
 	public function testSubmitFeedbackThrowsOnInvalidBody( string $method ): void {
 		$akismet = $this->createAkismetWithResponse(
-			new Response( 200, [], 'invalid' )
+			new Response( 200, [ 'X-akismet-debug-help' => 'Key revoked' ], 'invalid' )
 		);
 
 		$this->expectException( InvalidApiKeyException::class );
+		$this->expectExceptionMessage( 'Key revoked' );
 
 		$akismet->$method( $this->createComment() );
 	}
@@ -214,10 +217,11 @@ final class AkismetTest extends TestCase {
 
 	public function testGetUsageLimitThrowsOnInvalidBody(): void {
 		$akismet = $this->createAkismetWithResponse(
-			new Response( 200, [], 'invalid' )
+			new Response( 200, [ 'X-akismet-debug-help' => 'Expired key' ], 'invalid' )
 		);
 
 		$this->expectException( InvalidApiKeyException::class );
+		$this->expectExceptionMessage( 'Expired key' );
 
 		$akismet->getUsageLimit();
 	}
@@ -276,10 +280,11 @@ final class AkismetTest extends TestCase {
 
 	public function testGetKeySitesThrowsOnInvalidBody(): void {
 		$akismet = $this->createAkismetWithResponse(
-			new Response( 200, [], 'invalid' )
+			new Response( 200, [ 'X-akismet-debug-help' => 'Suspended key' ], 'invalid' )
 		);
 
 		$this->expectException( InvalidApiKeyException::class );
+		$this->expectExceptionMessage( 'Suspended key' );
 
 		$akismet->getKeySites();
 	}
@@ -507,8 +512,27 @@ final class AkismetTest extends TestCase {
 			httpClient: $mockClient,
 		);
 
-		$this->assertTrue( $akismet->verifyKey() );
+		$akismet->verifyKey();
 		$this->assertSame( 'test-key', $akismet->getConfiguration()->apiKey );
+	}
+
+	public function testCreateConvenienceFactoryPropagatesIsTestAndUserAgent(): void {
+		$mockClient = $this->createMock( ClientInterface::class );
+		$mockClient->method( 'sendRequest' )->willReturn(
+			new Response( 200, [], 'valid' )
+		);
+
+		$akismet = Akismet::create(
+			apiKey: 'test-key',
+			blog: 'https://example.com',
+			isTest: true,
+			applicationUserAgent: 'MyApp/1.0',
+			httpClient: $mockClient,
+		);
+
+		$config = $akismet->getConfiguration();
+		$this->assertTrue( $config->isTest );
+		$this->assertSame( 'MyApp/1.0', $config->applicationUserAgent );
 	}
 
 	// =========================================================================
