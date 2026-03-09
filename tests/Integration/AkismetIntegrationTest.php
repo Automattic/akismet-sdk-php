@@ -40,7 +40,7 @@ final class AkismetIntegrationTest extends TestCase {
 			$this->fail( 'AKISMET_API_KEY environment variable is required' );
 		}
 
-		$this->akismet = new Akismet(
+		$this->akismet = Akismet::create(
 			apiKey: $this->apiKey,
 			blog: $this->blogUrl,
 			isTest: true
@@ -58,7 +58,7 @@ final class AkismetIntegrationTest extends TestCase {
 	}
 
 	public function testVerifyKeyWithInvalidKey(): void {
-		$akismet = new Akismet(
+		$akismet = Akismet::create(
 			apiKey: 'invalid-key-that-does-not-exist',
 			blog: $this->blogUrl,
 			isTest: true

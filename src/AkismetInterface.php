@@ -13,6 +13,7 @@ use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\UsageLimit;
+use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Exception\AkismetException;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
@@ -95,9 +96,9 @@ interface AkismetInterface {
 	 * @param string|null $filter Filter results by site URL or partial URL.
 	 * @param int         $limit  Maximum number of results (must be > 0, default 500).
 	 * @param int         $offset Pagination offset (must be >= 0, default 0).
-	 * @param string|null $order  Sort column: 'total', 'spam', 'ham', 'missed_spam', or 'false_positives'.
+	 * @param KeySitesOrder|null $order  Sort column for results.
 	 * @return KeySitesResponse List of sites with statistics (JSON format only; CSV is not supported).
-	 * @throws ValidationException If month format, order value, limit, or offset is invalid.
+	 * @throws ValidationException If month format, limit, or offset is invalid.
 	 * @throws InvalidApiKeyException If the API key is invalid.
 	 * @throws ServerException If the API returns malformed JSON.
 	 * @throws AkismetException On network or API errors.
@@ -107,7 +108,7 @@ interface AkismetInterface {
 		?string $filter = null,
 		int $limit = 500,
 		int $offset = 0,
-		?string $order = null,
+		?KeySitesOrder $order = null,
 	): KeySitesResponse;
 
 	/**

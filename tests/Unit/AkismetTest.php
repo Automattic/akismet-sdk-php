@@ -18,6 +18,7 @@ use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\SiteStats;
 use Automattic\Akismet\DTO\UsageLimit;
+use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Enum\SpamVerdict;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
@@ -40,6 +41,7 @@ use Psr\Http\Message\ResponseInterface;
 #[UsesClass( ServerException::class )]
 #[UsesClass( AlertMetadata::class )]
 #[UsesClass( CheckResult::class )]
+#[UsesClass( KeySitesOrder::class )]
 #[UsesClass( SpamVerdict::class )]
 #[UsesClass( Comment::class )]
 #[UsesClass( UsageLimit::class )]
@@ -341,12 +343,11 @@ final class AkismetTest extends TestCase {
 		);
 
 		$akismet = new Akismet(
-			apiKey: 'test-key',
-			blog: 'https://example.com',
+			new Configuration( apiKey: 'test-key', blog: 'https://example.com' ),
 			httpClient: $mockClient,
 		);
 
-		$akismet->getKeySites( order: 'spam' );
+		$akismet->getKeySites( order: KeySitesOrder::Spam );
 
 		$this->assertNotNull( $capturedRequest );
 		$this->assertStringContainsString( 'order=spam', (string) $capturedRequest->getUri() );
@@ -397,26 +398,7 @@ final class AkismetTest extends TestCase {
 		$this->assertSame( 0, $result->total );
 	}
 
-	#[DataProvider( 'invalidOrderProvider' )]
-	public function testGetKeySitesRejectsInvalidOrder( string $order ): void {
-		$akismet = $this->createAkismetWithResponse( new Response( 200, [], '{}' ) );
-
-		$this->expectException( ValidationException::class );
-		$this->expectExceptionMessage( 'order' );
-
-		$akismet->getKeySites( order: $order );
-	}
-
-	/**
-	 * @return array<string, array{string}>
-	 */
-	public static function invalidOrderProvider(): array {
-		return [
-			'unknown column' => [ 'date' ],
-			'mixed case'     => [ 'Spam' ],
-			'empty string'   => [ '' ],
-		];
-	}
+	// Invalid order values are now prevented by the KeySitesOrder enum type.
 
 	public function testGetKeySitesRejectsNonPositiveLimit(): void {
 		$akismet = $this->createAkismetWithResponse( new Response( 200, [], '{}' ) );
@@ -503,8 +485,7 @@ final class AkismetTest extends TestCase {
 		);
 
 		$akismet = new Akismet(
-			apiKey: 'test-key',
-			blog: 'https://example.com',
+			new Configuration( apiKey: 'test-key', blog: 'https://example.com' ),
 			httpClient: $mockClient,
 		);
 
@@ -516,10 +497,10 @@ final class AkismetTest extends TestCase {
 	}
 
 	// =========================================================================
-	// fromConfiguration Tests
+	// Constructor Tests
 	// =========================================================================
 
-	public function testFromConfigurationPreservesCustomBaseUrl(): void {
+	public function testConstructorPreservesCustomBaseUrl(): void {
 		$config = new Configuration(
 			apiKey: 'test-key',
 			blog: 'https://example.com',
@@ -531,26 +512,25 @@ final class AkismetTest extends TestCase {
 			new Response( 200, [], 'valid' )
 		);
 
-		$akismet = Akismet::fromConfiguration( $config, httpClient: $mockClient );
+		$akismet = new Akismet( $config, httpClient: $mockClient );
 
 		$this->assertSame( $config, $akismet->getConfiguration() );
 	}
 
-	public function testFromConfigurationIsFunctional(): void {
-		$config = new Configuration(
-			apiKey: 'test-key',
-			blog: 'https://example.com',
-		);
-
+	public function testCreateConvenienceFactory(): void {
 		$mockClient = $this->createMock( ClientInterface::class );
 		$mockClient->method( 'sendRequest' )->willReturn(
 			new Response( 200, [], 'valid' )
 		);
 
-		$akismet = Akismet::fromConfiguration( $config, httpClient: $mockClient );
+		$akismet = Akismet::create(
+			apiKey: 'test-key',
+			blog: 'https://example.com',
+			httpClient: $mockClient,
+		);
 
 		$this->assertTrue( $akismet->verifyKey() );
-		$this->assertSame( $config, $akismet->getConfiguration() );
+		$this->assertSame( 'test-key', $akismet->getConfiguration()->apiKey );
 	}
 
 	// =========================================================================
@@ -569,8 +549,7 @@ final class AkismetTest extends TestCase {
 		$mockClient->method( 'sendRequest' )->willReturn( $response );
 
 		return new Akismet(
-			apiKey: 'test-key',
-			blog: 'https://example.com',
+			new Configuration( apiKey: 'test-key', blog: 'https://example.com' ),
 			httpClient: $mockClient,
 		);
 	}

@@ -31,7 +31,7 @@ use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\Enum\CommentType;
 
 // Initialize the client
-$akismet = new Akismet(
+$akismet = Akismet::create(
     apiKey: 'your-api-key',
     blog: 'https://your-site.com'
 );
@@ -162,7 +162,7 @@ API keys are automatically redacted from exception messages to prevent credentia
 Use test mode during development to avoid affecting your accuracy metrics:
 
 ```php
-$akismet = new Akismet(
+$akismet = Akismet::create(
     apiKey: 'your-api-key',
     blog: 'https://your-site.com',
     isTest: true
