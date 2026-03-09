@@ -170,7 +170,7 @@ function demonstrateCheckResultSerialization(): void
 // Example: Simple queue worker
 function runWorker(): void
 {
-    $akismet = new Akismet(
+    $akismet = Akismet::create(
         apiKey: getenv('AKISMET_API_KEY') ?: '',
         blog: getenv('AKISMET_SITE_URL') ?: '',
         isTest: true

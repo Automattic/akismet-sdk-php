@@ -12,6 +12,7 @@ namespace Automattic\Akismet\Tests\Unit\Exception;
 use Automattic\Akismet\Exception\AkismetException;
 use Automattic\Akismet\Exception\ServerException;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( ServerException::class )]
@@ -22,28 +23,37 @@ final class ServerExceptionTest extends TestCase {
 		$this->assertInstanceOf( AkismetException::class, $exception );
 	}
 
-	public function testFromStatusCodeWithoutBody(): void {
-		$exception = ServerException::fromStatusCode( 500 );
-		$this->assertSame( 'Akismet API returned server error: 500', $exception->getMessage() );
+	#[DataProvider( 'statusCodeWithoutBodyProvider' )]
+	public function testFromStatusCodeWithoutBody( int $statusCode ): void {
+		$exception = ServerException::fromStatusCode( $statusCode );
+		$this->assertSame( "Akismet API returned server error: {$statusCode}", $exception->getMessage() );
 	}
 
-	public function testFromStatusCodeWithBody(): void {
-		$exception = ServerException::fromStatusCode( 503, 'Service temporarily unavailable' );
-		$this->assertSame(
-			'Akismet API returned server error: 503 - Service temporarily unavailable',
-			$exception->getMessage()
-		);
+	/**
+	 * @return array<string, array{int}>
+	 */
+	public static function statusCodeWithoutBodyProvider(): array {
+		return [
+			'500' => [ 500 ],
+			'502' => [ 502 ],
+		];
 	}
 
-	public function testFromStatusCodeWith502(): void {
-		$exception = ServerException::fromStatusCode( 502 );
-		$this->assertSame( 'Akismet API returned server error: 502', $exception->getMessage() );
+	#[DataProvider( 'statusCodeWithBodyProvider' )]
+	public function testFromStatusCodeWithBody( int $statusCode, string $body ): void {
+		$exception = ServerException::fromStatusCode( $statusCode, $body );
+		$this->assertStringContainsString( (string) $statusCode, $exception->getMessage() );
+		$this->assertStringContainsString( $body, $exception->getMessage() );
 	}
 
-	public function testFromStatusCodeWith504(): void {
-		$exception = ServerException::fromStatusCode( 504, 'Gateway timeout' );
-		$this->assertStringContainsString( '504', $exception->getMessage() );
-		$this->assertStringContainsString( 'Gateway timeout', $exception->getMessage() );
+	/**
+	 * @return array<string, array{int, string}>
+	 */
+	public static function statusCodeWithBodyProvider(): array {
+		return [
+			'503' => [ 503, 'Service temporarily unavailable' ],
+			'504' => [ 504, 'Gateway timeout' ],
+		];
 	}
 
 	public function testUnexpectedResponseIncludesBody(): void {

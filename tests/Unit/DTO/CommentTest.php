@@ -125,6 +125,21 @@ final class CommentTest extends TestCase {
 		$this->assertSame( 'spam-bot-filled-this', $array['website_url'] );
 	}
 
+	public function testToArrayServerVariablesDoNotOverwriteHoneypot(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			honeypotFieldName: 'website_url',
+			honeypotFieldValue: 'spam-bot-filled-this',
+			serverVariables: [
+				'website_url' => 'should-be-ignored',
+			],
+		);
+
+		$array = $comment->toArray();
+
+		$this->assertSame( 'spam-bot-filled-this', $array['website_url'] );
+	}
+
 	public function testToArrayIncludesServerVariables(): void {
 		$comment = new Comment(
 			userIp: '192.168.1.1',
@@ -361,6 +376,34 @@ final class CommentTest extends TestCase {
 		// Original is unchanged.
 		$this->assertNull( $original->reporter );
 		$this->assertNull( $original->commentCheckResponse );
+	}
+
+	public function testHoneypotFieldValueRequiresFieldName(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'honeypotFieldValue' );
+
+		new Comment(
+			userIp: '192.168.1.1',
+			honeypotFieldValue: 'bot-filled',
+		);
+	}
+
+	public function testServerVariablesFilteredAtConstruction(): void {
+		$comment = new Comment(
+			userIp: '192.168.1.1',
+			serverVariables: [
+				'HTTP_ACCEPT' => 'text/html',
+				'user_ip'     => 'injected',
+				'api_key'     => 'stolen',
+				'blog'        => 'https://evil.com',
+			],
+		);
+
+		// Reserved keys are filtered at construction, not just in toArray().
+		$this->assertArrayNotHasKey( 'user_ip', $comment->serverVariables );
+		$this->assertArrayNotHasKey( 'api_key', $comment->serverVariables );
+		$this->assertArrayNotHasKey( 'blog', $comment->serverVariables );
+		$this->assertArrayHasKey( 'HTTP_ACCEPT', $comment->serverVariables );
 	}
 
 	public function testWithFeedbackValidatesCommentCheckResponse(): void {

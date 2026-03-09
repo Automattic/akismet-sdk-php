@@ -55,15 +55,14 @@ final class CheckResult implements JsonSerializable {
 	 * @param array<string, string> $headers     Response headers.
 	 */
 	public static function fromResponse( string $body, array $headers = [] ): self {
-		$normalizedHeaders = array_change_key_case( $headers, CASE_LOWER );
-
+		$headers     = array_change_key_case( $headers, CASE_LOWER );
 		$nullIfEmpty = static fn( ?string $value ): ?string => ( $value !== null && $value !== '' ) ? $value : null;
 
-		$proTip       = $nullIfEmpty( $normalizedHeaders['x-akismet-pro-tip'] ?? null );
-		$debugHelp    = $nullIfEmpty( $normalizedHeaders['x-akismet-debug-help'] ?? null );
-		$alertCode    = $nullIfEmpty( $normalizedHeaders['x-akismet-alert-code'] ?? null );
-		$alertMessage = $nullIfEmpty( $normalizedHeaders['x-akismet-alert-msg'] ?? null );
-		$guid         = $nullIfEmpty( $normalizedHeaders['x-akismet-guid'] ?? null );
+		$proTip       = $nullIfEmpty( $headers['x-akismet-pro-tip'] ?? null );
+		$debugHelp    = $nullIfEmpty( $headers['x-akismet-debug-help'] ?? null );
+		$alertCode    = $nullIfEmpty( $headers['x-akismet-alert-code'] ?? null );
+		$alertMessage = $nullIfEmpty( $headers['x-akismet-alert-msg'] ?? null );
+		$guid         = $nullIfEmpty( $headers['x-akismet-guid'] ?? null );
 
 		// Determine verdict
 		if ( $body === 'true' ) {
@@ -72,7 +71,7 @@ final class CheckResult implements JsonSerializable {
 			$verdict = SpamVerdict::Ham;
 		}
 
-		$alertMetadata = AlertMetadata::fromHeaders( $normalizedHeaders );
+		$alertMetadata = AlertMetadata::fromHeaders( $headers );
 
 		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage, $guid, $alertMetadata );
 	}

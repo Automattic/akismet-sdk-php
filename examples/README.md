@@ -34,13 +34,13 @@ php examples/basic-usage.php
 
 ## Testing
 
-Enable test mode by passing `isTest: true` to the Akismet constructor:
+Enable test mode by passing `isTest: true` when creating the client:
 
 ```php
-$akismet = new Akismet(
+$akismet = Akismet::create(
     apiKey: $apiKey,
     blog: $siteUrl,
-    isTest: true
+    isTest: true,
 );
 ```
 

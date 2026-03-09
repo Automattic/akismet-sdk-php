@@ -22,30 +22,30 @@ final class Comment {
 	/**
 	 * Akismet canonical field names that must not be overwritten by serverVariables.
 	 *
-	 * @var array<string>
+	 * @var array<string, true>
 	 */
 	private const RESERVED_KEYS = [
-		'user_ip',
-		'user_agent',
-		'comment_content',
-		'comment_author',
-		'comment_author_email',
-		'comment_author_url',
-		'comment_type',
-		'permalink',
-		'referrer',
-		'comment_date_gmt',
-		'comment_post_modified_gmt',
-		'comment_parent',
-		'user_role',
-		'recheck_reason',
-		'honeypot_field_name',
-		'comment_context',
-		'api_key',
-		'blog',
-		'is_test',
-		'reporter',
-		'comment_check_response',
+		'user_ip'                   => true,
+		'user_agent'                => true,
+		'comment_content'           => true,
+		'comment_author'            => true,
+		'comment_author_email'      => true,
+		'comment_author_url'        => true,
+		'comment_type'              => true,
+		'permalink'                 => true,
+		'referrer'                  => true,
+		'comment_date_gmt'          => true,
+		'comment_post_modified_gmt' => true,
+		'comment_parent'            => true,
+		'user_role'                 => true,
+		'recheck_reason'            => true,
+		'honeypot_field_name'       => true,
+		'comment_context'           => true,
+		'api_key'                   => true,
+		'blog'                      => true,
+		'is_test'                   => true,
+		'reporter'                  => true,
+		'comment_check_response'    => true,
 	];
 
 	/**
@@ -62,6 +62,13 @@ final class Comment {
 	 * Permanent URL of the entry being commented on (normalized from empty string to null).
 	 */
 	public readonly ?string $permalink;
+
+	/**
+	 * Additional server variables with reserved keys and honeypot collisions filtered out.
+	 *
+	 * @var array<string, string>
+	 */
+	public readonly array $serverVariables;
 
 	/**
 	 * @param string                  $userIp                  IP address of the content submitter (required).
@@ -84,8 +91,8 @@ final class Comment {
 	 * @param string|null             $reporter                Who reported the content (e.g., current user name).
 	 * @param string|null             $commentCheckResponse    The original comment-check result ('true' or 'false').
 	 * @param array<string, string>   $serverVariables         Additional server variables to include. Keys matching
-	 *                                                          RESERVED_KEYS are silently skipped in toArray() to
-	 *                                                          prevent overwriting canonical Akismet fields.
+	 *                                                          RESERVED_KEYS and the honeypot field name are filtered
+	 *                                                          out at construction time.
 	 * @throws ValidationException If userIp, authorEmail, authorUrl, or permalink is invalid.
 	 */
 	public function __construct(
@@ -108,7 +115,7 @@ final class Comment {
 		public readonly ?string $context = null,
 		public readonly ?string $reporter = null,
 		public readonly ?string $commentCheckResponse = null,
-		public readonly array $serverVariables = [],
+		array $serverVariables = [],
 	) {
 		// Normalize empty strings to null for optional validated fields.
 		$this->authorEmail = $authorEmail === '' ? null : $authorEmail;
@@ -131,6 +138,16 @@ final class Comment {
 		if ( $this->commentCheckResponse !== null && ! in_array( $this->commentCheckResponse, [ 'true', 'false' ], true ) ) {
 			throw ValidationException::invalidValue( 'commentCheckResponse', "expected 'true' or 'false'" );
 		}
+		if ( $this->honeypotFieldValue !== null && $this->honeypotFieldName === null ) {
+			throw ValidationException::invalidValue( 'honeypotFieldValue', 'requires honeypotFieldName to be set' );
+		}
+
+		// Filter reserved keys and honeypot field name collisions at construction time.
+		$excludeKeys = self::RESERVED_KEYS;
+		if ( $this->honeypotFieldName !== null ) {
+			$excludeKeys[ $this->honeypotFieldName ] = true;
+		}
+		$this->serverVariables = array_diff_key( $serverVariables, $excludeKeys );
 	}
 
 	/**
@@ -231,11 +248,6 @@ final class Comment {
 			$data['recheck_reason'] = $this->recheckReason;
 		}
 
-		// Edge case: the honeypot value is written under the dynamic field name key
-		// (e.g., 'website_url'). This key is not in RESERVED_KEYS, so if a serverVariable
-		// shares the same key, it will overwrite the honeypot value in the loop below.
-		// In practice this is unlikely since honeypot names are form fields and server
-		// variables are typically HTTP headers (e.g., HTTP_ACCEPT, REMOTE_ADDR).
 		if ( $this->honeypotFieldName !== null ) {
 			$data['honeypot_field_name'] = $this->honeypotFieldName;
 			if ( $this->honeypotFieldValue !== null ) {
@@ -255,11 +267,9 @@ final class Comment {
 			$data['comment_check_response'] = $this->commentCheckResponse;
 		}
 
-		// Include additional server variables, skipping reserved Akismet fields.
+		// Server variables are pre-filtered at construction time.
 		foreach ( $this->serverVariables as $key => $value ) {
-			if ( ! in_array( $key, self::RESERVED_KEYS, true ) ) {
-				$data[ $key ] = $value;
-			}
+			$data[ $key ] = $value;
 		}
 
 		return $data;

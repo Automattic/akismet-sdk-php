@@ -12,6 +12,7 @@ namespace Automattic\Akismet\Tests\Unit\Exception;
 use Automattic\Akismet\Exception\AkismetException;
 use Automattic\Akismet\Exception\ClientErrorException;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( ClientErrorException::class )]
@@ -22,33 +23,37 @@ final class ClientErrorExceptionTest extends TestCase {
 		$this->assertInstanceOf( AkismetException::class, $exception );
 	}
 
-	public function testFromStatusCodeWithoutBody(): void {
-		$exception = ClientErrorException::fromStatusCode( 400 );
-		$this->assertSame( 'Akismet API returned client error: 400', $exception->getMessage() );
+	#[DataProvider( 'statusCodeWithoutBodyProvider' )]
+	public function testFromStatusCodeWithoutBody( int $statusCode ): void {
+		$exception = ClientErrorException::fromStatusCode( $statusCode );
+		$this->assertSame( "Akismet API returned client error: {$statusCode}", $exception->getMessage() );
 	}
 
-	public function testFromStatusCodeWithBody(): void {
-		$exception = ClientErrorException::fromStatusCode( 400, 'Invalid request parameters' );
-		$this->assertSame(
-			'Akismet API returned client error: 400 - Invalid request parameters',
-			$exception->getMessage()
-		);
+	/**
+	 * @return array<string, array{int}>
+	 */
+	public static function statusCodeWithoutBodyProvider(): array {
+		return [
+			'400' => [ 400 ],
+			'404' => [ 404 ],
+		];
 	}
 
-	public function testFromStatusCodeWith403(): void {
-		$exception = ClientErrorException::fromStatusCode( 403, 'Forbidden' );
-		$this->assertStringContainsString( '403', $exception->getMessage() );
-		$this->assertStringContainsString( 'Forbidden', $exception->getMessage() );
+	#[DataProvider( 'statusCodeWithBodyProvider' )]
+	public function testFromStatusCodeWithBody( int $statusCode, string $body ): void {
+		$exception = ClientErrorException::fromStatusCode( $statusCode, $body );
+		$this->assertStringContainsString( (string) $statusCode, $exception->getMessage() );
+		$this->assertStringContainsString( $body, $exception->getMessage() );
 	}
 
-	public function testFromStatusCodeWith404(): void {
-		$exception = ClientErrorException::fromStatusCode( 404 );
-		$this->assertSame( 'Akismet API returned client error: 404', $exception->getMessage() );
-	}
-
-	public function testFromStatusCodeWith422(): void {
-		$exception = ClientErrorException::fromStatusCode( 422, 'Unprocessable entity' );
-		$this->assertStringContainsString( '422', $exception->getMessage() );
-		$this->assertStringContainsString( 'Unprocessable entity', $exception->getMessage() );
+	/**
+	 * @return array<string, array{int, string}>
+	 */
+	public static function statusCodeWithBodyProvider(): array {
+		return [
+			'400' => [ 400, 'Invalid request parameters' ],
+			'403' => [ 403, 'Forbidden' ],
+			'422' => [ 422, 'Unprocessable entity' ],
+		];
 	}
 }

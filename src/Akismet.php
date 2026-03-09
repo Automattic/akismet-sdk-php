@@ -15,11 +15,13 @@ use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Comment;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\UsageLimit;
+use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
 use Automattic\Akismet\Exception\ValidationException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
 /**
@@ -33,6 +35,29 @@ final class Akismet implements AkismetInterface {
 	/**
 	 * Create a new Akismet client.
 	 *
+	 * @param Configuration                $config         SDK configuration.
+	 * @param ClientInterface|null         $httpClient     Custom PSR-18 HTTP client (auto-discovered if null).
+	 * @param RequestFactoryInterface|null $requestFactory Custom PSR-17 request factory (auto-discovered if null).
+	 * @param StreamFactoryInterface|null  $streamFactory  Custom PSR-17 stream factory (auto-discovered if null).
+	 */
+	public function __construct(
+		Configuration $config,
+		?ClientInterface $httpClient = null,
+		?RequestFactoryInterface $requestFactory = null,
+		?StreamFactoryInterface $streamFactory = null,
+	) {
+		$this->config     = $config;
+		$this->httpClient = new HttpClient(
+			$config,
+			$httpClient,
+			$requestFactory,
+			$streamFactory,
+		);
+	}
+
+	/**
+	 * Convenience factory for quick initialization from scalar values.
+	 *
 	 * @param string                       $apiKey               Your Akismet API key.
 	 * @param string                       $blog                 Your site's homepage URL.
 	 * @param bool                         $isTest               Enable test mode.
@@ -41,7 +66,7 @@ final class Akismet implements AkismetInterface {
 	 * @param RequestFactoryInterface|null $requestFactory       Custom PSR-17 request factory.
 	 * @param StreamFactoryInterface|null  $streamFactory        Custom PSR-17 stream factory.
 	 */
-	public function __construct(
+	public static function create(
 		string $apiKey,
 		string $blog,
 		bool $isTest = false,
@@ -49,51 +74,15 @@ final class Akismet implements AkismetInterface {
 		?ClientInterface $httpClient = null,
 		?RequestFactoryInterface $requestFactory = null,
 		?StreamFactoryInterface $streamFactory = null,
-	) {
-		$this->config     = new Configuration( $apiKey, $blog, isTest: $isTest, applicationUserAgent: $applicationUserAgent );
-		$this->httpClient = new HttpClient(
-			$this->config,
-			$httpClient,
-			$requestFactory,
-			$streamFactory,
-		);
-	}
-
-	/**
-	 * Create a client from an existing Configuration object.
-	 */
-	public static function fromConfiguration(
-		Configuration $config,
-		?ClientInterface $httpClient = null,
-		?RequestFactoryInterface $requestFactory = null,
-		?StreamFactoryInterface $streamFactory = null,
 	): self {
-		$instance = new self(
-			$config->apiKey,
-			$config->blog,
-			$config->isTest,
-			$config->applicationUserAgent,
-			$httpClient,
-			$requestFactory,
-			$streamFactory,
-		);
-
-		// Overwrite to preserve custom baseUrl from Configuration.
-		$instance->config     = $config;
-		$instance->httpClient = new HttpClient(
-			$config,
-			$httpClient,
-			$requestFactory,
-			$streamFactory,
-		);
-
-		return $instance;
+		$config = new Configuration( $apiKey, $blog, isTest: $isTest, applicationUserAgent: $applicationUserAgent );
+		return new self( $config, $httpClient, $requestFactory, $streamFactory );
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	public function verifyKey(): bool {
+	public function verifyKey(): void {
 		$response = $this->httpClient->post(
 			'/1.1/verify-key',
 			[
@@ -104,13 +93,11 @@ final class Akismet implements AkismetInterface {
 		$body = HttpClient::getBody( $response );
 
 		if ( $body === 'valid' ) {
-			return true;
+			return;
 		}
 
 		if ( $body === 'invalid' ) {
-			$headers   = array_change_key_case( HttpClient::getHeaders( $response ), CASE_LOWER );
-			$debugHelp = $headers['x-akismet-debug-help'] ?? null;
-			throw InvalidApiKeyException::verificationFailed( $debugHelp );
+			$this->throwInvalidKey( $response );
 		}
 
 		throw ServerException::unexpectedResponse( $body );
@@ -124,51 +111,28 @@ final class Akismet implements AkismetInterface {
 		$body     = HttpClient::getBody( $response );
 
 		if ( $body === 'invalid' ) {
-			$headers   = array_change_key_case( HttpClient::getHeaders( $response ), CASE_LOWER );
-			$debugHelp = $headers['x-akismet-debug-help'] ?? null;
-			throw InvalidApiKeyException::verificationFailed( $debugHelp );
+			$this->throwInvalidKey( $response );
 		}
 
 		if ( $body !== 'true' && $body !== 'false' ) {
 			throw ServerException::unexpectedResponse( $body );
 		}
 
-		return CheckResult::fromResponse(
-			$body,
-			HttpClient::getHeaders( $response ),
-		);
+		return CheckResult::fromResponse( $body, HttpClient::getHeaders( $response ) );
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 	public function submitSpam( Comment $comment ): void {
-		$response = $this->httpClient->post( '/1.1/submit-spam', $comment->toArray() );
-		$body     = HttpClient::getBody( $response );
-
-		if ( $body === 'invalid' ) {
-			throw InvalidApiKeyException::verificationFailed();
-		}
-
-		if ( $body !== 'Thanks for making the web a better place.' ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
+		$this->submitFeedback( '/1.1/submit-spam', $comment );
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 	public function submitHam( Comment $comment ): void {
-		$response = $this->httpClient->post( '/1.1/submit-ham', $comment->toArray() );
-		$body     = HttpClient::getBody( $response );
-
-		if ( $body === 'invalid' ) {
-			throw InvalidApiKeyException::verificationFailed();
-		}
-
-		if ( $body !== 'Thanks for making the web a better place.' ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
+		$this->submitFeedback( '/1.1/submit-ham', $comment );
 	}
 
 	/**
@@ -176,21 +140,7 @@ final class Akismet implements AkismetInterface {
 	 */
 	public function getUsageLimit(): UsageLimit {
 		$response = $this->httpClient->get( '/1.2/usage-limit' );
-		$body     = HttpClient::getBody( $response );
-
-		if ( $body === 'invalid' ) {
-			throw InvalidApiKeyException::verificationFailed();
-		}
-
-		try {
-			$data = json_decode( $body, true, 512, JSON_THROW_ON_ERROR );
-		} catch ( \JsonException ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
-
-		if ( ! is_array( $data ) ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
+		$data     = $this->decodeJsonResponse( $response );
 
 		/** @var array{limit: int|string, usage: int, percentage: string, throttled: bool} $data */
 		return UsageLimit::fromResponse( $data );
@@ -204,15 +154,10 @@ final class Akismet implements AkismetInterface {
 		?string $filter = null,
 		int $limit = 500,
 		int $offset = 0,
-		?string $order = null,
+		?KeySitesOrder $order = null,
 	): KeySitesResponse {
 		if ( $month !== null && ! preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $month ) ) {
 			throw ValidationException::invalidValue( 'month', 'must be in YYYY-MM format (01-12)' );
-		}
-
-		$validOrders = [ 'total', 'spam', 'ham', 'missed_spam', 'false_positives' ];
-		if ( $order !== null && ! in_array( $order, $validOrders, true ) ) {
-			throw ValidationException::invalidValue( 'order', 'must be one of: ' . implode( ', ', $validOrders ) );
 		}
 
 		if ( $limit <= 0 ) {
@@ -237,25 +182,11 @@ final class Akismet implements AkismetInterface {
 		}
 
 		if ( $order !== null ) {
-			$params['order'] = $order;
+			$params['order'] = $order->value;
 		}
 
 		$response = $this->httpClient->get( '/1.2/key-sites', $params );
-		$body     = HttpClient::getBody( $response );
-
-		if ( $body === 'invalid' ) {
-			throw InvalidApiKeyException::verificationFailed();
-		}
-
-		try {
-			$data = json_decode( $body, true, 512, JSON_THROW_ON_ERROR );
-		} catch ( \JsonException ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
-
-		if ( ! is_array( $data ) ) {
-			throw ServerException::unexpectedResponse( $body );
-		}
+		$data     = $this->decodeJsonResponse( $response );
 
 		/** @var array<string, mixed> $data */
 		return KeySitesResponse::fromResponse( $data );
@@ -281,5 +212,67 @@ final class Akismet implements AkismetInterface {
 	 */
 	public function getConfiguration(): Configuration {
 		return $this->config;
+	}
+
+	/**
+	 * Throw an InvalidApiKeyException, including any debug help from the response.
+	 *
+	 * @throws InvalidApiKeyException Always.
+	 */
+	private function throwInvalidKey( ResponseInterface $response ): never {
+		$headers   = HttpClient::getHeaders( $response );
+		$debugHelp = $headers['x-akismet-debug-help'] ?? null;
+		throw InvalidApiKeyException::verificationFailed( $debugHelp );
+	}
+
+	private const FEEDBACK_SUCCESS_BODY = 'Thanks for making the web a better place.';
+
+	/**
+	 * Submit spam or ham feedback to the API.
+	 *
+	 * @param string  $endpoint API endpoint path.
+	 * @param Comment $comment  The comment to submit feedback for.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the response is unexpected.
+	 */
+	private function submitFeedback( string $endpoint, Comment $comment ): void {
+		$response = $this->httpClient->post( $endpoint, $comment->toArray() );
+		$body     = HttpClient::getBody( $response );
+
+		if ( $body === 'invalid' ) {
+			$this->throwInvalidKey( $response );
+		}
+
+		if ( $body !== self::FEEDBACK_SUCCESS_BODY ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
+	}
+
+	/**
+	 * Decode a JSON response body into an array.
+	 *
+	 * @param ResponseInterface $response The HTTP response.
+	 * @return array<mixed, mixed> The decoded data.
+	 * @throws InvalidApiKeyException If the body is 'invalid'.
+	 * @throws ServerException If the body is not valid JSON or not an array.
+	 */
+	private function decodeJsonResponse( ResponseInterface $response ): array {
+		$body = HttpClient::getBody( $response );
+
+		if ( $body === 'invalid' ) {
+			$this->throwInvalidKey( $response );
+		}
+
+		try {
+			$data = json_decode( $body, true, 512, JSON_THROW_ON_ERROR );
+		} catch ( \JsonException ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
+
+		if ( ! is_array( $data ) ) {
+			throw ServerException::unexpectedResponse( $body );
+		}
+
+		return $data;
 	}
 }
