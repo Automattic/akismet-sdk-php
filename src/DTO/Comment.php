@@ -22,30 +22,30 @@ final class Comment {
 	/**
 	 * Akismet canonical field names that must not be overwritten by serverVariables.
 	 *
-	 * @var array<string>
+	 * @var array<string, true>
 	 */
 	private const RESERVED_KEYS = [
-		'user_ip',
-		'user_agent',
-		'comment_content',
-		'comment_author',
-		'comment_author_email',
-		'comment_author_url',
-		'comment_type',
-		'permalink',
-		'referrer',
-		'comment_date_gmt',
-		'comment_post_modified_gmt',
-		'comment_parent',
-		'user_role',
-		'recheck_reason',
-		'honeypot_field_name',
-		'comment_context',
-		'api_key',
-		'blog',
-		'is_test',
-		'reporter',
-		'comment_check_response',
+		'user_ip'                   => true,
+		'user_agent'                => true,
+		'comment_content'           => true,
+		'comment_author'            => true,
+		'comment_author_email'      => true,
+		'comment_author_url'        => true,
+		'comment_type'              => true,
+		'permalink'                 => true,
+		'referrer'                  => true,
+		'comment_date_gmt'          => true,
+		'comment_post_modified_gmt' => true,
+		'comment_parent'            => true,
+		'user_role'                 => true,
+		'recheck_reason'            => true,
+		'honeypot_field_name'       => true,
+		'comment_context'           => true,
+		'api_key'                   => true,
+		'blog'                      => true,
+		'is_test'                   => true,
+		'reporter'                  => true,
+		'comment_check_response'    => true,
 	];
 
 	/**
@@ -257,7 +257,7 @@ final class Comment {
 
 		// Include additional server variables, skipping reserved Akismet fields.
 		foreach ( $this->serverVariables as $key => $value ) {
-			if ( ! in_array( $key, self::RESERVED_KEYS, true ) ) {
+			if ( ! isset( self::RESERVED_KEYS[ $key ] ) ) {
 				$data[ $key ] = $value;
 			}
 		}
