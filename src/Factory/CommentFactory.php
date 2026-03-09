@@ -25,11 +25,24 @@ final class CommentFactory {
 	 * The Akismet API benefits from receiving as much server environment data
 	 * as possible. Rather than an allowlist, we exclude only sensitive values
 	 * that should never be sent — matching the approach used by the WP plugin.
+	 *
+	 * @var array<string, true>
 	 */
 	private const SERVER_VARS_TO_EXCLUDE = [
-		'HTTP_COOKIE',
-		'HTTP_COOKIE2',
-		'PHP_AUTH_PW',
+		'HTTP_COOKIE'  => true,
+		'HTTP_COOKIE2' => true,
+		'PHP_AUTH_PW'  => true,
+	];
+
+	/**
+	 * Proxy headers to check for the real client IP (after X-Forwarded-For).
+	 *
+	 * @var array<string>
+	 */
+	private const PROXY_HEADERS = [
+		'X-Real-IP',
+		'CF-Connecting-IP',
+		'True-Client-IP',
 	];
 
 	/**
@@ -145,6 +158,17 @@ final class CommentFactory {
 	}
 
 	/**
+	 * Resolve a value from the data array, trying the primary key then an optional fallback.
+	 *
+	 * @param array<string, mixed> $data        Source data.
+	 * @param string               $key         Primary key.
+	 * @param string|null          $fallbackKey Fallback key if primary not found.
+	 */
+	private static function resolve( array $data, string $key, ?string $fallbackKey = null ): mixed {
+		return $data[ $key ] ?? ( $fallbackKey !== null ? ( $data[ $fallbackKey ] ?? null ) : null );
+	}
+
+	/**
 	 * Get a string value from data array with fallback key.
 	 *
 	 * @param array<string, mixed> $data        Source data.
@@ -152,7 +176,7 @@ final class CommentFactory {
 	 * @param string|null          $fallbackKey Fallback key if primary not found.
 	 */
 	private static function getString( array $data, string $key, ?string $fallbackKey = null ): ?string {
-		$value = $data[ $key ] ?? ( $fallbackKey !== null ? ( $data[ $fallbackKey ] ?? null ) : null );
+		$value = self::resolve( $data, $key, $fallbackKey );
 		return is_string( $value ) ? $value : null;
 	}
 
@@ -164,7 +188,7 @@ final class CommentFactory {
 	 * @param string|null          $fallbackKey Fallback key if primary not found.
 	 */
 	private static function getDateTime( array $data, string $key, ?string $fallbackKey = null ): ?DateTimeInterface {
-		$value = $data[ $key ] ?? ( $fallbackKey !== null ? ( $data[ $fallbackKey ] ?? null ) : null );
+		$value = self::resolve( $data, $key, $fallbackKey );
 		if ( $value instanceof DateTimeInterface ) {
 			return $value;
 		}
@@ -251,8 +275,7 @@ final class CommentFactory {
 			}
 
 			// Check other common proxy headers
-			$proxyHeaders = [ 'X-Real-IP', 'CF-Connecting-IP', 'True-Client-IP' ];
-			foreach ( $proxyHeaders as $header ) {
+			foreach ( self::PROXY_HEADERS as $header ) {
 				$ip = $request->getHeaderLine( $header );
 				if ( $ip !== '' ) {
 					return $ip;
@@ -273,7 +296,7 @@ final class CommentFactory {
 		$variables = [];
 
 		foreach ( $serverParams as $key => $value ) {
-			if ( is_string( $value ) && ! in_array( $key, self::SERVER_VARS_TO_EXCLUDE, true ) ) {
+			if ( is_string( $value ) && ! isset( self::SERVER_VARS_TO_EXCLUDE[ $key ] ) ) {
 				$variables[ $key ] = $value;
 			}
 		}

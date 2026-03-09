@@ -57,11 +57,12 @@ final class KeySitesResponse {
 
 		$sites = [];
 		foreach ( $data as $siteData ) {
-			// Each remaining key is site data (keyed by month or identifier)
-			if ( is_array( $siteData ) && isset( $siteData['site'] ) ) {
-				/** @var array{site: string, api_calls?: int, total?: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool} $siteData */
-				$sites[] = SiteStats::fromResponse( $siteData );
+			if ( ! is_array( $siteData ) || ! isset( $siteData['site'] ) ) {
+				continue;
 			}
+
+			/** @var array{site: string, api_calls?: int, total?: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool} $siteData */
+			$sites[] = SiteStats::fromResponse( $siteData );
 		}
 
 		return new self( $sites, $limit, $offset, $total );

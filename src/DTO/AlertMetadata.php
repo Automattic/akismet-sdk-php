@@ -39,11 +39,12 @@ final class AlertMetadata implements JsonSerializable {
 	}
 
 	/**
-	 * Create from normalized (lowercased) response headers.
+	 * Create from response headers.
 	 *
 	 * Returns null if no extended alert headers are present.
+	 * Header keys are normalized to lowercase internally.
 	 *
-	 * @param array<string, string> $headers Response headers (lowercased automatically).
+	 * @param array<string, string> $headers Response headers.
 	 */
 	public static function fromHeaders( array $headers ): ?self {
 		$headers     = array_change_key_case( $headers, CASE_LOWER );
