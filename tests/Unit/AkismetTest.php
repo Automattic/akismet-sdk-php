@@ -141,20 +141,32 @@ final class AkismetTest extends TestCase {
 	}
 
 	// =========================================================================
-	// submitSpam Tests
+	// submitSpam / submitHam Tests
 	// =========================================================================
 
-	public function testSubmitSpamSucceeds(): void {
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function submitMethodProvider(): array {
+		return [
+			'submitSpam' => [ 'submitSpam' ],
+			'submitHam'  => [ 'submitHam' ],
+		];
+	}
+
+	#[DataProvider( 'submitMethodProvider' )]
+	public function testSubmitFeedbackSucceeds( string $method ): void {
 		$akismet = $this->createAkismetWithResponse(
 			new Response( 200, [], 'Thanks for making the web a better place.' )
 		);
 
-		$akismet->submitSpam( $this->createComment() );
+		$akismet->$method( $this->createComment() );
 
 		$this->addToAssertionCount( 1 );
 	}
 
-	public function testSubmitSpamThrowsOnUnexpectedBody(): void {
+	#[DataProvider( 'submitMethodProvider' )]
+	public function testSubmitFeedbackThrowsOnUnexpectedBody( string $method ): void {
 		$akismet = $this->createAkismetWithResponse(
 			new Response( 200, [], 'something-unexpected' )
 		);
@@ -162,52 +174,18 @@ final class AkismetTest extends TestCase {
 		$this->expectException( ServerException::class );
 		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
 
-		$akismet->submitSpam( $this->createComment() );
+		$akismet->$method( $this->createComment() );
 	}
 
-	public function testSubmitSpamThrowsOnInvalidBody(): void {
+	#[DataProvider( 'submitMethodProvider' )]
+	public function testSubmitFeedbackThrowsOnInvalidBody( string $method ): void {
 		$akismet = $this->createAkismetWithResponse(
 			new Response( 200, [], 'invalid' )
 		);
 
 		$this->expectException( InvalidApiKeyException::class );
 
-		$akismet->submitSpam( $this->createComment() );
-	}
-
-	// =========================================================================
-	// submitHam Tests
-	// =========================================================================
-
-	public function testSubmitHamSucceeds(): void {
-		$akismet = $this->createAkismetWithResponse(
-			new Response( 200, [], 'Thanks for making the web a better place.' )
-		);
-
-		$akismet->submitHam( $this->createComment() );
-
-		$this->addToAssertionCount( 1 );
-	}
-
-	public function testSubmitHamThrowsOnUnexpectedBody(): void {
-		$akismet = $this->createAkismetWithResponse(
-			new Response( 200, [], 'something-unexpected' )
-		);
-
-		$this->expectException( ServerException::class );
-		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
-
-		$akismet->submitHam( $this->createComment() );
-	}
-
-	public function testSubmitHamThrowsOnInvalidBody(): void {
-		$akismet = $this->createAkismetWithResponse(
-			new Response( 200, [], 'invalid' )
-		);
-
-		$this->expectException( InvalidApiKeyException::class );
-
-		$akismet->submitHam( $this->createComment() );
+		$akismet->$method( $this->createComment() );
 	}
 
 	// =========================================================================
@@ -398,22 +376,24 @@ final class AkismetTest extends TestCase {
 		$this->assertSame( 0, $result->total );
 	}
 
-	public function testGetKeySitesRejectsNonPositiveLimit(): void {
+	#[DataProvider( 'invalidLimitProvider' )]
+	public function testGetKeySitesRejectsInvalidLimit( int $limit ): void {
 		$akismet = $this->createAkismetWithResponse( new Response( 200, [], '{}' ) );
 
 		$this->expectException( ValidationException::class );
 		$this->expectExceptionMessage( 'limit' );
 
-		$akismet->getKeySites( limit: 0 );
+		$akismet->getKeySites( limit: $limit );
 	}
 
-	public function testGetKeySitesRejectsNegativeLimit(): void {
-		$akismet = $this->createAkismetWithResponse( new Response( 200, [], '{}' ) );
-
-		$this->expectException( ValidationException::class );
-		$this->expectExceptionMessage( 'limit' );
-
-		$akismet->getKeySites( limit: -1 );
+	/**
+	 * @return array<string, array{int}>
+	 */
+	public static function invalidLimitProvider(): array {
+		return [
+			'zero'     => [ 0 ],
+			'negative' => [ -1 ],
+		];
 	}
 
 	public function testGetKeySitesRejectsNegativeOffset(): void {
