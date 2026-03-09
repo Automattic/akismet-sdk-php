@@ -398,8 +398,6 @@ final class AkismetTest extends TestCase {
 		$this->assertSame( 0, $result->total );
 	}
 
-	// Invalid order values are now prevented by the KeySitesOrder enum type.
-
 	public function testGetKeySitesRejectsNonPositiveLimit(): void {
 		$akismet = $this->createAkismetWithResponse( new Response( 200, [], '{}' ) );
 
