@@ -28,13 +28,14 @@ final class AkismetIntegrationTest extends TestCase {
 
 	private Akismet $akismet;
 	private string $apiKey;
-	private string $blogUrl;
+	private string $siteUrl;
 
 	protected function setUp(): void {
 		$apiKey        = getenv( 'AKISMET_API_KEY' );
 		$this->apiKey  = false !== $apiKey ? $apiKey : '';
-		$blogUrl       = getenv( 'AKISMET_BLOG_URL' );
-		$this->blogUrl = false !== $blogUrl ? $blogUrl : 'https://example.com';
+		$siteUrl       = getenv( 'AKISMET_SITE_URL' );
+		$siteUrl       = false !== $siteUrl ? $siteUrl : getenv( 'AKISMET_BLOG_URL' );
+		$this->siteUrl = false !== $siteUrl ? $siteUrl : 'https://example.com';
 
 		if ( '' === $this->apiKey ) {
 			$this->fail( 'AKISMET_API_KEY environment variable is required' );
@@ -42,7 +43,7 @@ final class AkismetIntegrationTest extends TestCase {
 
 		$this->akismet = Akismet::create(
 			apiKey: $this->apiKey,
-			site: $this->blogUrl,
+			site: $this->siteUrl,
 			isTest: true
 		);
 	}
@@ -60,7 +61,7 @@ final class AkismetIntegrationTest extends TestCase {
 	public function testVerifyKeyWithInvalidKey(): void {
 		$akismet = Akismet::create(
 			apiKey: 'invalid-key-that-does-not-exist',
-			site: $this->blogUrl,
+			site: $this->siteUrl,
 			isTest: true
 		);
 
