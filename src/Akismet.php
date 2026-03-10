@@ -12,7 +12,7 @@ namespace Automattic\Akismet;
 use Automattic\Akismet\Client\HttpClient;
 use Automattic\Akismet\Config\Configuration;
 use Automattic\Akismet\DTO\CheckResult;
-use Automattic\Akismet\DTO\Comment;
+use Automattic\Akismet\DTO\Content;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
@@ -59,7 +59,7 @@ final class Akismet implements AkismetInterface {
 	 * Convenience factory for quick initialization from scalar values.
 	 *
 	 * @param string                       $apiKey               Your Akismet API key.
-	 * @param string                       $blog                 Your site's homepage URL.
+	 * @param string                       $site                 Your site's homepage URL.
 	 * @param bool                         $isTest               Enable test mode.
 	 * @param string|null                  $applicationUserAgent Integration identifier prepended to the SDK User-Agent header.
 	 * @param ClientInterface|null         $httpClient           Custom PSR-18 HTTP client.
@@ -68,14 +68,14 @@ final class Akismet implements AkismetInterface {
 	 */
 	public static function create(
 		string $apiKey,
-		string $blog,
+		string $site,
 		bool $isTest = false,
 		?string $applicationUserAgent = null,
 		?ClientInterface $httpClient = null,
 		?RequestFactoryInterface $requestFactory = null,
 		?StreamFactoryInterface $streamFactory = null,
 	): self {
-		$config = new Configuration( $apiKey, $blog, isTest: $isTest, applicationUserAgent: $applicationUserAgent );
+		$config = new Configuration( $apiKey, $site, isTest: $isTest, applicationUserAgent: $applicationUserAgent );
 		return new self( $config, $httpClient, $requestFactory, $streamFactory );
 	}
 
@@ -106,8 +106,8 @@ final class Akismet implements AkismetInterface {
 	/**
 	 * @inheritDoc
 	 */
-	public function check( Comment $comment ): CheckResult {
-		$response = $this->httpClient->post( '/1.1/comment-check', $comment->toArray() );
+	public function check( Content $content ): CheckResult {
+		$response = $this->httpClient->post( '/1.1/comment-check', $content->toArray() );
 		$body     = HttpClient::getBody( $response );
 
 		if ( $body === 'invalid' ) {
@@ -124,15 +124,15 @@ final class Akismet implements AkismetInterface {
 	/**
 	 * @inheritDoc
 	 */
-	public function submitSpam( Comment $comment ): void {
-		$this->submitFeedback( '/1.1/submit-spam', $comment );
+	public function submitSpam( Content $content ): void {
+		$this->submitFeedback( '/1.1/submit-spam', $content );
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	public function submitHam( Comment $comment ): void {
-		$this->submitFeedback( '/1.1/submit-ham', $comment );
+	public function submitHam( Content $content ): void {
+		$this->submitFeedback( '/1.1/submit-ham', $content );
 	}
 
 	/**
@@ -231,12 +231,12 @@ final class Akismet implements AkismetInterface {
 	 * Submit spam or ham feedback to the API.
 	 *
 	 * @param string  $endpoint API endpoint path.
-	 * @param Comment $comment  The comment to submit feedback for.
+	 * @param Content $content  The content to submit feedback for.
 	 * @throws InvalidApiKeyException If the API key is invalid.
 	 * @throws ServerException If the response is unexpected.
 	 */
-	private function submitFeedback( string $endpoint, Comment $comment ): void {
-		$response = $this->httpClient->post( $endpoint, $comment->toArray() );
+	private function submitFeedback( string $endpoint, Content $content ): void {
+		$response = $this->httpClient->post( $endpoint, $content->toArray() );
 		$body     = HttpClient::getBody( $response );
 
 		if ( $body === 'invalid' ) {

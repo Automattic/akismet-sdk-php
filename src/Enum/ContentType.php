@@ -1,6 +1,6 @@
 <?php
 /**
- * Comment type enum for Akismet API.
+ * Content type enum for Akismet API.
  *
  * @package Automattic\Akismet
  */
@@ -12,10 +12,10 @@ namespace Automattic\Akismet\Enum;
 /**
  * Represents the type of content being checked for spam.
  *
- * These are the standard comment types recognized by Akismet.
+ * These are the standard content types recognized by Akismet.
  * Custom types can be passed as strings directly to the API.
  */
-enum CommentType: string {
+enum ContentType: string {
 
 	case Comment     = 'comment';
 	case ForumPost   = 'forum-post';

@@ -19,7 +19,7 @@ use RuntimeException;
  *
  * Example:
  * try {
- *     $result = $akismet->check($comment);
+ *     $result = $akismet->check($content);
  * } catch (RateLimitException $e) {
  *     $wait = $e->getRetryAfter() ?? 60;
  *     // Queue for retry after $wait seconds
