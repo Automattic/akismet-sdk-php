@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Tests\Unit\Factory;
 
 use Automattic\Akismet\DTO\Content;
+use Automattic\Akismet\Enum\CheckResponse;
 use Automattic\Akismet\Enum\ContentType;
 use Automattic\Akismet\Exception\ValidationException;
 use Automattic\Akismet\Factory\ContentFactory;
@@ -21,6 +22,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 
 #[CoversClass( ContentFactory::class )]
+#[UsesClass( CheckResponse::class )]
 #[UsesClass( Content::class )]
 #[UsesClass( InputValidator::class )]
 #[UsesClass( ValidationException::class )]
@@ -283,7 +285,7 @@ final class ContentFactoryTest extends TestCase {
 		);
 
 		$this->assertSame( 'admin-user', $camelCase->reporter );
-		$this->assertSame( 'true', $camelCase->commentCheckResponse );
+		$this->assertSame( CheckResponse::Spam, $camelCase->commentCheckResponse );
 
 		$snakeCase = ContentFactory::fromArray(
 			[
@@ -294,7 +296,7 @@ final class ContentFactoryTest extends TestCase {
 		);
 
 		$this->assertSame( 'moderator', $snakeCase->reporter );
-		$this->assertSame( 'false', $snakeCase->commentCheckResponse );
+		$this->assertSame( CheckResponse::Ham, $snakeCase->commentCheckResponse );
 	}
 
 	public function testFromArrayWithCustomContentType(): void {

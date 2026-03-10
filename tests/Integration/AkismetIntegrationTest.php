@@ -34,8 +34,8 @@ final class AkismetIntegrationTest extends TestCase {
 		$apiKey        = getenv( 'AKISMET_API_KEY' );
 		$this->apiKey  = false !== $apiKey ? $apiKey : '';
 		$siteUrl       = getenv( 'AKISMET_SITE_URL' );
-		$siteUrl       = false !== $siteUrl ? $siteUrl : getenv( 'AKISMET_BLOG_URL' );
-		$this->siteUrl = false !== $siteUrl ? $siteUrl : 'https://example.com';
+		$siteUrl       = ( false !== $siteUrl && '' !== $siteUrl ) ? $siteUrl : getenv( 'AKISMET_BLOG_URL' );
+		$this->siteUrl = ( false !== $siteUrl && '' !== $siteUrl ) ? $siteUrl : 'https://example.com';
 
 		if ( '' === $this->apiKey ) {
 			$this->fail( 'AKISMET_API_KEY environment variable is required' );
