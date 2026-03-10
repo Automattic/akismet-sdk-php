@@ -308,6 +308,29 @@ final class ContentFactoryTest extends TestCase {
 		$this->assertSame( 'custom-type-not-in-enum', $content->type );
 	}
 
+	public function testFromArrayWithWireFormatCommentTypeKey(): void {
+		$data = [
+			'userIp'       => '192.168.1.1',
+			'comment_type' => 'contact-form',
+		];
+
+		$content = ContentFactory::fromArray( $data );
+
+		$this->assertSame( ContentType::ContactForm, $content->type );
+	}
+
+	public function testFromArrayTypeKeyTakesPrecedenceOverCommentTypeKey(): void {
+		$data = [
+			'userIp'       => '192.168.1.1',
+			'type'         => 'forum-post',
+			'comment_type' => 'contact-form',
+		];
+
+		$content = ContentFactory::fromArray( $data );
+
+		$this->assertSame( ContentType::ForumPost, $content->type );
+	}
+
 	public function testFromArrayWithEnumContentType(): void {
 		$data = [
 			'userIp' => '192.168.1.1',

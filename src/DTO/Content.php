@@ -82,12 +82,12 @@ final class Content {
 	 * @param string|null             $referrer                HTTP referrer header.
 	 * @param DateTimeInterface|null  $dateGmt                 Date/time the content was created.
 	 * @param DateTimeInterface|null  $postModifiedGmt         Date/time the post was last modified.
-	 * @param string|null             $parentId                ID of the parent comment if this is a reply.
+	 * @param string|null             $parentId                ID of the parent content if this is a reply.
 	 * @param string|null             $userRole                Role of the content submitter (e.g., 'administrator').
 	 * @param string|null             $recheckReason           Reason for rechecking previously checked content (free-form string, e.g., 'edit').
 	 * @param string|null             $honeypotFieldName       Name of a honeypot field if one was used.
 	 * @param string|null             $honeypotFieldValue      Value of the honeypot field (should be empty for humans).
-	 * @param string|null             $context                 The context or location of the comment within the website.
+	 * @param string|null             $context                 The context or location of the content within the website.
 	 * @param string|null             $reporter                Who reported the content (e.g., current user name).
 	 * @param string|null             $commentCheckResponse    The original comment-check result ('true' or 'false').
 	 * @param array<string, string>   $serverVariables         Additional server variables to include. Keys matching
