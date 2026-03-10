@@ -358,6 +358,14 @@ final class ContentTest extends TestCase {
 		$this->assertSame( CheckResponse::Spam, $content->commentCheckResponse );
 	}
 
+	public function testWithFeedbackAcceptsCheckResponseEnum(): void {
+		$content  = new Content( userIp: '192.168.1.1' );
+		$feedback = $content->withFeedback( 'admin', CheckResponse::Ham );
+
+		$this->assertSame( CheckResponse::Ham, $feedback->commentCheckResponse );
+		$this->assertSame( 'false', $feedback->toArray()['comment_check_response'] );
+	}
+
 	public function testWithFeedbackReturnsNewInstanceWithFeedbackFields(): void {
 		$original = new Content(
 			userIp: '192.168.1.1',

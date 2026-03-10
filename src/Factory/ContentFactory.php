@@ -197,7 +197,7 @@ final class ContentFactory {
 		if ( is_string( $value ) && $value !== '' ) {
 			try {
 				return new \DateTimeImmutable( $value );
-			} catch ( \Throwable ) {
+			} catch ( \Exception ) {
 				return null;
 			}
 		}

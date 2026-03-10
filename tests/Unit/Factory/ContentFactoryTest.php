@@ -438,6 +438,101 @@ final class ContentFactoryTest extends TestCase {
 		$this->assertNull( $content->dateGmt );
 	}
 
+	public function testFromArrayWithOnlyCommentContentKey(): void {
+		$data = [
+			'userIp'          => '192.168.1.1',
+			'comment_content' => 'Wire format only',
+		];
+
+		$content = ContentFactory::fromArray( $data );
+
+		$this->assertSame( 'Wire format only', $content->body );
+	}
+
+	public function testFromArrayContentKeyTakesPrecedenceOverCommentContentKey(): void {
+		$data = [
+			'userIp'          => '192.168.1.1',
+			'content'         => 'Legacy content key',
+			'comment_content' => 'Wire format key',
+		];
+
+		$content = ContentFactory::fromArray( $data );
+
+		$this->assertSame( 'Legacy content key', $content->body );
+	}
+
+	public function testFromArrayNonStringBodyFallsThrough(): void {
+		$data = [
+			'userIp'          => '192.168.1.1',
+			'body'            => 12345,
+			'comment_content' => 'Fallback text',
+		];
+
+		$content = ContentFactory::fromArray( $data );
+
+		// Non-string body is discarded by getString(), falls through to comment_content.
+		$this->assertSame( 'Fallback text', $content->body );
+	}
+
+	public function testFromArrayRoundTripsAllFields(): void {
+		$date         = new DateTimeImmutable( '2024-06-15T12:00:00+00:00' );
+		$postModified = new DateTimeImmutable( '2024-06-10T08:30:00+00:00' );
+
+		$original = new Content(
+			userIp: '203.0.113.42',
+			userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+			body: 'This is a test comment with all fields populated.',
+			authorName: 'Jane Smith',
+			authorEmail: 'jane@example.com',
+			authorUrl: 'https://jane.example.com',
+			type: ContentType::ContactForm,
+			permalink: 'https://example.com/blog/post-123',
+			referrer: 'https://google.com/search?q=example',
+			dateGmt: $date,
+			postModifiedGmt: $postModified,
+			parentId: '456',
+			userRole: 'subscriber',
+			recheckReason: 'edit',
+			honeypotFieldName: 'website_url',
+			honeypotFieldValue: 'bot-filled',
+			context: 'sidebar-widget',
+			reporter: 'admin',
+			commentCheckResponse: CheckResponse::Spam,
+		);
+
+		$array         = $original->toArray();
+		$reconstructed = ContentFactory::fromArray( $array );
+
+		$this->assertSame( $original->userIp, $reconstructed->userIp );
+		$this->assertSame( $original->userAgent, $reconstructed->userAgent );
+		$this->assertSame( $original->body, $reconstructed->body );
+		$this->assertSame( $original->authorName, $reconstructed->authorName );
+		$this->assertSame( $original->authorEmail, $reconstructed->authorEmail );
+		$this->assertSame( $original->authorUrl, $reconstructed->authorUrl );
+		$this->assertSame( ContentType::ContactForm, $reconstructed->type );
+		$this->assertSame( $original->permalink, $reconstructed->permalink );
+		$this->assertSame( $original->referrer, $reconstructed->referrer );
+		$this->assertNotNull( $reconstructed->dateGmt );
+		$this->assertSame( $date->format( 'c' ), $reconstructed->dateGmt->format( 'c' ) );
+		$this->assertNotNull( $reconstructed->postModifiedGmt );
+		$this->assertSame( $postModified->format( 'c' ), $reconstructed->postModifiedGmt->format( 'c' ) );
+		$this->assertSame( $original->parentId, $reconstructed->parentId );
+		$this->assertSame( $original->userRole, $reconstructed->userRole );
+		$this->assertSame( $original->recheckReason, $reconstructed->recheckReason );
+		$this->assertSame( $original->honeypotFieldName, $reconstructed->honeypotFieldName );
+		$this->assertSame( $original->honeypotFieldValue, $reconstructed->honeypotFieldValue );
+		$this->assertSame( $original->context, $reconstructed->context );
+		$this->assertSame( $original->reporter, $reconstructed->reporter );
+		$this->assertSame( CheckResponse::Spam, $reconstructed->commentCheckResponse );
+	}
+
+	public function testFromArrayWithEmptyArrayThrowsValidation(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'userIp' );
+
+		ContentFactory::fromArray( [] );
+	}
+
 	/**
 	 * Create a mock ServerRequestInterface.
 	 *
