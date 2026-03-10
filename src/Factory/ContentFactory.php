@@ -62,7 +62,7 @@ final class ContentFactory {
 	 * @param string|null              $recheckReason Reason for rechecking content.
 	 * @param string|null              $honeypotFieldName  Name of honeypot field.
 	 * @param string|null              $honeypotFieldValue Value of honeypot field.
-	 * @param string|null              $context            The context or location of the comment.
+	 * @param string|null              $context            The context or location of the content.
 	 * @param array<string>           $trustedProxies     List of trusted proxy IPs. Use ['*'] to trust all proxies.
 	 */
 	public static function fromRequest(
@@ -121,7 +121,7 @@ final class ContentFactory {
 	/**
 	 * Create a Content from an array of data.
 	 *
-	 * Useful for creating comments from form submissions or stored data.
+	 * Useful for creating content from form submissions or stored data.
 	 *
 	 * @param array<string, mixed> $data Content data with keys matching Content properties.
 	 */
@@ -230,7 +230,7 @@ final class ContentFactory {
 	 * @return ContentType|string|null
 	 */
 	private static function getContentType( array $data ): ContentType|string|null {
-		$type = $data['type'] ?? null;
+		$type = $data['type'] ?? $data['comment_type'] ?? null;
 
 		if ( $type instanceof ContentType ) {
 			return $type;
