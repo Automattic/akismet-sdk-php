@@ -4,7 +4,7 @@ This directory contains practical examples demonstrating how to integrate the Ak
 
 ## Examples
 
-- **basic-usage.php** - Getting started with the SDK, including verifying your API key, checking comments, listing sites, and monitoring usage
+- **basic-usage.php** - Getting started with the SDK, including verifying your API key, checking content, listing sites, and monitoring usage
 - **async-processing.php** - Processing spam checks asynchronously with queues
 - **testing-example.php** - Unit testing your Akismet integration with PHPUnit mocks
 
@@ -39,7 +39,7 @@ Enable test mode by passing `isTest: true` when creating the client:
 ```php
 $akismet = Akismet::create(
     apiKey: $apiKey,
-    blog: $siteUrl,
+    site: $siteUrl,
     isTest: true,
 );
 ```

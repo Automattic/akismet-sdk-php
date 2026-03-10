@@ -13,8 +13,8 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Tests\Integration;
 
 use Automattic\Akismet\Akismet;
-use Automattic\Akismet\DTO\Comment;
-use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\DTO\Content;
+use Automattic\Akismet\Enum\ContentType;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Group;
@@ -42,7 +42,7 @@ final class AkismetIntegrationTest extends TestCase {
 
 		$this->akismet = Akismet::create(
 			apiKey: $this->apiKey,
-			blog: $this->blogUrl,
+			site: $this->blogUrl,
 			isTest: true
 		);
 	}
@@ -60,7 +60,7 @@ final class AkismetIntegrationTest extends TestCase {
 	public function testVerifyKeyWithInvalidKey(): void {
 		$akismet = Akismet::create(
 			apiKey: 'invalid-key-that-does-not-exist',
-			blog: $this->blogUrl,
+			site: $this->blogUrl,
 			isTest: true
 		);
 
@@ -69,31 +69,31 @@ final class AkismetIntegrationTest extends TestCase {
 	}
 
 	// =========================================================================
-	// Comment Check Tests - Ham (Not Spam)
+	// Content Check Tests - Ham (Not Spam)
 	// =========================================================================
 
-	public function testCheckHamWithTypicalComment(): void {
-		$comment = new Comment(
+	public function testCheckHamWithTypicalContent(): void {
+		$content = new Content(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-			content: 'This is a legitimate comment with normal content.',
+			body: 'This is a legitimate comment with normal content.',
 			authorName: 'John Doe',
 			authorEmail: 'john@example.com',
-			type: CommentType::Comment
+			type: ContentType::Comment
 		);
 
-		$result = $this->akismet->check( $comment );
+		$result = $this->akismet->check( $content );
 
-		$this->assertFalse( $result->isSpam(), 'Normal comment should not be spam' );
-		$this->assertFalse( $result->shouldDiscard(), 'Normal comment should not be discarded' );
+		$this->assertFalse( $result->isSpam(), 'Normal content should not be spam' );
+		$this->assertFalse( $result->shouldDiscard(), 'Normal content should not be discarded' );
 		$this->assertNotNull( $result->guid, 'Akismet should return a GUID for check requests' );
 	}
 
 	public function testCheckHamWithMinimalData(): void {
 		// Minimal data with no spam signals should return ham (not spam).
-		$comment = new Comment( userIp: '192.168.1.1' );
+		$content = new Content( userIp: '192.168.1.1' );
 
-		$result = $this->akismet->check( $comment );
+		$result = $this->akismet->check( $content );
 
 		// Absence of spam signals should bias toward ham.
 		$this->assertFalse( $result->isSpam(), 'Minimal data without spam signals should not be flagged' );
@@ -102,69 +102,69 @@ final class AkismetIntegrationTest extends TestCase {
 
 	public function testCheckHamWithAdministratorRole(): void {
 		// Administrator role should bias toward ham.
-		$comment = new Comment(
+		$content = new Content(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: 'Admin comment',
+			body: 'Admin comment',
 			authorName: 'Site Admin',
 			authorEmail: 'admin@example.com',
-			type: CommentType::Comment,
+			type: ContentType::Comment,
 			userRole: 'administrator'
 		);
 
-		$result = $this->akismet->check( $comment );
+		$result = $this->akismet->check( $content );
 
 		$this->assertFalse( $result->isSpam(), 'Administrator comments should not be spam' );
 	}
 
 	// =========================================================================
-	// Comment Check Tests - Spam
+	// Content Check Tests - Spam
 	// =========================================================================
 
 	public function testCheckSpamWithGuaranteedSpamEmail(): void {
 		// Akismet test mode: akismet-guaranteed-spam@example.com always triggers spam.
-		$comment = new Comment(
+		$content = new Content(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: 'This comment uses a guaranteed spam email.',
+			body: 'This comment uses a guaranteed spam email.',
 			authorEmail: 'akismet-guaranteed-spam@example.com',
-			type: CommentType::Comment
+			type: ContentType::Comment
 		);
 
-		$result = $this->akismet->check( $comment );
+		$result = $this->akismet->check( $content );
 
 		$this->assertTrue( $result->isSpam(), 'Guaranteed spam email should be flagged' );
 	}
 
 	public function testCheckSpamWithGuaranteedSpamAuthor(): void {
 		// Using akismet-guaranteed-spam as author name triggers spam detection.
-		$comment = new Comment(
+		$content = new Content(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: 'Check out my website!',
+			body: 'Check out my website!',
 			authorName: 'akismet-guaranteed-spam',
 			authorEmail: 'test@example.com',
-			type: CommentType::Comment
+			type: ContentType::Comment
 		);
 
-		$result = $this->akismet->check( $comment );
+		$result = $this->akismet->check( $content );
 
 		$this->assertTrue( $result->isSpam(), 'Guaranteed spam author should be flagged' );
 	}
 
 	public function testCheckSpamBlatantShouldDiscard(): void {
 		// Combining multiple spam signals should trigger blatant spam (discard).
-		$comment = new Comment(
+		$content = new Content(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: 'Buy cheap stuff now!',
+			body: 'Buy cheap stuff now!',
 			authorName: 'akismet-guaranteed-spam',
 			authorEmail: 'akismet-guaranteed-spam@example.com',
 			authorUrl: 'https://spam-site.example.com',
-			type: CommentType::Comment
+			type: ContentType::Comment
 		);
 
-		$result = $this->akismet->check( $comment );
+		$result = $this->akismet->check( $content );
 
 		$this->assertTrue( $result->isSpam(), 'Blatant spam should be flagged as spam' );
 		// Note: shouldDiscard() depends on X-akismet-pro-tip header from API.
@@ -172,21 +172,21 @@ final class AkismetIntegrationTest extends TestCase {
 	}
 
 	// =========================================================================
-	// Comment Check Tests - All Fields
+	// Content Check Tests - All Fields
 	// =========================================================================
 
 	public function testCheckWithAllOptionalFields(): void {
 		$date         = new \DateTimeImmutable( '2024-01-15T10:30:00Z' );
 		$postModified = new \DateTimeImmutable( '2024-01-10T08:00:00Z' );
 
-		$comment = new Comment(
+		$content = new Content(
 			userIp: '203.0.113.42',
 			userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-			content: 'This is a test comment with all fields populated.',
+			body: 'This is a test comment with all fields populated.',
 			authorName: 'Jane Smith',
 			authorEmail: 'jane@example.com',
 			authorUrl: 'https://jane.example.com',
-			type: CommentType::Comment,
+			type: ContentType::Comment,
 			permalink: 'https://example.com/blog/post-123',
 			referrer: 'https://google.com/search?q=example',
 			dateGmt: $date,
@@ -200,43 +200,43 @@ final class AkismetIntegrationTest extends TestCase {
 			],
 		);
 
-		$result = $this->akismet->check( $comment );
+		$result = $this->akismet->check( $content );
 
 		// Legitimate content with all fields should not be spam.
-		$this->assertFalse( $result->isSpam(), 'Comment with all fields should not be spam' );
+		$this->assertFalse( $result->isSpam(), 'Content with all fields should not be spam' );
 		$this->assertNotNull( $result->verdict );
 	}
 
 	// =========================================================================
-	// Comment Check Tests - Different Comment Types
+	// Content Check Tests - Different Content Types
 	// =========================================================================
 
 	public function testCheckContactFormSubmission(): void {
-		$comment = new Comment(
+		$content = new Content(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: 'I have a question about your services.',
+			body: 'I have a question about your services.',
 			authorName: 'Potential Customer',
 			authorEmail: 'customer@example.com',
-			type: CommentType::ContactForm
+			type: ContentType::ContactForm
 		);
 
-		$result = $this->akismet->check( $comment );
+		$result = $this->akismet->check( $content );
 
 		$this->assertFalse( $result->isSpam(), 'Legitimate contact form should not be spam' );
 	}
 
 	public function testCheckSignupSubmission(): void {
-		$comment = new Comment(
+		$content = new Content(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: '',
+			body: '',
 			authorName: 'newuser123',
 			authorEmail: 'newuser@example.com',
-			type: CommentType::Signup
+			type: ContentType::Signup
 		);
 
-		$result = $this->akismet->check( $comment );
+		$result = $this->akismet->check( $content );
 
 		// Legitimate signup with normal email should not be flagged.
 		$this->assertFalse( $result->isSpam(), 'Legitimate signup should not be spam' );
@@ -249,30 +249,30 @@ final class AkismetIntegrationTest extends TestCase {
 	public function testSubmitSpamDoesNotThrow(): void {
 		$this->expectNotToPerformAssertions();
 
-		$comment = new Comment(
+		$content = new Content(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: 'This was spam that got through.',
+			body: 'This was spam that got through.',
 			authorEmail: 'spammer@example.com',
-			type: CommentType::Comment
+			type: ContentType::Comment
 		);
 
-		$this->akismet->submitSpam( $comment );
+		$this->akismet->submitSpam( $content );
 	}
 
 	public function testSubmitHamDoesNotThrow(): void {
 		$this->expectNotToPerformAssertions();
 
-		$comment = new Comment(
+		$content = new Content(
 			userIp: '127.0.0.1',
 			userAgent: 'Mozilla/5.0',
-			content: 'This was incorrectly flagged as spam.',
+			body: 'This was incorrectly flagged as spam.',
 			authorName: 'Legitimate User',
 			authorEmail: 'legit@example.com',
-			type: CommentType::Comment
+			type: ContentType::Comment
 		);
 
-		$this->akismet->submitHam( $comment );
+		$this->akismet->submitHam( $content );
 	}
 
 	// =========================================================================

@@ -27,8 +27,8 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use Automattic\Akismet\Akismet;
 use Automattic\Akismet\DTO\CheckResult;
-use Automattic\Akismet\DTO\Comment;
-use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\DTO\Content;
+use Automattic\Akismet\Enum\ContentType;
 use Automattic\Akismet\Exception\AkismetException;
 use Automattic\Akismet\Exception\NetworkException;
 use Automattic\Akismet\Exception\RateLimitException;
@@ -61,18 +61,18 @@ class CommentSpamChecker
     public function processComment(array $commentData): array
     {
         try {
-            $comment = new Comment(
+            $content = new Content(
                 userIp: $commentData['user_ip'],
                 userAgent: $commentData['user_agent'] ?? null,
-                content: $commentData['content'] ?? null,
+                body: $commentData['content'] ?? null,
                 authorName: $commentData['author'] ?? null,
                 authorEmail: $commentData['email'] ?? null,
-                type: $commentData['type'] ?? CommentType::Comment,
+                type: $commentData['type'] ?? ContentType::Comment,
                 referrer: $commentData['referrer'] ?? null,
                 permalink: $commentData['permalink'] ?? null
             );
 
-            $result = $this->akismet->check($comment);
+            $result = $this->akismet->check($content);
 
             return [
                 'success' => true,
@@ -172,7 +172,7 @@ function runWorker(): void
 {
     $akismet = Akismet::create(
         apiKey: getenv('AKISMET_API_KEY') ?: '',
-        blog: getenv('AKISMET_SITE_URL') ?: '',
+        site: getenv('AKISMET_SITE_URL') ?: '',
         isTest: true
     );
 

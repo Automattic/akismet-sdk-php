@@ -25,7 +25,7 @@ final class ConfigurationTest extends TestCase {
 		$config = new Configuration( 'test-api-key', 'https://example.com' );
 
 		$this->assertSame( 'test-api-key', $config->apiKey );
-		$this->assertSame( 'https://example.com', $config->blog );
+		$this->assertSame( 'https://example.com', $config->site );
 		$this->assertSame( Configuration::DEFAULT_BASE_URL, $config->baseUrl );
 		$this->assertFalse( $config->isTest );
 	}
@@ -42,9 +42,9 @@ final class ConfigurationTest extends TestCase {
 		$this->assertTrue( $config->isTest );
 	}
 
-	public function testTrimsTrailingSlashFromBlog(): void {
+	public function testTrimsTrailingSlashFromSite(): void {
 		$config = new Configuration( 'key', 'https://example.com/' );
-		$this->assertSame( 'https://example.com', $config->blog );
+		$this->assertSame( 'https://example.com', $config->site );
 	}
 
 	public function testTrimsTrailingSlashFromBaseUrl(): void {
@@ -59,14 +59,14 @@ final class ConfigurationTest extends TestCase {
 		new Configuration( '', 'https://example.com' );
 	}
 
-	public function testThrowsOnEmptyBlog(): void {
+	public function testThrowsOnEmptySite(): void {
 		$this->expectException( ValidationException::class );
-		$this->expectExceptionMessage( 'blog' );
+		$this->expectExceptionMessage( 'site' );
 
 		new Configuration( 'key', '' );
 	}
 
-	public function testThrowsOnInvalidBlogUrl(): void {
+	public function testThrowsOnInvalidSiteUrl(): void {
 		$this->expectException( ValidationException::class );
 		$this->expectExceptionMessage( 'valid URL' );
 

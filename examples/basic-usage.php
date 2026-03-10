@@ -5,8 +5,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Automattic\Akismet\Akismet;
-use Automattic\Akismet\DTO\Comment;
-use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\DTO\Content;
+use Automattic\Akismet\Enum\ContentType;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\NetworkException;
 use Automattic\Akismet\Exception\RateLimitException;
@@ -24,7 +24,7 @@ try {
     // Initialize the SDK
     $akismet = Akismet::create(
         apiKey: $apiKey,
-        blog: $siteUrl,
+        site: $siteUrl,
         isTest: true // Enable test mode
     );
 
@@ -42,18 +42,18 @@ try {
     // Step 2: Check a comment for spam
     echo "\nChecking a comment...\n";
 
-    $comment = new Comment(
+    $content = new Content(
         userIp: '192.168.1.1',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        content: 'Great article! Thanks for sharing.',
+        body: 'Great article! Thanks for sharing.',
         authorName: 'John Doe',
         authorEmail: 'john@example.com',
-        type: CommentType::Comment,
+        type: ContentType::Comment,
         referrer: 'https://google.com',
         permalink: 'https://example.com/article',
     );
 
-    $result = $akismet->check($comment);
+    $result = $akismet->check($content);
 
     echo "Spam verdict: {$result->verdict->value}\n";
     if ($result->isSpam()) {
@@ -105,13 +105,13 @@ try {
     // Example: Submit spam (if we got it wrong)
     if (!$result->isSpam()) {
         echo "\nIf this was actually spam, you could report it:\n";
-        echo "// \$akismet->submitSpam(\$comment);\n";
+        echo "// \$akismet->submitSpam(\$content);\n";
     }
 
     // Example: Submit ham (false positive)
     if ($result->isSpam()) {
         echo "\nIf this was a false positive, you could report it:\n";
-        echo "// \$akismet->submitHam(\$comment);\n";
+        echo "// \$akismet->submitHam(\$content);\n";
     }
 
     echo "\n✓ Example completed successfully\n";

@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace Automattic\Akismet;
 
 use Automattic\Akismet\DTO\CheckResult;
-use Automattic\Akismet\DTO\Comment;
+use Automattic\Akismet\DTO\Content;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
@@ -39,11 +39,11 @@ interface AkismetInterface {
 	/**
 	 * Check if content is spam.
 	 *
-	 * @param Comment $comment The content to check.
+	 * @param Content $content The content to check.
 	 * @return CheckResult The spam check result.
 	 * @throws AkismetException On network or API errors.
 	 */
-	public function check( Comment $comment ): CheckResult;
+	public function check( Content $content ): CheckResult;
 
 	/**
 	 * Submit content as spam (missed spam / false negative).
@@ -57,12 +57,12 @@ interface AkismetInterface {
 	 * - Use consistent data between check and submit calls
 	 * - Do not submit based solely on automated rules without verification
 	 *
-	 * @param Comment $comment The spam content.
+	 * @param Content $content The spam content.
 	 * @throws InvalidApiKeyException If the API key is invalid.
 	 * @throws ServerException If the API returns an unexpected response body.
 	 * @throws AkismetException On network or API errors.
 	 */
-	public function submitSpam( Comment $comment ): void;
+	public function submitSpam( Content $content ): void;
 
 	/**
 	 * Submit content as ham (false positive).
@@ -76,12 +76,12 @@ interface AkismetInterface {
 	 * - Consider batching submissions if processing historical data
 	 * - Track and monitor false positive rates to identify patterns
 	 *
-	 * @param Comment $comment The legitimate content.
+	 * @param Content $content The legitimate content.
 	 * @throws InvalidApiKeyException If the API key is invalid.
 	 * @throws ServerException If the API returns an unexpected response body.
 	 * @throws AkismetException On network or API errors.
 	 */
-	public function submitHam( Comment $comment ): void;
+	public function submitHam( Content $content ): void;
 
 	/**
 	 * Get API usage statistics and limits.
