@@ -27,26 +27,26 @@ composer require guzzlehttp/guzzle
 <?php
 
 use Automattic\Akismet\Akismet;
-use Automattic\Akismet\DTO\Comment;
-use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\DTO\Content;
+use Automattic\Akismet\Enum\ContentType;
 
 // Initialize the client
 $akismet = Akismet::create(
     apiKey: 'your-api-key',
-    blog: 'https://your-site.com'
+    site: 'https://your-site.com'
 );
 
 // Check if content is spam
-$comment = new Comment(
+$content = new Content(
     userIp: $_SERVER['REMOTE_ADDR'],
     userAgent: $_SERVER['HTTP_USER_AGENT'],
-    content: $formData['message'],
+    body: $formData['message'],
     authorName: $formData['name'],
     authorEmail: $formData['email'],
-    type: CommentType::ContactForm
+    type: ContentType::ContactForm
 );
 
-$result = $akismet->check($comment);
+$result = $akismet->check($content);
 
 if ($result->isSpam()) {
     // Handle spam
@@ -63,7 +63,7 @@ if ($result->isSpam()) {
 - Full support for Akismet API 1.1 and 1.2 endpoints
 - PSR-18 HTTP client compatibility (works with Guzzle, Symfony, etc.)
 - Immutable, type-safe DTOs
-- Native PHP 8.1 enums for comment types and verdicts
+- Native PHP 8.1 enums for content types and verdicts
 - Built-in test mode for development
 
 ## API Methods
@@ -71,46 +71,46 @@ if ($result->isSpam()) {
 | Method | Description |
 |--------|-------------|
 | `verifyKey()` | Verify your API key is valid |
-| `check($comment)` | Check if content is spam |
-| `submitSpam($comment)` | Report missed spam (false negative) |
-| `submitHam($comment)` | Report false positive |
+| `check($content)` | Check if content is spam |
+| `submitSpam($content)` | Report missed spam (false negative) |
+| `submitHam($content)` | Report false positive |
 | `getUsageLimit()` | Get API usage stats and limits |
 | `getKeySites()` | Get sites using your API key (JSON format only; CSV is not supported) |
 | `getAccessToken()` | Exchange API key for a scoped access token |
 
 ## Framework Integration
 
-Use `CommentFactory` to create `Comment` objects from PSR-7 requests with automatic IP and user agent extraction:
+Use `ContentFactory` to create `Content` objects from PSR-7 requests with automatic IP and user agent extraction:
 
 ```php
-use Automattic\Akismet\Factory\CommentFactory;
-use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\Factory\ContentFactory;
+use Automattic\Akismet\Enum\ContentType;
 
-$comment = CommentFactory::fromRequest(
+$content = ContentFactory::fromRequest(
     request: $psr7Request,
-    content: $formData['message'],
+    body: $formData['message'],
     authorName: $formData['name'],
     authorEmail: $formData['email'],
-    type: CommentType::ContactForm,
+    type: ContentType::ContactForm,
 );
 ```
 
 ### Trusted Proxies
 
-By default, `CommentFactory::fromRequest()` uses `REMOTE_ADDR` as the client IP. If your application runs behind a reverse proxy or load balancer, pass the proxy IPs to trust forwarded headers (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, `True-Client-IP`):
+By default, `ContentFactory::fromRequest()` uses `REMOTE_ADDR` as the client IP. If your application runs behind a reverse proxy or load balancer, pass the proxy IPs to trust forwarded headers (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, `True-Client-IP`):
 
 ```php
 // Trust specific proxy IPs
-$comment = CommentFactory::fromRequest(
+$content = ContentFactory::fromRequest(
     request: $psr7Request,
-    content: $formData['message'],
+    body: $formData['message'],
     trustedProxies: ['10.0.0.1', '10.0.0.2'],
 );
 
 // Trust all proxies (use only in controlled environments)
-$comment = CommentFactory::fromRequest(
+$content = ContentFactory::fromRequest(
     request: $psr7Request,
-    content: $formData['message'],
+    body: $formData['message'],
     trustedProxies: ['*'],
 );
 ```
@@ -121,10 +121,10 @@ Help improve Akismet's accuracy by reporting mistakes:
 
 ```php
 // Report a missed spam (was marked as ham but is actually spam)
-$akismet->submitSpam($comment);
+$akismet->submitSpam($content);
 
 // Report a false positive (was marked as spam but is actually ham)
-$akismet->submitHam($comment);
+$akismet->submitHam($content);
 ```
 
 ## Error Handling
@@ -137,7 +137,7 @@ use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\RateLimitException;
 
 try {
-    $result = $akismet->check($comment);
+    $result = $akismet->check($content);
 } catch (InvalidApiKeyException $e) {
     // API key is invalid or revoked
 } catch (RateLimitException $e) {
@@ -164,7 +164,7 @@ Use test mode during development to avoid affecting your accuracy metrics:
 ```php
 $akismet = Akismet::create(
     apiKey: 'your-api-key',
-    blog: 'https://your-site.com',
+    site: 'https://your-site.com',
     isTest: true
 );
 ```

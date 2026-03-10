@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for CommentFactory.
+ * Tests for ContentFactory.
  *
  * @package Automattic\Akismet
  */
@@ -9,10 +9,10 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet\Tests\Unit\Factory;
 
-use Automattic\Akismet\DTO\Comment;
-use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\DTO\Content;
+use Automattic\Akismet\Enum\ContentType;
 use Automattic\Akismet\Exception\ValidationException;
-use Automattic\Akismet\Factory\CommentFactory;
+use Automattic\Akismet\Factory\ContentFactory;
 use Automattic\Akismet\Validator\InputValidator;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -20,11 +20,11 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 
-#[CoversClass( CommentFactory::class )]
-#[UsesClass( Comment::class )]
+#[CoversClass( ContentFactory::class )]
+#[UsesClass( Content::class )]
 #[UsesClass( InputValidator::class )]
 #[UsesClass( ValidationException::class )]
-final class CommentFactoryTest extends TestCase {
+final class ContentFactoryTest extends TestCase {
 
 	public function testFromRequestExtractsBasicInfo(): void {
 		$request = $this->createMockRequest(
@@ -35,11 +35,11 @@ final class CommentFactoryTest extends TestCase {
 			],
 		);
 
-		$comment = CommentFactory::fromRequest( $request );
+		$content = ContentFactory::fromRequest( $request );
 
-		$this->assertSame( '192.168.1.100', $comment->userIp );
-		$this->assertSame( 'Mozilla/5.0 Test Browser', $comment->userAgent );
-		$this->assertSame( 'https://google.com/search', $comment->referrer );
+		$this->assertSame( '192.168.1.100', $content->userIp );
+		$this->assertSame( 'Mozilla/5.0 Test Browser', $content->userAgent );
+		$this->assertSame( 'https://google.com/search', $content->referrer );
 	}
 
 	public function testFromRequestExtractsForwardedIpWithTrustedProxy(): void {
@@ -48,10 +48,10 @@ final class CommentFactoryTest extends TestCase {
 			headers: [ 'X-Forwarded-For' => '203.0.113.50, 70.41.3.18, 150.172.238.178' ],
 		);
 
-		$comment = CommentFactory::fromRequest( $request, trustedProxies: [ '10.0.0.1' ] );
+		$content = ContentFactory::fromRequest( $request, trustedProxies: [ '10.0.0.1' ] );
 
 		// Should use the first IP from X-Forwarded-For
-		$this->assertSame( '203.0.113.50', $comment->userIp );
+		$this->assertSame( '203.0.113.50', $content->userIp );
 	}
 
 	public function testFromRequestExtractsCloudflareIpWithTrustedProxy(): void {
@@ -60,9 +60,9 @@ final class CommentFactoryTest extends TestCase {
 			headers: [ 'CF-Connecting-IP' => '198.51.100.25' ],
 		);
 
-		$comment = CommentFactory::fromRequest( $request, trustedProxies: [ '10.0.0.1' ] );
+		$content = ContentFactory::fromRequest( $request, trustedProxies: [ '10.0.0.1' ] );
 
-		$this->assertSame( '198.51.100.25', $comment->userIp );
+		$this->assertSame( '198.51.100.25', $content->userIp );
 	}
 
 	public function testFromRequestIgnoresForwardedHeadersWithoutTrustedProxies(): void {
@@ -71,9 +71,9 @@ final class CommentFactoryTest extends TestCase {
 			headers: [ 'X-Forwarded-For' => '203.0.113.50' ],
 		);
 
-		$comment = CommentFactory::fromRequest( $request );
+		$content = ContentFactory::fromRequest( $request );
 
-		$this->assertSame( '10.0.0.1', $comment->userIp );
+		$this->assertSame( '10.0.0.1', $content->userIp );
 	}
 
 	public function testFromRequestTrustsForwardedHeadersWithWildcard(): void {
@@ -82,9 +82,9 @@ final class CommentFactoryTest extends TestCase {
 			headers: [ 'X-Forwarded-For' => '203.0.113.50' ],
 		);
 
-		$comment = CommentFactory::fromRequest( $request, trustedProxies: [ '*' ] );
+		$content = ContentFactory::fromRequest( $request, trustedProxies: [ '*' ] );
 
-		$this->assertSame( '203.0.113.50', $comment->userIp );
+		$this->assertSame( '203.0.113.50', $content->userIp );
 	}
 
 	public function testFromRequestWithAllParameters(): void {
@@ -95,13 +95,13 @@ final class CommentFactoryTest extends TestCase {
 
 		$date = new DateTimeImmutable( '2024-01-15T10:30:00Z' );
 
-		$comment = CommentFactory::fromRequest(
+		$content = ContentFactory::fromRequest(
 			request: $request,
-			content: 'Test message content',
+			body: 'Test message content',
 			authorName: 'John Doe',
 			authorEmail: 'john@example.com',
 			authorUrl: 'https://john.example.com',
-			type: CommentType::ContactForm,
+			type: ContentType::ContactForm,
 			permalink: 'https://example.com/contact',
 			dateGmt: $date,
 			userRole: 'guest',
@@ -110,15 +110,15 @@ final class CommentFactoryTest extends TestCase {
 			honeypotFieldValue: '',
 		);
 
-		$this->assertSame( 'Test message content', $comment->content );
-		$this->assertSame( 'John Doe', $comment->authorName );
-		$this->assertSame( 'john@example.com', $comment->authorEmail );
-		$this->assertSame( 'https://john.example.com', $comment->authorUrl );
-		$this->assertSame( CommentType::ContactForm, $comment->type );
-		$this->assertSame( 'https://example.com/contact', $comment->permalink );
-		$this->assertSame( $date, $comment->dateGmt );
-		$this->assertSame( 'guest', $comment->userRole );
-		$this->assertSame( 'website', $comment->honeypotFieldName );
+		$this->assertSame( 'Test message content', $content->body );
+		$this->assertSame( 'John Doe', $content->authorName );
+		$this->assertSame( 'john@example.com', $content->authorEmail );
+		$this->assertSame( 'https://john.example.com', $content->authorUrl );
+		$this->assertSame( ContentType::ContactForm, $content->type );
+		$this->assertSame( 'https://example.com/contact', $content->permalink );
+		$this->assertSame( $date, $content->dateGmt );
+		$this->assertSame( 'guest', $content->userRole );
+		$this->assertSame( 'website', $content->honeypotFieldName );
 	}
 
 	public function testFromRequestPassesContext(): void {
@@ -127,12 +127,12 @@ final class CommentFactoryTest extends TestCase {
 			headers: [],
 		);
 
-		$comment = CommentFactory::fromRequest(
+		$content = ContentFactory::fromRequest(
 			request: $request,
 			context: 'sidebar-widget',
 		);
 
-		$this->assertSame( 'sidebar-widget', $comment->context );
+		$this->assertSame( 'sidebar-widget', $content->context );
 	}
 
 	public function testFromRequestExtractsServerVariables(): void {
@@ -148,13 +148,13 @@ final class CommentFactoryTest extends TestCase {
 			headers: [],
 		);
 
-		$comment = CommentFactory::fromRequest( $request );
+		$content = ContentFactory::fromRequest( $request );
 
-		$this->assertArrayHasKey( 'HTTP_ACCEPT_LANGUAGE', $comment->serverVariables );
-		$this->assertArrayHasKey( 'HTTP_ACCEPT_ENCODING', $comment->serverVariables );
-		$this->assertArrayHasKey( 'SERVER_NAME', $comment->serverVariables );
-		$this->assertArrayHasKey( 'REQUEST_URI', $comment->serverVariables );
-		$this->assertArrayHasKey( 'SOME_OTHER_VAR', $comment->serverVariables );
+		$this->assertArrayHasKey( 'HTTP_ACCEPT_LANGUAGE', $content->serverVariables );
+		$this->assertArrayHasKey( 'HTTP_ACCEPT_ENCODING', $content->serverVariables );
+		$this->assertArrayHasKey( 'SERVER_NAME', $content->serverVariables );
+		$this->assertArrayHasKey( 'REQUEST_URI', $content->serverVariables );
+		$this->assertArrayHasKey( 'SOME_OTHER_VAR', $content->serverVariables );
 	}
 
 	public function testFromRequestExcludesSensitiveServerVariables(): void {
@@ -169,12 +169,12 @@ final class CommentFactoryTest extends TestCase {
 			headers: [],
 		);
 
-		$comment = CommentFactory::fromRequest( $request );
+		$content = ContentFactory::fromRequest( $request );
 
-		$this->assertArrayHasKey( 'SERVER_NAME', $comment->serverVariables );
-		$this->assertArrayNotHasKey( 'HTTP_COOKIE', $comment->serverVariables );
-		$this->assertArrayNotHasKey( 'HTTP_COOKIE2', $comment->serverVariables );
-		$this->assertArrayNotHasKey( 'PHP_AUTH_PW', $comment->serverVariables );
+		$this->assertArrayHasKey( 'SERVER_NAME', $content->serverVariables );
+		$this->assertArrayNotHasKey( 'HTTP_COOKIE', $content->serverVariables );
+		$this->assertArrayNotHasKey( 'HTTP_COOKIE2', $content->serverVariables );
+		$this->assertArrayNotHasKey( 'PHP_AUTH_PW', $content->serverVariables );
 	}
 
 	public function testFromRequestWithMissingIpThrowsValidationException(): void {
@@ -185,27 +185,27 @@ final class CommentFactoryTest extends TestCase {
 
 		$this->expectException( ValidationException::class );
 
-		CommentFactory::fromRequest( $request );
+		ContentFactory::fromRequest( $request );
 	}
 
 	public function testFromArrayWithCamelCaseKeys(): void {
 		$data = [
 			'userIp'      => '192.168.1.1',
 			'userAgent'   => 'Test Browser',
-			'content'     => 'Test content',
+			'body'        => 'Test content',
 			'authorName'  => 'Jane Doe',
 			'authorEmail' => 'jane@example.com',
 			'type'        => 'contact-form',
 		];
 
-		$comment = CommentFactory::fromArray( $data );
+		$content = ContentFactory::fromArray( $data );
 
-		$this->assertSame( '192.168.1.1', $comment->userIp );
-		$this->assertSame( 'Test Browser', $comment->userAgent );
-		$this->assertSame( 'Test content', $comment->content );
-		$this->assertSame( 'Jane Doe', $comment->authorName );
-		$this->assertSame( 'jane@example.com', $comment->authorEmail );
-		$this->assertSame( CommentType::ContactForm, $comment->type );
+		$this->assertSame( '192.168.1.1', $content->userIp );
+		$this->assertSame( 'Test Browser', $content->userAgent );
+		$this->assertSame( 'Test content', $content->body );
+		$this->assertSame( 'Jane Doe', $content->authorName );
+		$this->assertSame( 'jane@example.com', $content->authorEmail );
+		$this->assertSame( ContentType::ContactForm, $content->type );
 	}
 
 	public function testFromArrayWithSnakeCaseKeys(): void {
@@ -218,14 +218,14 @@ final class CommentFactoryTest extends TestCase {
 			'comment_author_url'   => 'https://jane.example.com',
 		];
 
-		$comment = CommentFactory::fromArray( $data );
+		$content = ContentFactory::fromArray( $data );
 
-		$this->assertSame( '192.168.1.1', $comment->userIp );
-		$this->assertSame( 'Test Browser', $comment->userAgent );
-		$this->assertSame( 'Test content', $comment->content );
-		$this->assertSame( 'Jane Doe', $comment->authorName );
-		$this->assertSame( 'jane@example.com', $comment->authorEmail );
-		$this->assertSame( 'https://jane.example.com', $comment->authorUrl );
+		$this->assertSame( '192.168.1.1', $content->userIp );
+		$this->assertSame( 'Test Browser', $content->userAgent );
+		$this->assertSame( 'Test content', $content->body );
+		$this->assertSame( 'Jane Doe', $content->authorName );
+		$this->assertSame( 'jane@example.com', $content->authorEmail );
+		$this->assertSame( 'https://jane.example.com', $content->authorUrl );
 	}
 
 	public function testFromArrayReadsContext(): void {
@@ -234,9 +234,9 @@ final class CommentFactoryTest extends TestCase {
 			'context' => 'footer-form',
 		];
 
-		$comment = CommentFactory::fromArray( $data );
+		$content = ContentFactory::fromArray( $data );
 
-		$this->assertSame( 'footer-form', $comment->context );
+		$this->assertSame( 'footer-form', $content->context );
 	}
 
 	public function testFromArrayReadsCommentContextKey(): void {
@@ -245,13 +245,13 @@ final class CommentFactoryTest extends TestCase {
 			'comment_context' => 'footer-form',
 		];
 
-		$comment = CommentFactory::fromArray( $data );
+		$content = ContentFactory::fromArray( $data );
 
-		$this->assertSame( 'footer-form', $comment->context );
+		$this->assertSame( 'footer-form', $content->context );
 	}
 
 	public function testFromArrayReadsFeedbackFields(): void {
-		$camelCase = CommentFactory::fromArray(
+		$camelCase = ContentFactory::fromArray(
 			[
 				'userIp'               => '192.168.1.1',
 				'reporter'             => 'admin-user',
@@ -262,7 +262,7 @@ final class CommentFactoryTest extends TestCase {
 		$this->assertSame( 'admin-user', $camelCase->reporter );
 		$this->assertSame( 'true', $camelCase->commentCheckResponse );
 
-		$snakeCase = CommentFactory::fromArray(
+		$snakeCase = ContentFactory::fromArray(
 			[
 				'user_ip'                => '192.168.1.1',
 				'reporter'               => 'moderator',
@@ -274,26 +274,26 @@ final class CommentFactoryTest extends TestCase {
 		$this->assertSame( 'false', $snakeCase->commentCheckResponse );
 	}
 
-	public function testFromArrayWithCustomCommentType(): void {
+	public function testFromArrayWithCustomContentType(): void {
 		$data = [
 			'userIp' => '192.168.1.1',
 			'type'   => 'custom-type-not-in-enum',
 		];
 
-		$comment = CommentFactory::fromArray( $data );
+		$content = ContentFactory::fromArray( $data );
 
-		$this->assertSame( 'custom-type-not-in-enum', $comment->type );
+		$this->assertSame( 'custom-type-not-in-enum', $content->type );
 	}
 
-	public function testFromArrayWithEnumCommentType(): void {
+	public function testFromArrayWithEnumContentType(): void {
 		$data = [
 			'userIp' => '192.168.1.1',
-			'type'   => CommentType::Signup,
+			'type'   => ContentType::Signup,
 		];
 
-		$comment = CommentFactory::fromArray( $data );
+		$content = ContentFactory::fromArray( $data );
 
-		$this->assertSame( CommentType::Signup, $comment->type );
+		$this->assertSame( ContentType::Signup, $content->type );
 	}
 
 	public function testFromArrayAcceptsIso8601DateStrings(): void {
@@ -303,12 +303,12 @@ final class CommentFactoryTest extends TestCase {
 			'postModifiedGmt' => '2024-02-20T14:00:00+00:00',
 		];
 
-		$comment = CommentFactory::fromArray( $data );
+		$content = ContentFactory::fromArray( $data );
 
-		$this->assertNotNull( $comment->dateGmt );
-		$this->assertSame( '2024-01-15T10:30:00+00:00', $comment->dateGmt->format( 'c' ) );
-		$this->assertNotNull( $comment->postModifiedGmt );
-		$this->assertSame( '2024-02-20T14:00:00+00:00', $comment->postModifiedGmt->format( 'c' ) );
+		$this->assertNotNull( $content->dateGmt );
+		$this->assertSame( '2024-01-15T10:30:00+00:00', $content->dateGmt->format( 'c' ) );
+		$this->assertNotNull( $content->postModifiedGmt );
+		$this->assertSame( '2024-02-20T14:00:00+00:00', $content->postModifiedGmt->format( 'c' ) );
 	}
 
 	public function testFromArrayReturnsNullForInvalidDateStrings(): void {
@@ -317,23 +317,23 @@ final class CommentFactoryTest extends TestCase {
 			'dateGmt' => 'not-a-date',
 		];
 
-		$comment = CommentFactory::fromArray( $data );
+		$content = ContentFactory::fromArray( $data );
 
-		$this->assertNull( $comment->dateGmt );
+		$this->assertNull( $content->dateGmt );
 	}
 
 	public function testFromArrayRoundTripsDateCorrectly(): void {
 		$date         = new DateTimeImmutable( '2024-06-15T12:00:00+00:00' );
 		$postModified = new DateTimeImmutable( '2024-06-10T08:30:00+00:00' );
 
-		$original = new Comment(
+		$original = new Content(
 			userIp: '192.168.1.1',
 			dateGmt: $date,
 			postModifiedGmt: $postModified,
 		);
 
 		$array         = $original->toArray();
-		$reconstructed = CommentFactory::fromArray( $array );
+		$reconstructed = ContentFactory::fromArray( $array );
 
 		$this->assertNotNull( $reconstructed->dateGmt );
 		$this->assertSame( $date->format( 'c' ), $reconstructed->dateGmt->format( 'c' ) );
@@ -342,14 +342,14 @@ final class CommentFactoryTest extends TestCase {
 	}
 
 	public function testFromArrayRoundTripsHoneypotCorrectly(): void {
-		$original = new Comment(
+		$original = new Content(
 			userIp: '192.168.1.1',
 			honeypotFieldName: 'website_url',
 			honeypotFieldValue: 'sneaky-bot-value',
 		);
 
 		$array         = $original->toArray();
-		$reconstructed = CommentFactory::fromArray( $array );
+		$reconstructed = ContentFactory::fromArray( $array );
 
 		$this->assertSame( 'website_url', $reconstructed->honeypotFieldName );
 		$this->assertSame( 'sneaky-bot-value', $reconstructed->honeypotFieldValue );
@@ -362,32 +362,32 @@ final class CommentFactoryTest extends TestCase {
 			'honeypot_field_value' => 'bot-input',
 		];
 
-		$comment = CommentFactory::fromArray( $data );
+		$content = ContentFactory::fromArray( $data );
 
-		$this->assertSame( 'website_url', $comment->honeypotFieldName );
-		$this->assertSame( 'bot-input', $comment->honeypotFieldValue );
+		$this->assertSame( 'website_url', $content->honeypotFieldName );
+		$this->assertSame( 'bot-input', $content->honeypotFieldValue );
 	}
 
 	public function testFromArrayReturnsNullForEmptyStringDate(): void {
-		$comment = CommentFactory::fromArray(
+		$content = ContentFactory::fromArray(
 			[
 				'userIp'  => '192.168.1.1',
 				'dateGmt' => '',
 			]
 		);
 
-		$this->assertNull( $comment->dateGmt );
+		$this->assertNull( $content->dateGmt );
 	}
 
 	public function testFromArrayReturnsNullForNonStringDate(): void {
-		$comment = CommentFactory::fromArray(
+		$content = ContentFactory::fromArray(
 			[
 				'userIp'  => '192.168.1.1',
 				'dateGmt' => 42,
 			]
 		);
 
-		$this->assertNull( $comment->dateGmt );
+		$this->assertNull( $content->dateGmt );
 	}
 
 	/**

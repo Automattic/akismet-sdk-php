@@ -75,7 +75,7 @@ final class HttpClient {
 		$url = $this->config->baseUrl . $endpoint;
 
 		$data['api_key'] = $this->config->apiKey;
-		$data['blog']    = $this->config->blog;
+		$data['blog']    = $this->config->site;
 
 		if ( $this->config->isTest ) {
 			$data['is_test'] = '1';

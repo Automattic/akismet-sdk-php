@@ -90,7 +90,7 @@ All code must pass PHPStan at maximum level with no errors.
 - Place in `src/DTO/` directory
 
 **Enums**:
-- Use backed string enums: `enum CommentType: string`
+- Use backed string enums: `enum ContentType: string`
 - Place in `src/Enum/` directory
 
 **Exceptions**:

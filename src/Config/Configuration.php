@@ -20,14 +20,14 @@ final class Configuration {
 	public const DEFAULT_BASE_URL = 'https://rest.akismet.com';
 
 	public readonly string $apiKey;
-	public readonly string $blog;
+	public readonly string $site;
 	public readonly string $baseUrl;
 	public readonly bool $isTest;
 	public readonly ?string $applicationUserAgent;
 
 	/**
 	 * @param string      $apiKey               Akismet API key.
-	 * @param string      $blog                 Blog URL.
+	 * @param string      $site                 Site URL.
 	 * @param string      $baseUrl              Base URL for API requests.
 	 * @param bool        $isTest               Whether to enable test mode.
 	 * @param string|null $applicationUserAgent  Integration identifier prepended to the SDK User-Agent header.
@@ -35,7 +35,7 @@ final class Configuration {
 	 */
 	public function __construct(
 		string $apiKey,
-		string $blog,
+		string $site,
 		string $baseUrl = self::DEFAULT_BASE_URL,
 		bool $isTest = false,
 		?string $applicationUserAgent = null,
@@ -45,11 +45,11 @@ final class Configuration {
 			throw ValidationException::invalidValue( 'apiKey', 'cannot be empty' );
 		}
 
-		InputValidator::validateUrl( $blog, 'blog' );
+		InputValidator::validateUrl( $site, 'site' );
 		InputValidator::validateUrl( $baseUrl, 'baseUrl' );
 
 		$this->apiKey               = $apiKey;
-		$this->blog                 = rtrim( $blog, '/' );
+		$this->site                 = rtrim( $site, '/' );
 		$this->baseUrl              = rtrim( $baseUrl, '/' );
 		$this->isTest               = $isTest;
 		$this->applicationUserAgent = $applicationUserAgent;
@@ -64,7 +64,7 @@ final class Configuration {
 	public function withTestMode( bool $isTest = true ): self {
 		return new self(
 			$this->apiKey,
-			$this->blog,
+			$this->site,
 			$this->baseUrl,
 			$isTest,
 			$this->applicationUserAgent,

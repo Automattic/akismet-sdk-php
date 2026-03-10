@@ -1,6 +1,6 @@
 <?php
 /**
- * Comment DTO for Akismet API requests.
+ * Content DTO for Akismet API requests.
  *
  * @package Automattic\Akismet
  */
@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet\DTO;
 
-use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\Enum\ContentType;
 use Automattic\Akismet\Exception\ValidationException;
 use Automattic\Akismet\Validator\InputValidator;
 use DateTimeInterface;
@@ -17,7 +17,7 @@ use DateTimeInterface;
 /**
  * Immutable data transfer object representing content to check for spam.
  */
-final class Comment {
+final class Content {
 
 	/**
 	 * Akismet canonical field names that must not be overwritten by serverVariables.
@@ -73,11 +73,11 @@ final class Comment {
 	/**
 	 * @param string                  $userIp                  IP address of the content submitter (required).
 	 * @param string|null             $userAgent               User agent of the content submitter.
-	 * @param string|null             $content                 The content to check.
+	 * @param string|null             $body                    The content to check.
 	 * @param string|null             $authorName              Name of the content author.
 	 * @param string|null             $authorEmail             Email of the content author.
 	 * @param string|null             $authorUrl               URL/website of the content author.
-	 * @param CommentType|string|null $type                    Type of content being checked.
+	 * @param ContentType|string|null $type                    Type of content being checked.
 	 * @param string|null             $permalink               Permanent URL of the entry being commented on.
 	 * @param string|null             $referrer                HTTP referrer header.
 	 * @param DateTimeInterface|null  $dateGmt                 Date/time the content was created.
@@ -98,11 +98,11 @@ final class Comment {
 	public function __construct(
 		public readonly string $userIp,
 		public readonly ?string $userAgent = null,
-		public readonly ?string $content = null,
+		public readonly ?string $body = null,
 		public readonly ?string $authorName = null,
 		?string $authorEmail = null,
 		?string $authorUrl = null,
-		public readonly CommentType|string|null $type = null,
+		public readonly ContentType|string|null $type = null,
 		?string $permalink = null,
 		public readonly ?string $referrer = null,
 		public readonly ?DateTimeInterface $dateGmt = null,
@@ -160,7 +160,7 @@ final class Comment {
 		return new self(
 			userIp: $this->userIp,
 			userAgent: $this->userAgent,
-			content: $this->content,
+			body: $this->body,
 			authorName: $this->authorName,
 			authorEmail: $this->authorEmail,
 			authorUrl: $this->authorUrl,
@@ -198,8 +198,8 @@ final class Comment {
 			$data['user_agent'] = $this->userAgent;
 		}
 
-		if ( $this->content !== null ) {
-			$data['comment_content'] = $this->content;
+		if ( $this->body !== null ) {
+			$data['comment_content'] = $this->body;
 		}
 
 		if ( $this->authorName !== null ) {
@@ -215,7 +215,7 @@ final class Comment {
 		}
 
 		if ( $this->type !== null ) {
-			$data['comment_type'] = $this->type instanceof CommentType
+			$data['comment_type'] = $this->type instanceof ContentType
 				? $this->type->value
 				: $this->type;
 		}
