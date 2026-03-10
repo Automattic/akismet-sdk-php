@@ -228,6 +228,29 @@ final class ContentFactoryTest extends TestCase {
 		$this->assertSame( 'https://jane.example.com', $content->authorUrl );
 	}
 
+	public function testFromArrayWithLegacyContentKey(): void {
+		$data = [
+			'userIp'  => '192.168.1.1',
+			'content' => 'Legacy content value',
+		];
+
+		$content = ContentFactory::fromArray( $data );
+
+		$this->assertSame( 'Legacy content value', $content->body );
+	}
+
+	public function testFromArrayBodyKeyTakesPrecedenceOverContentKey(): void {
+		$data = [
+			'userIp'  => '192.168.1.1',
+			'body'    => 'New body value',
+			'content' => 'Legacy content value',
+		];
+
+		$content = ContentFactory::fromArray( $data );
+
+		$this->assertSame( 'New body value', $content->body );
+	}
+
 	public function testFromArrayReadsContext(): void {
 		$data = [
 			'userIp'  => '192.168.1.1',

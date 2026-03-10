@@ -136,7 +136,7 @@ final class ContentFactory {
 		return new Content(
 			userIp: self::getString( $data, 'userIp', 'user_ip' ) ?? '',
 			userAgent: self::getString( $data, 'userAgent', 'user_agent' ),
-			body: self::getString( $data, 'body', 'comment_content' ),
+			body: self::getString( $data, 'body' ) ?? self::getString( $data, 'content', 'comment_content' ),
 			authorName: self::getString( $data, 'authorName', 'comment_author' ),
 			authorEmail: self::getString( $data, 'authorEmail', 'comment_author_email' ),
 			authorUrl: self::getString( $data, 'authorUrl', 'comment_author_url' ),
