@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet\DTO;
 
+use Automattic\Akismet\Enum\CheckResponse;
 use Automattic\Akismet\Enum\ContentType;
 use Automattic\Akismet\Exception\ValidationException;
 use Automattic\Akismet\Validator\InputValidator;
@@ -64,6 +65,11 @@ final class Content {
 	public readonly ?string $permalink;
 
 	/**
+	 * The original comment-check result, coerced to an enum.
+	 */
+	public readonly ?CheckResponse $commentCheckResponse;
+
+	/**
 	 * Additional server variables with reserved keys and honeypot collisions filtered out.
 	 *
 	 * @var array<string, string>
@@ -88,11 +94,11 @@ final class Content {
 	 * @param string|null             $honeypotFieldName       Name of a honeypot field if one was used.
 	 * @param string|null             $honeypotFieldValue      Value of the honeypot field (should be empty for humans).
 	 * @param string|null             $context                 The context or location of the content within the website.
-	 * @param string|null             $reporter                Who reported the content (e.g., current user name).
-	 * @param string|null             $commentCheckResponse    The original comment-check result ('true' or 'false').
-	 * @param array<string, string>   $serverVariables         Additional server variables to include. Keys matching
-	 *                                                          RESERVED_KEYS and the honeypot field name are filtered
-	 *                                                          out at construction time.
+	 * @param string|null               $reporter                Who reported the content (e.g., current user name).
+	 * @param CheckResponse|string|null $commentCheckResponse    The original comment-check result ('true' or 'false').
+	 * @param array<string, string>     $serverVariables         Additional server variables to include. Keys matching
+	 *                                                            RESERVED_KEYS and the honeypot field name are filtered
+	 *                                                            out at construction time.
 	 * @throws ValidationException If userIp, authorEmail, authorUrl, or permalink is invalid.
 	 */
 	public function __construct(
@@ -114,13 +120,16 @@ final class Content {
 		public readonly ?string $honeypotFieldValue = null,
 		public readonly ?string $context = null,
 		public readonly ?string $reporter = null,
-		public readonly ?string $commentCheckResponse = null,
+		CheckResponse|string|null $commentCheckResponse = null,
 		array $serverVariables = [],
 	) {
 		// Normalize empty strings to null for optional validated fields.
-		$this->authorEmail = $authorEmail === '' ? null : $authorEmail;
-		$this->authorUrl   = $authorUrl === '' ? null : $authorUrl;
-		$this->permalink   = $permalink === '' ? null : $permalink;
+		$this->authorEmail = self::nullIfEmpty( $authorEmail );
+		$this->authorUrl   = self::nullIfEmpty( $authorUrl );
+		$this->permalink   = self::nullIfEmpty( $permalink );
+
+		// Coerce string to enum when possible, validate otherwise.
+		$this->commentCheckResponse = self::resolveCheckResponse( $commentCheckResponse );
 
 		// Validate required fields.
 		InputValidator::validateIp( $userIp, 'userIp' );
@@ -134,9 +143,6 @@ final class Content {
 		}
 		if ( $this->permalink !== null ) {
 			InputValidator::validateUrl( $this->permalink, 'permalink' );
-		}
-		if ( $this->commentCheckResponse !== null && ! in_array( $this->commentCheckResponse, [ 'true', 'false' ], true ) ) {
-			throw ValidationException::invalidValue( 'commentCheckResponse', "expected 'true' or 'false'" );
 		}
 		if ( $this->honeypotFieldValue !== null && $this->honeypotFieldName === null ) {
 			throw ValidationException::invalidValue( 'honeypotFieldValue', 'requires honeypotFieldName to be set' );
@@ -153,10 +159,12 @@ final class Content {
 	/**
 	 * Create a copy with feedback fields set for submit-spam/submit-ham requests.
 	 *
-	 * @param string $reporter              Who reported the content (e.g., current user name).
-	 * @param string $commentCheckResponse  The original comment-check result ('true' or 'false').
+	 * @param string                  $reporter              Who reported the content (e.g., current user name).
+	 * @param CheckResponse|string    $commentCheckResponse  The original comment-check result.
 	 */
-	public function withFeedback( string $reporter, string $commentCheckResponse ): self {
+	public function withFeedback( string $reporter, CheckResponse|string $commentCheckResponse ): self {
+		// Note: serverVariables are already filtered, but the constructor will
+		// harmlessly re-filter them since readonly properties prevent bypass.
 		return new self(
 			userIp: $this->userIp,
 			userAgent: $this->userAgent,
@@ -264,7 +272,7 @@ final class Content {
 		}
 
 		if ( $this->commentCheckResponse !== null ) {
-			$data['comment_check_response'] = $this->commentCheckResponse;
+			$data['comment_check_response'] = $this->commentCheckResponse->value;
 		}
 
 		// Server variables are pre-filtered at construction time.
@@ -273,5 +281,30 @@ final class Content {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Normalize an empty string to null.
+	 */
+	private static function nullIfEmpty( ?string $value ): ?string {
+		return ( $value === null || $value === '' ) ? null : $value;
+	}
+
+	/**
+	 * Coerce a CheckResponse|string|null to a CheckResponse enum or throw.
+	 *
+	 * @throws ValidationException If the string value is not 'true' or 'false'.
+	 */
+	private static function resolveCheckResponse( CheckResponse|string|null $value ): ?CheckResponse {
+		if ( $value === null || $value instanceof CheckResponse ) {
+			return $value;
+		}
+
+		$resolved = CheckResponse::tryFrom( $value );
+		if ( $resolved === null ) {
+			throw ValidationException::invalidValue( 'commentCheckResponse', "expected 'true' or 'false'" );
+		}
+
+		return $resolved;
 	}
 }

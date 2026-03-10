@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\Content;
+use Automattic\Akismet\Enum\CheckResponse;
 use Automattic\Akismet\Enum\ContentType;
 use Automattic\Akismet\Exception\ValidationException;
 use Automattic\Akismet\Validator\InputValidator;
@@ -19,6 +20,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( Content::class )]
+#[UsesClass( CheckResponse::class )]
 #[UsesClass( InputValidator::class )]
 #[UsesClass( ValidationException::class )]
 final class ContentTest extends TestCase {
@@ -343,12 +345,17 @@ final class ContentTest extends TestCase {
 		);
 	}
 
-	public function testAcceptsValidCommentCheckResponse(): void {
+	public function testAcceptsValidCommentCheckResponseStrings(): void {
 		$true = new Content( userIp: '192.168.1.1', commentCheckResponse: 'true' );
-		$this->assertSame( 'true', $true->commentCheckResponse );
+		$this->assertSame( CheckResponse::Spam, $true->commentCheckResponse );
 
 		$false = new Content( userIp: '192.168.1.1', commentCheckResponse: 'false' );
-		$this->assertSame( 'false', $false->commentCheckResponse );
+		$this->assertSame( CheckResponse::Ham, $false->commentCheckResponse );
+	}
+
+	public function testAcceptsCheckResponseEnum(): void {
+		$content = new Content( userIp: '192.168.1.1', commentCheckResponse: CheckResponse::Spam );
+		$this->assertSame( CheckResponse::Spam, $content->commentCheckResponse );
 	}
 
 	public function testWithFeedbackReturnsNewInstanceWithFeedbackFields(): void {
@@ -364,7 +371,7 @@ final class ContentTest extends TestCase {
 
 		// Feedback fields are set.
 		$this->assertSame( 'admin', $feedback->reporter );
-		$this->assertSame( 'true', $feedback->commentCheckResponse );
+		$this->assertSame( CheckResponse::Spam, $feedback->commentCheckResponse );
 
 		// Original fields are preserved.
 		$this->assertSame( '192.168.1.1', $feedback->userIp );

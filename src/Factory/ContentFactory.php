@@ -133,6 +133,8 @@ final class ContentFactory {
 		/** @var array<string, string> $serverVariables */
 		$serverVariables = is_array( $serverVars ) ? $serverVars : [];
 
+		$honeypotFieldName = self::getString( $data, 'honeypotFieldName', 'honeypot_field_name' );
+
 		return new Content(
 			userIp: self::getString( $data, 'userIp', 'user_ip' ) ?? '',
 			userAgent: self::getString( $data, 'userAgent', 'user_agent' ),
@@ -148,8 +150,8 @@ final class ContentFactory {
 			parentId: self::getString( $data, 'parentId', 'comment_parent' ),
 			userRole: self::getString( $data, 'userRole', 'user_role' ),
 			recheckReason: self::getString( $data, 'recheckReason', 'recheck_reason' ),
-			honeypotFieldName: self::getString( $data, 'honeypotFieldName', 'honeypot_field_name' ),
-			honeypotFieldValue: self::getHoneypotValue( $data, self::getString( $data, 'honeypotFieldName', 'honeypot_field_name' ) ),
+			honeypotFieldName: $honeypotFieldName,
+			honeypotFieldValue: self::getHoneypotValue( $data, $honeypotFieldName ),
 			context: self::getString( $data, 'context', 'comment_context' ),
 			reporter: self::getString( $data, 'reporter' ),
 			commentCheckResponse: self::getString( $data, 'commentCheckResponse', 'comment_check_response' ),

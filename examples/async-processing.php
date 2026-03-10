@@ -67,7 +67,7 @@ class CommentSpamChecker
                 body: $commentData['content'] ?? null,
                 authorName: $commentData['author'] ?? null,
                 authorEmail: $commentData['email'] ?? null,
-                type: $commentData['type'] ?? ContentType::Comment,
+                type: isset( $commentData['type'] ) ? ContentType::tryFrom( $commentData['type'] ) ?? $commentData['type'] : ContentType::Comment,
                 referrer: $commentData['referrer'] ?? null,
                 permalink: $commentData['permalink'] ?? null
             );
