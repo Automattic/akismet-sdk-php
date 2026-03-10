@@ -151,6 +151,7 @@ try {
 |-----------|------|
 | `InvalidApiKeyException` | API key is invalid or revoked |
 | `ValidationException` | Invalid input (e.g., bad IP address, malformed month format) |
+| `ClientErrorException` | HTTP 4xx client errors (excluding 429) |
 | `RateLimitException` | HTTP 429 — too many requests |
 | `NetworkException` | Connection failures or DNS resolution errors |
 | `ServerException` | HTTP 5xx or unexpected API response body |
