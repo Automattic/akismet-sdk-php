@@ -14,7 +14,7 @@ use Automattic\Akismet\Client\HttpClient;
 use Automattic\Akismet\Config\Configuration;
 use Automattic\Akismet\DTO\AlertMetadata;
 use Automattic\Akismet\DTO\CheckResult;
-use Automattic\Akismet\DTO\Comment;
+use Automattic\Akismet\DTO\Content;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\SiteStats;
 use Automattic\Akismet\DTO\UsageLimit;
@@ -43,7 +43,7 @@ use Psr\Http\Message\ResponseInterface;
 #[UsesClass( CheckResult::class )]
 #[UsesClass( KeySitesOrder::class )]
 #[UsesClass( SpamVerdict::class )]
-#[UsesClass( Comment::class )]
+#[UsesClass( Content::class )]
 #[UsesClass( UsageLimit::class )]
 #[UsesClass( KeySitesResponse::class )]
 #[UsesClass( SiteStats::class )]
@@ -95,7 +95,7 @@ final class AkismetTest extends TestCase {
 			new Response( 200, [], 'false' )
 		);
 
-		$result = $akismet->check( $this->createComment() );
+		$result = $akismet->check( $this->createContent() );
 
 		$this->assertFalse( $result->isSpam() );
 	}
@@ -105,7 +105,7 @@ final class AkismetTest extends TestCase {
 			new Response( 200, [], 'true' )
 		);
 
-		$result = $akismet->check( $this->createComment() );
+		$result = $akismet->check( $this->createContent() );
 
 		$this->assertTrue( $result->isSpam() );
 	}
@@ -115,7 +115,7 @@ final class AkismetTest extends TestCase {
 			new Response( 200, [ 'X-akismet-pro-tip' => 'discard' ], 'true' )
 		);
 
-		$result = $akismet->check( $this->createComment() );
+		$result = $akismet->check( $this->createContent() );
 
 		$this->assertTrue( $result->shouldDiscard() );
 	}
@@ -128,7 +128,7 @@ final class AkismetTest extends TestCase {
 		$this->expectException( ServerException::class );
 		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
 
-		$akismet->check( $this->createComment() );
+		$akismet->check( $this->createContent() );
 	}
 
 	public function testCheckThrowsOnInvalidBody(): void {
@@ -139,7 +139,7 @@ final class AkismetTest extends TestCase {
 		$this->expectException( InvalidApiKeyException::class );
 		$this->expectExceptionMessage( 'Invalid key' );
 
-		$akismet->check( $this->createComment() );
+		$akismet->check( $this->createContent() );
 	}
 
 	// =========================================================================
@@ -162,7 +162,7 @@ final class AkismetTest extends TestCase {
 			new Response( 200, [], 'Thanks for making the web a better place.' )
 		);
 
-		$akismet->$method( $this->createComment() );
+		$akismet->$method( $this->createContent() );
 
 		$this->addToAssertionCount( 1 );
 	}
@@ -176,7 +176,7 @@ final class AkismetTest extends TestCase {
 		$this->expectException( ServerException::class );
 		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
 
-		$akismet->$method( $this->createComment() );
+		$akismet->$method( $this->createContent() );
 	}
 
 	#[DataProvider( 'submitMethodProvider' )]
@@ -188,7 +188,7 @@ final class AkismetTest extends TestCase {
 		$this->expectException( InvalidApiKeyException::class );
 		$this->expectExceptionMessage( 'Key revoked' );
 
-		$akismet->$method( $this->createComment() );
+		$akismet->$method( $this->createContent() );
 	}
 
 	// =========================================================================
@@ -326,7 +326,7 @@ final class AkismetTest extends TestCase {
 		);
 
 		$akismet = new Akismet(
-			new Configuration( apiKey: 'test-key', blog: 'https://example.com' ),
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
 			httpClient: $mockClient,
 		);
 
@@ -468,7 +468,7 @@ final class AkismetTest extends TestCase {
 		);
 
 		$akismet = new Akismet(
-			new Configuration( apiKey: 'test-key', blog: 'https://example.com' ),
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
 			httpClient: $mockClient,
 		);
 
@@ -486,7 +486,7 @@ final class AkismetTest extends TestCase {
 	public function testConstructorPreservesCustomBaseUrl(): void {
 		$config = new Configuration(
 			apiKey: 'test-key',
-			blog: 'https://example.com',
+			site: 'https://example.com',
 			baseUrl: 'https://custom-api.example.com',
 		);
 
@@ -508,7 +508,7 @@ final class AkismetTest extends TestCase {
 
 		$akismet = Akismet::create(
 			apiKey: 'test-key',
-			blog: 'https://example.com',
+			site: 'https://example.com',
 			httpClient: $mockClient,
 		);
 
@@ -524,7 +524,7 @@ final class AkismetTest extends TestCase {
 
 		$akismet = Akismet::create(
 			apiKey: 'test-key',
-			blog: 'https://example.com',
+			site: 'https://example.com',
 			isTest: true,
 			applicationUserAgent: 'MyApp/1.0',
 			httpClient: $mockClient,
@@ -539,8 +539,8 @@ final class AkismetTest extends TestCase {
 	// Helper Methods
 	// =========================================================================
 
-	private function createComment(): Comment {
-		return new Comment(
+	private function createContent(): Content {
+		return new Content(
 			userIp: '127.0.0.1',
 			userAgent: 'TestAgent/1.0',
 		);
@@ -551,7 +551,7 @@ final class AkismetTest extends TestCase {
 		$mockClient->method( 'sendRequest' )->willReturn( $response );
 
 		return new Akismet(
-			new Configuration( apiKey: 'test-key', blog: 'https://example.com' ),
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
 			httpClient: $mockClient,
 		);
 	}

@@ -19,8 +19,8 @@ namespace App\Tests;
 
 use Automattic\Akismet\AkismetInterface;
 use Automattic\Akismet\DTO\CheckResult;
-use Automattic\Akismet\DTO\Comment;
-use Automattic\Akismet\Enum\CommentType;
+use Automattic\Akismet\DTO\Content;
+use Automattic\Akismet\Enum\ContentType;
 use Automattic\Akismet\Enum\SpamVerdict;
 use PHPUnit\Framework\TestCase;
 
@@ -35,16 +35,16 @@ class SpamCheckTest extends TestCase
         $akismet->method('check')
             ->willReturn(new CheckResult(SpamVerdict::Ham));
 
-        $comment = new Comment(
+        $content = new Content(
             userIp: '192.168.1.1',
             userAgent: 'Mozilla/5.0',
-            content: 'Great article!',
+            body: 'Great article!',
             authorName: 'Jane Doe',
             authorEmail: 'jane@example.com',
-            type: CommentType::Comment
+            type: ContentType::Comment
         );
 
-        $result = $akismet->check($comment);
+        $result = $akismet->check($content);
 
         $this->assertFalse($result->isSpam());
         $this->assertFalse($result->shouldDiscard());
@@ -60,16 +60,16 @@ class SpamCheckTest extends TestCase
         $akismet->method('check')
             ->willReturn(new CheckResult(SpamVerdict::Spam));
 
-        $comment = new Comment(
+        $content = new Content(
             userIp: '10.0.0.1',
             userAgent: 'SpamBot/1.0',
-            content: 'Buy cheap products now!',
+            body: 'Buy cheap products now!',
             authorName: 'akismet-guaranteed-spam',
             authorEmail: 'akismet-guaranteed-spam@example.com',
-            type: CommentType::Comment
+            type: ContentType::Comment
         );
 
-        $result = $akismet->check($comment);
+        $result = $akismet->check($content);
 
         $this->assertTrue($result->isSpam());
         $this->assertFalse($result->shouldDiscard());
@@ -84,13 +84,13 @@ class SpamCheckTest extends TestCase
         $akismet->method('check')
             ->willReturn(new CheckResult(SpamVerdict::Discard, proTip: 'discard'));
 
-        $comment = new Comment(
+        $content = new Content(
             userIp: '10.0.0.1',
-            content: 'Blatant spam content',
-            type: CommentType::Comment
+            body: 'Blatant spam content',
+            type: ContentType::Comment
         );
 
-        $result = $akismet->check($comment);
+        $result = $akismet->check($content);
 
         $this->assertTrue($result->isSpam());
         $this->assertTrue($result->shouldDiscard());
@@ -125,17 +125,17 @@ class SpamCheckTest extends TestCase
      */
     public function testSubmitSpamIsCalledCorrectly(): void
     {
-        $comment = new Comment(
+        $content = new Content(
             userIp: '10.0.0.1',
-            content: 'Missed spam content',
-            type: CommentType::Comment
+            body: 'Missed spam content',
+            type: ContentType::Comment
         );
 
         $akismet = $this->createMock(AkismetInterface::class);
         $akismet->expects($this->once())
             ->method('submitSpam')
-            ->with($this->identicalTo($comment));
+            ->with($this->identicalTo($content));
 
-        $akismet->submitSpam($comment);
+        $akismet->submitSpam($content);
     }
 }

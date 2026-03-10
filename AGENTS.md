@@ -12,9 +12,9 @@ src/
 ├── AkismetInterface.php     # Interface for mocking
 ├── Client/                  # PSR-18 HTTP client wrapper + auto-discovery
 ├── Config/Configuration.php # Immutable config
-├── DTO/                     # Comment, CheckResult, AlertMetadata, KeySitesResponse, SiteStats, UsageLimit
-├── Enum/                    # CommentType, SpamVerdict, KeySitesOrder (PHP 8.1 enums)
-├── Factory/                 # CommentFactory (from PSR-7 requests and arrays)
+├── DTO/                     # Content, CheckResult, AlertMetadata, KeySitesResponse, SiteStats, UsageLimit
+├── Enum/                    # ContentType, SpamVerdict, KeySitesOrder (PHP 8.1 enums)
+├── Factory/                 # ContentFactory (from PSR-7 requests and arrays)
 ├── Validator/               # InputValidator (URL, IP, email)
 └── Exception/               # AkismetException, InvalidApiKeyException, ClientErrorException, ServerException, NetworkException, RateLimitException, ValidationException
 ```
@@ -49,8 +49,8 @@ Base: `https://rest.akismet.com/`
 
 **Patterns**:
 - DTOs: `final readonly class` with constructor promotion, `toArray()`, optional `fromResponse()` / `fromJson()` factories
-- Client: `new Akismet(Configuration $config)` or `Akismet::create(apiKey, blog)` convenience factory
-- Enums: Backed string enums (`enum CommentType: string`)
+- Client: `new Akismet(Configuration $config)` or `Akismet::create(apiKey, site)` convenience factory
+- Enums: Backed string enums (`enum ContentType: string`)
 - Exceptions: Interface `AkismetException extends Throwable`, static factory methods
 
 ## Commands

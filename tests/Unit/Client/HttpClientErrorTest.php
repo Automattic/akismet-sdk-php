@@ -45,7 +45,7 @@ final class HttpClientErrorTest extends TestCase {
 	protected function setUp(): void {
 		$this->config      = new Configuration(
 			apiKey: 'test-api-key',
-			blog: 'https://example.com'
+			site: 'https://example.com'
 		);
 		$this->httpFactory = new HttpFactory();
 	}
@@ -339,7 +339,7 @@ final class HttpClientErrorTest extends TestCase {
 	public function testTestModeAddsIsTestParameter(): void {
 		$config          = new Configuration(
 			apiKey: 'test-api-key',
-			blog: 'https://example.com',
+			site: 'https://example.com',
 			isTest: true
 		);
 		$capturedRequest = null;
@@ -432,7 +432,7 @@ final class HttpClientErrorTest extends TestCase {
 	public function testPostRequestSendsCustomUserAgent(): void {
 		$config          = new Configuration(
 			apiKey: 'test-api-key',
-			blog: 'https://example.com',
+			site: 'https://example.com',
 			applicationUserAgent: 'Akismet-Drupal/1.0 | Drupal/11.0',
 		);
 		$capturedRequest = null;
@@ -455,7 +455,7 @@ final class HttpClientErrorTest extends TestCase {
 	public function testGetRequestSendsCustomUserAgent(): void {
 		$config          = new Configuration(
 			apiKey: 'test-api-key',
-			blog: 'https://example.com',
+			site: 'https://example.com',
 			applicationUserAgent: 'MyApp/2.0',
 		);
 		$capturedRequest = null;

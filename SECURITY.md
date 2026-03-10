@@ -76,7 +76,7 @@ if (filter_var($userIp, FILTER_VALIDATE_IP) === false) {
 }
 
 // Sanitize URLs
-$blog = filter_var($blog, FILTER_SANITIZE_URL);
+$site = filter_var($site, FILTER_SANITIZE_URL);
 
 // Validate email addresses
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -90,7 +90,7 @@ Don't expose sensitive information in error messages:
 
 ```php
 try {
-    $result = $akismet->check($comment);
+    $result = $akismet->check($content);
 } catch (AkismetException $e) {
     // Good: Log full details for debugging
     error_log($e->getMessage());
@@ -120,7 +120,7 @@ Implement rate limiting to prevent abuse:
 
 ```php
 try {
-    $result = $akismet->check($comment);
+    $result = $akismet->check($content);
 } catch (RateLimitException $e) {
     // Handle rate limit gracefully
     // Don't retry immediately
@@ -143,7 +143,7 @@ composer update
 ### Test Mode
 
 Never use test mode in production. The `is_test` parameter is set at the API request
-level, not on the Comment DTO. Ensure your application only enables it in development
+level, not on the Content DTO. Ensure your application only enables it in development
 environments.
 
 ## Known Security Considerations
@@ -170,7 +170,7 @@ Always pass the user's real User-Agent, not your application's:
 
 ```php
 // Good: User's browser User-Agent
-$comment = new Comment(
+$content = new Content(
     userIp: $_SERVER['REMOTE_ADDR'],
     userAgent: $_SERVER['HTTP_USER_AGENT'],
     // ... other params
