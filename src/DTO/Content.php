@@ -77,6 +77,12 @@ final class Content {
 	public readonly array $serverVariables;
 
 	/**
+	 * Note on union type design: `$type` accepts ContentType|string|null and stores
+	 * the value as-is because the Akismet API accepts arbitrary custom type strings
+	 * (open value set). In contrast, `$commentCheckResponse` accepts CheckResponse|string|null
+	 * but coerces strings to the CheckResponse enum at construction time because the API
+	 * only ever returns 'true' or 'false' (closed value set).
+	 *
 	 * @param string                  $userIp                  IP address of the content submitter (required).
 	 * @param string|null             $userAgent               User agent of the content submitter.
 	 * @param string|null             $body                    The content to check.
@@ -123,7 +129,9 @@ final class Content {
 		CheckResponse|string|null $commentCheckResponse = null,
 		array $serverVariables = [],
 	) {
-		// Normalize empty strings to null for optional validated fields.
+		// Normalize empty strings to null for fields with URL/email validation.
+		// Other string fields intentionally skip this: empty strings are valid
+		// API values and don't undergo format validation that would reject them.
 		$this->authorEmail = self::nullIfEmpty( $authorEmail );
 		$this->authorUrl   = self::nullIfEmpty( $authorUrl );
 		$this->permalink   = self::nullIfEmpty( $permalink );
