@@ -2,6 +2,7 @@
 * text=auto
 
 # Distribution archive exclusions
+.gitattributes       export-ignore
 /.claude/**          export-ignore
 /docs/**             export-ignore
 /.github/**          export-ignore

@@ -51,7 +51,23 @@ On https://github.com/Automattic/akismet-sdk-php/settings:
    - Require status checks to pass (if CI is set up)
 3. **Features:** Enable Issues, disable Wiki (docs are on akismet.com)
 
-### Step 5: Finalize the Changelog and Tag the Release
+### Step 5: Preflight Validation
+
+Run all quality checks and verify the distribution archive before tagging:
+
+```bash
+composer install
+composer check
+
+# Run integration tests if you have an API key
+AKISMET_API_KEY=your-key composer test:integration
+
+# Verify only the expected files ship in the archive
+git archive --format=tar HEAD | tar -tf - | sort
+# Should contain only: CHANGELOG.md, LICENSE, README.md, composer.json, src/**
+```
+
+### Step 6: Finalize the Changelog and Tag the Release
 
 ```bash
 # Write the changelog for 1.0.0
@@ -69,7 +85,7 @@ git push origin trunk && git push origin v1.0.0
 git push public trunk && git push public v1.0.0
 ```
 
-### Step 6: Create a GitHub Release
+### Step 7: Create a GitHub Release
 
 1. Go to https://github.com/Automattic/akismet-sdk-php/releases/new
 2. **Tag:** `v1.0.0`
@@ -77,13 +93,13 @@ git push public trunk && git push public v1.0.0
 4. Copy the relevant section from `CHANGELOG.md` into the description
 5. Publish
 
-### Step 7: Submit to Packagist
+### Step 8: Submit to Packagist
 
 1. Go to https://packagist.org/packages/submit
 2. Enter: `https://github.com/Automattic/akismet-sdk-php`
 3. Packagist will crawl the repo and index the package as `automattic/akismet-sdk`
 
-### Step 8: Set Up Auto-Update Webhook
+### Step 9: Set Up Auto-Update Webhook
 
 So Packagist picks up new releases automatically:
 
@@ -96,7 +112,7 @@ So Packagist picks up new releases automatically:
 
 Alternatively, use the [Packagist GitHub App](https://github.com/apps/packagist) which is simpler — install it and grant access to the repo.
 
-### Step 9: Verify
+### Step 10: Verify
 
 ```bash
 # Wait ~5 minutes, then verify the package is live

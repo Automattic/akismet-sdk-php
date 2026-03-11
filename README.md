@@ -76,7 +76,7 @@ if ($result->isSpam()) {
 | `submitHam($content)` | Report false positive |
 | `getUsageLimit()` | Get API usage stats and limits |
 | `getKeySites()` | Get sites using your API key (JSON format only; CSV is not supported) |
-| `getAccessToken()` | Exchange API key for a scoped access token |
+| `getAccessToken()` | Exchange API key for a scoped access token (stats pages only, not for API calls) |
 
 ## Integration Identification
 

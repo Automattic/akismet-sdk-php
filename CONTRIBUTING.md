@@ -34,17 +34,14 @@ This project adheres to a [Code of Conduct](CODE-OF-CONDUCT.md). By participatin
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (with coverage if Xdebug is available)
 composer test
 
 # Run only unit tests
-./vendor/bin/phpunit --testsuite=unit
+composer test:unit
 
-# Run integration tests (requires API key)
-AKISMET_API_KEY=your_key_here ./vendor/bin/phpunit --testsuite=integration
-
-# Run with coverage (outputs to .phpunit.cache/coverage-html)
-composer test
+# Run integration tests (requires API key, runs without coverage)
+AKISMET_API_KEY=your_key_here composer test:integration
 ```
 
 ### Code Quality
