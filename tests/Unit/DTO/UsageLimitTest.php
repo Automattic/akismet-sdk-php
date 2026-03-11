@@ -10,10 +10,13 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\UsageLimit;
+use Automattic\Akismet\Exception\ServerException;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( UsageLimit::class )]
+#[UsesClass( ServerException::class )]
 final class UsageLimitTest extends TestCase {
 
 	public function testCreatesWithLimitedPlan(): void {
@@ -96,5 +99,17 @@ final class UsageLimitTest extends TestCase {
 		$usage = UsageLimit::fromResponse( $data );
 
 		$this->assertTrue( $usage->throttled );
+	}
+
+	public function testFromResponseThrowsOnMissingKeys(): void {
+		$this->expectException( ServerException::class );
+
+		UsageLimit::fromResponse( [ 'limit' => 10000 ] );
+	}
+
+	public function testFromResponseThrowsOnEmptyArray(): void {
+		$this->expectException( ServerException::class );
+
+		UsageLimit::fromResponse( [] );
 	}
 }

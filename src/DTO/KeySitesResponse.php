@@ -46,17 +46,34 @@ final class KeySitesResponse {
 	 * Create from API JSON response.
 	 *
 	 * @param array<string, mixed> $data Raw API response data.
+	 * @throws \Automattic\Akismet\Exception\ServerException If required pagination keys are missing or non-numeric.
 	 */
 	public static function fromResponse( array $data ): self {
-		$limit  = isset( $data['limit'] ) && is_numeric( $data['limit'] ) ? (int) $data['limit'] : 500;
-		$offset = isset( $data['offset'] ) && is_numeric( $data['offset'] ) ? (int) $data['offset'] : 0;
-		$total  = isset( $data['total'] ) && is_numeric( $data['total'] ) ? (int) $data['total'] : 0;
+		foreach ( [ 'limit', 'offset', 'total' ] as $key ) {
+			if ( ! isset( $data[ $key ] ) || ! is_numeric( $data[ $key ] ) ) {
+				throw \Automattic\Akismet\Exception\ServerException::unexpectedResponse(
+					sprintf( 'Missing or non-numeric "%s" in key-sites response', $key )
+				);
+			}
+		}
+
+		/** @var numeric $rawLimit */
+		$rawLimit = $data['limit'];
+		/** @var numeric $rawOffset */
+		$rawOffset = $data['offset'];
+		/** @var numeric $rawTotal */
+		$rawTotal = $data['total'];
+
+		$limit  = (int) $rawLimit;
+		$offset = (int) $rawOffset;
+		$total  = (int) $rawTotal;
 
 		// Remove pagination keys to get site data
 		unset( $data['limit'], $data['offset'], $data['total'] );
 
 		$sites = [];
 		foreach ( $data as $siteData ) {
+			// Skip non-site entries (the API may include additional metadata keys).
 			if ( ! is_array( $siteData ) || ! isset( $siteData['site'] ) ) {
 				continue;
 			}

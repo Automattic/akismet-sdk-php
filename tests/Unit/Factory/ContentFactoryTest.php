@@ -67,6 +67,28 @@ final class ContentFactoryTest extends TestCase {
 		$this->assertSame( '198.51.100.25', $content->userIp );
 	}
 
+	public function testFromRequestExtractsXRealIpWithTrustedProxy(): void {
+		$request = $this->createMockRequest(
+			serverParams: [ 'REMOTE_ADDR' => '10.0.0.1' ],
+			headers: [ 'X-Real-IP' => '198.51.100.50' ],
+		);
+
+		$content = ContentFactory::fromRequest( $request, trustedProxies: [ '10.0.0.1' ] );
+
+		$this->assertSame( '198.51.100.50', $content->userIp );
+	}
+
+	public function testFromRequestExtractsTrueClientIpWithTrustedProxy(): void {
+		$request = $this->createMockRequest(
+			serverParams: [ 'REMOTE_ADDR' => '10.0.0.1' ],
+			headers: [ 'True-Client-IP' => '203.0.113.75' ],
+		);
+
+		$content = ContentFactory::fromRequest( $request, trustedProxies: [ '10.0.0.1' ] );
+
+		$this->assertSame( '203.0.113.75', $content->userIp );
+	}
+
 	public function testFromRequestIgnoresForwardedHeadersWithoutTrustedProxies(): void {
 		$request = $this->createMockRequest(
 			serverParams: [ 'REMOTE_ADDR' => '10.0.0.1' ],
@@ -359,15 +381,16 @@ final class ContentFactoryTest extends TestCase {
 		$this->assertSame( '2024-02-20T14:00:00+00:00', $content->postModifiedGmt->format( 'c' ) );
 	}
 
-	public function testFromArrayReturnsNullForInvalidDateStrings(): void {
-		$data = [
-			'userIp'  => '192.168.1.1',
-			'dateGmt' => 'not-a-date',
-		];
+	public function testFromArrayThrowsOnInvalidDateStrings(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'dateGmt' );
 
-		$content = ContentFactory::fromArray( $data );
-
-		$this->assertNull( $content->dateGmt );
+		ContentFactory::fromArray(
+			[
+				'userIp'  => '192.168.1.1',
+				'dateGmt' => 'not-a-date',
+			]
+		);
 	}
 
 	public function testFromArrayRoundTripsDateCorrectly(): void {

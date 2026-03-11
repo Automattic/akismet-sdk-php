@@ -18,6 +18,11 @@ use JsonSerializable;
  *
  * Implements JsonSerializable to allow storing results in moderation queues
  * for later feedback submission.
+ *
+ * Alert fields: `alertCode` and `alertMessage` expose the standard documented
+ * Akismet alert headers. `alertMetadata` is an optional superset that captures
+ * additional undocumented alert headers (used by the WordPress plugin). When
+ * present, `alertMetadata` includes the same code/message plus extended fields.
  */
 final class CheckResult implements JsonSerializable {
 

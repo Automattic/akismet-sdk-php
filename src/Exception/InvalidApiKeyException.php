@@ -23,7 +23,9 @@ final class InvalidApiKeyException extends RuntimeException implements AkismetEx
 	 * @return self
 	 */
 	public static function forKey( string $apiKey ): self {
-		$maskedKey = substr( $apiKey, 0, 4 ) . str_repeat( '*', max( 0, strlen( $apiKey ) - 4 ) );
+		$length    = strlen( $apiKey );
+		$visible   = min( 2, $length );
+		$maskedKey = substr( $apiKey, 0, $visible ) . str_repeat( '*', max( 0, $length - $visible ) );
 		return new self( sprintf( 'Invalid Akismet API key: %s', $maskedKey ) );
 	}
 

@@ -334,4 +334,15 @@ final class AkismetIntegrationTest extends TestCase {
 		$this->assertLessThanOrEqual( 5, count( $response->sites ), 'Should respect limit' );
 		$this->assertSame( 5, $response->limit, 'Limit should match requested value' );
 	}
+
+	// =========================================================================
+	// Access Token Tests
+	// =========================================================================
+
+	public function testGetAccessTokenReturnsNonEmptyString(): void {
+		$token = $this->akismet->getAccessToken();
+
+		$this->assertIsString( $token );
+		$this->assertNotEmpty( $token, 'Access token should be a non-empty string' );
+	}
 }
