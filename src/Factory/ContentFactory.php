@@ -189,11 +189,6 @@ final class ContentFactory {
 	 * @param array<string, mixed> $data        Source data.
 	 * @param string               $key         Primary key.
 	 * @param string|null          $fallbackKey Fallback key if primary not found.
-	 */
-	/**
-	 * @param array<string, mixed> $data        Source data.
-	 * @param string               $key         Primary key.
-	 * @param string|null          $fallbackKey Fallback key if primary not found.
 	 * @throws ValidationException If the value is a string that cannot be parsed as a date.
 	 */
 	private static function getDateTime( array $data, string $key, ?string $fallbackKey = null ): ?DateTimeInterface {

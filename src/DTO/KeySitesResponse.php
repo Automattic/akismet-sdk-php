@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet\DTO;
 
+use Automattic\Akismet\Exception\ServerException;
+
 /**
  * Represents the response from the key-sites endpoint.
  */
@@ -46,22 +48,22 @@ final class KeySitesResponse {
 	 * Create from API JSON response.
 	 *
 	 * @param array<string, mixed> $data Raw API response data.
-	 * @throws \Automattic\Akismet\Exception\ServerException If required pagination keys are missing or non-numeric.
+	 * @throws ServerException If required pagination keys are missing or non-numeric.
 	 */
 	public static function fromResponse( array $data ): self {
 		foreach ( [ 'limit', 'offset', 'total' ] as $key ) {
 			if ( ! isset( $data[ $key ] ) || ! is_numeric( $data[ $key ] ) ) {
-				throw \Automattic\Akismet\Exception\ServerException::unexpectedResponse(
+				throw ServerException::unexpectedResponse(
 					sprintf( 'Missing or non-numeric "%s" in key-sites response', $key )
 				);
 			}
 		}
 
-		/** @var numeric $rawLimit */
+		/** @var int|float|numeric-string $rawLimit */
 		$rawLimit = $data['limit'];
-		/** @var numeric $rawOffset */
+		/** @var int|float|numeric-string $rawOffset */
 		$rawOffset = $data['offset'];
-		/** @var numeric $rawTotal */
+		/** @var int|float|numeric-string $rawTotal */
 		$rawTotal = $data['total'];
 
 		$limit  = (int) $rawLimit;
