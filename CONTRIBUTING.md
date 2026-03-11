@@ -81,7 +81,7 @@ All code must pass PHPStan at maximum level with no errors.
 ### Patterns
 
 **DTOs (Data Transfer Objects)**:
-- Use `final readonly class` with constructor promotion
+- Use `final class` with per-property `readonly` and constructor promotion
 - Implement `toArray()` method
 - Optional: `fromRequest()`, `toJson()`, `fromJson()` methods
 - Place in `src/DTO/` directory
@@ -215,7 +215,7 @@ vendor/bin/changelogger add --significance=minor --type=added --entry="Support f
 Releases are handled by maintainers:
 
 1. Ensure all PRs for the release are merged
-2. Run: `vendor/bin/changelogger write --release-version=X.Y.Z`
+2. Run: `vendor/bin/changelogger write --use-version=X.Y.Z`
 3. Update version in relevant files
 4. Create GitHub release
 5. Publish to Packagist
