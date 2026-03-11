@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet\DTO;
 
+use Automattic\Akismet\Exception\ServerException;
+
 /**
  * Represents API usage statistics and limits.
  *
@@ -57,12 +59,12 @@ final class UsageLimit {
 	 * Create from API JSON response.
 	 *
 	 * @param array{limit: int|string, usage: int|string, percentage: int|string, throttled: bool} $data
-	 * @throws \Automattic\Akismet\Exception\ServerException If required keys are missing.
+	 * @throws ServerException If required keys are missing.
 	 */
 	public static function fromResponse( array $data ): self {
 		foreach ( [ 'limit', 'usage', 'percentage', 'throttled' ] as $key ) {
 			if ( ! array_key_exists( $key, $data ) ) {
-				throw \Automattic\Akismet\Exception\ServerException::unexpectedResponse(
+				throw ServerException::unexpectedResponse(
 					sprintf( 'Missing required key "%s" in usage-limit response', $key )
 				);
 			}

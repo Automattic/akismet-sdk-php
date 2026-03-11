@@ -260,6 +260,7 @@ final class AkismetTest extends TestCase {
 				'total'  => 1,
 				'site1'  => [
 					'site'            => 'https://example.com',
+					'api_calls'       => 100,
 					'spam'            => 10,
 					'ham'             => 90,
 					'missed_spam'     => 1,

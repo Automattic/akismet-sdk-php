@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet\DTO;
 
+use Automattic\Akismet\Exception\ServerException;
+
 /**
  * Represents the response from the key-sites endpoint.
  */
@@ -46,17 +48,34 @@ final class KeySitesResponse {
 	 * Create from API JSON response.
 	 *
 	 * @param array<string, mixed> $data Raw API response data.
+	 * @throws ServerException If required pagination keys are missing or non-numeric.
 	 */
 	public static function fromResponse( array $data ): self {
-		$limit  = isset( $data['limit'] ) && is_numeric( $data['limit'] ) ? (int) $data['limit'] : 500;
-		$offset = isset( $data['offset'] ) && is_numeric( $data['offset'] ) ? (int) $data['offset'] : 0;
-		$total  = isset( $data['total'] ) && is_numeric( $data['total'] ) ? (int) $data['total'] : 0;
+		foreach ( [ 'limit', 'offset', 'total' ] as $key ) {
+			if ( ! isset( $data[ $key ] ) || ! is_numeric( $data[ $key ] ) ) {
+				throw ServerException::unexpectedResponse(
+					sprintf( 'Missing or non-numeric "%s" in key-sites response', $key )
+				);
+			}
+		}
+
+		/** @var int|float|numeric-string $rawLimit */
+		$rawLimit = $data['limit'];
+		/** @var int|float|numeric-string $rawOffset */
+		$rawOffset = $data['offset'];
+		/** @var int|float|numeric-string $rawTotal */
+		$rawTotal = $data['total'];
+
+		$limit  = (int) $rawLimit;
+		$offset = (int) $rawOffset;
+		$total  = (int) $rawTotal;
 
 		// Remove pagination keys to get site data
 		unset( $data['limit'], $data['offset'], $data['total'] );
 
 		$sites = [];
 		foreach ( $data as $siteData ) {
+			// Skip non-site entries (the API may include additional metadata keys).
 			if ( ! is_array( $siteData ) || ! isset( $siteData['site'] ) ) {
 				continue;
 			}

@@ -11,6 +11,7 @@ namespace Automattic\Akismet\Factory;
 
 use Automattic\Akismet\DTO\Content;
 use Automattic\Akismet\Enum\ContentType;
+use Automattic\Akismet\Exception\ValidationException;
 use DateTimeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -188,6 +189,7 @@ final class ContentFactory {
 	 * @param array<string, mixed> $data        Source data.
 	 * @param string               $key         Primary key.
 	 * @param string|null          $fallbackKey Fallback key if primary not found.
+	 * @throws ValidationException If the value is a string that cannot be parsed as a date.
 	 */
 	private static function getDateTime( array $data, string $key, ?string $fallbackKey = null ): ?DateTimeInterface {
 		$value = self::resolve( $data, $key, $fallbackKey );
@@ -197,8 +199,11 @@ final class ContentFactory {
 		if ( is_string( $value ) && $value !== '' ) {
 			try {
 				return new \DateTimeImmutable( $value );
-			} catch ( \Exception ) {
-				return null;
+			} catch ( \Exception $e ) {
+				throw ValidationException::invalidValue(
+					$key,
+					sprintf( 'invalid date string "%s": %s', $value, $e->getMessage() )
+				);
 			}
 		}
 		return null;

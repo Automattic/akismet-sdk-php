@@ -24,9 +24,9 @@ final class InvalidApiKeyExceptionTest extends TestCase {
 
 	public function testForKeyMasksApiKey(): void {
 		$exception = InvalidApiKeyException::forKey( 'abc123456789' );
-		$this->assertStringContainsString( 'abc1', $exception->getMessage() );
-		$this->assertStringContainsString( '****', $exception->getMessage() );
-		$this->assertStringNotContainsString( '123456789', $exception->getMessage() );
+		$this->assertStringContainsString( 'ab', $exception->getMessage() );
+		$this->assertStringContainsString( '**********', $exception->getMessage() );
+		$this->assertStringNotContainsString( 'c123456789', $exception->getMessage() );
 	}
 
 	public function testVerificationFailedWithoutDebugHelp(): void {
@@ -37,5 +37,24 @@ final class InvalidApiKeyExceptionTest extends TestCase {
 	public function testVerificationFailedWithDebugHelp(): void {
 		$exception = InvalidApiKeyException::verificationFailed( 'Invalid blog URL' );
 		$this->assertStringContainsString( 'Invalid blog URL', $exception->getMessage() );
+	}
+
+	public function testForKeyWithShortKeyShowsAtMostTwoChars(): void {
+		$exception = InvalidApiKeyException::forKey( 'ab' );
+		// 2-char key: 'ab' visible, no mask
+		$this->assertStringContainsString( 'ab', $exception->getMessage() );
+	}
+
+	public function testForKeyWithOneCharKey(): void {
+		$exception = InvalidApiKeyException::forKey( 'a' );
+		// 1-char key: 'a' visible, no mask
+		$this->assertStringContainsString( 'a', $exception->getMessage() );
+	}
+
+	public function testForKeyWithFourCharKeyShowsTwoAndMasksRest(): void {
+		$exception = InvalidApiKeyException::forKey( 'abcd' );
+		// 4-char key: 'ab' visible + '**' masked
+		$this->assertStringContainsString( 'ab**', $exception->getMessage() );
+		$this->assertStringNotContainsString( 'abcd', $exception->getMessage() );
 	}
 }

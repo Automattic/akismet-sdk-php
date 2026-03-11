@@ -10,10 +10,13 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\SiteStats;
+use Automattic\Akismet\Exception\ServerException;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( SiteStats::class )]
+#[UsesClass( ServerException::class )]
 final class SiteStatsTest extends TestCase {
 
 	public function testCreatesWithAllFields(): void {
@@ -89,5 +92,41 @@ final class SiteStatsTest extends TestCase {
 
 		$this->assertSame( 3000, $stats->totalCalls );
 		$this->assertTrue( $stats->isRevoked );
+	}
+
+	public function testFromResponseThrowsOnMissingSiteKey(): void {
+		$this->expectException( ServerException::class );
+
+		SiteStats::fromResponse(
+			[
+				'api_calls'       => 1000,
+				'spam'            => 400,
+				'ham'             => 580,
+				'missed_spam'     => 10,
+				'false_positives' => 5,
+				'is_revoked'      => false,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnMissingTotalAndApiCalls(): void {
+		$this->expectException( ServerException::class );
+
+		SiteStats::fromResponse(
+			[
+				'site'            => 'example.com',
+				'spam'            => 400,
+				'ham'             => 580,
+				'missed_spam'     => 10,
+				'false_positives' => 5,
+				'is_revoked'      => false,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnEmptyArray(): void {
+		$this->expectException( ServerException::class );
+
+		SiteStats::fromResponse( [] );
 	}
 }

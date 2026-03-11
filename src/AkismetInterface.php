@@ -32,6 +32,7 @@ interface AkismetInterface {
 	 * Returns normally if the key is valid; throws InvalidApiKeyException otherwise.
 	 *
 	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns an unexpected response body.
 	 * @throws AkismetException On network or API errors.
 	 */
 	public function verifyKey(): void;
@@ -41,6 +42,8 @@ interface AkismetInterface {
 	 *
 	 * @param Content $content The content to check.
 	 * @return CheckResult The spam check result.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns an unexpected response body.
 	 * @throws AkismetException On network or API errors.
 	 */
 	public function check( Content $content ): CheckResult;
@@ -87,6 +90,8 @@ interface AkismetInterface {
 	 * Get API usage statistics and limits.
 	 *
 	 * @return UsageLimit Current usage information.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns malformed JSON.
 	 * @throws AkismetException On network or API errors.
 	 */
 	public function getUsageLimit(): UsageLimit;
@@ -121,6 +126,7 @@ interface AkismetInterface {
 	 * comment-check, submit-spam, submit-ham, or other API calls.
 	 *
 	 * @return string Opaque access token string.
+	 * @throws InvalidApiKeyException If the API key is invalid or token exchange fails.
 	 * @throws AkismetException On network or API errors.
 	 */
 	public function getAccessToken(): string;

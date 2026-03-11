@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet\DTO;
 
+use Automattic\Akismet\Exception\ServerException;
+
 /**
  * Represents usage statistics for a single site.
  */
@@ -28,24 +30,41 @@ final class SiteStats {
 	/**
 	 * Calculate the spam detection accuracy percentage.
 	 *
-	 * Returns null if there are no calls to calculate from.
+	 * Returns null if there are no calls to calculate from. The result is
+	 * clamped to [0.0, 100.0] — values outside this range indicate a data
+	 * inconsistency from the API (e.g., errors exceeding total calls).
 	 */
 	public function getAccuracy(): ?float {
 		if ( $this->totalCalls === 0 ) {
 			return null;
 		}
 
-		$errors = $this->missedSpam + $this->falsePositives;
-		return round( ( 1 - ( $errors / $this->totalCalls ) ) * 100, 2 );
+		$errors   = $this->missedSpam + $this->falsePositives;
+		$accuracy = round( ( 1 - ( $errors / $this->totalCalls ) ) * 100, 2 );
+		return max( 0.0, min( 100.0, $accuracy ) );
 	}
 
 	/**
 	 * Create from API response data.
 	 *
 	 * @param array{site: string, api_calls?: int, total?: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool} $data
+	 * @throws ServerException If required keys are missing.
 	 */
 	public static function fromResponse( array $data ): self {
-		// API may return 'api_calls' or 'total' depending on context
+		foreach ( [ 'site', 'spam', 'ham', 'missed_spam', 'false_positives', 'is_revoked' ] as $key ) {
+			if ( ! array_key_exists( $key, $data ) ) {
+				throw ServerException::unexpectedResponse(
+					sprintf( 'Missing required key "%s" in site stats response', $key )
+				);
+			}
+		}
+
+		if ( ! isset( $data['api_calls'] ) && ! isset( $data['total'] ) ) {
+			throw ServerException::unexpectedResponse(
+				'Missing required key "api_calls" or "total" in site stats response'
+			);
+		}
+
 		$totalCalls = $data['api_calls'] ?? $data['total'] ?? 0;
 
 		return new self(
