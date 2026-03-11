@@ -1,4 +1,4 @@
-## Unreleased
+## 1.0.0 - 2026-03-11
 ### Added
 - `guid` property on `CheckResult` DTO, extracted from the `X-akismet-guid` response header.
 - `ServerException::unexpectedResponse()` factory for malformed API responses.
