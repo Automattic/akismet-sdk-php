@@ -3,16 +3,16 @@
 
 # Distribution archive exclusions
 .gitattributes       export-ignore
-/.claude/**          export-ignore
-/docs/**             export-ignore
-/.github/**          export-ignore
+/.claude/            export-ignore
+/docs/               export-ignore
+/.github/            export-ignore
 /.gitignore          export-ignore
-/.phpunit.cache/**   export-ignore
-/changelog/**        export-ignore
-/examples/**         export-ignore
-/reviews/**          export-ignore
-/tasks/**            export-ignore
-/tests/**            export-ignore
+/.phpunit.cache/     export-ignore
+/changelog/          export-ignore
+/examples/           export-ignore
+/reviews/            export-ignore
+/tasks/              export-ignore
+/tests/              export-ignore
 AGENTS.md            export-ignore
 CLAUDE.md            export-ignore
 CLAUDE.local.md      export-ignore
