@@ -41,7 +41,7 @@ jobs:
         run: composer install --prefer-dist --no-progress --no-interaction
 
       - name: Run unit tests
-        run: composer test:unit
+        run: ./vendor/bin/phpunit --testsuite=unit --no-coverage
 
   integration-tests:
     name: Integration Tests
