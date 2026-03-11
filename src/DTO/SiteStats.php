@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet\DTO;
 
+use Automattic\Akismet\Exception\ServerException;
+
 /**
  * Represents usage statistics for a single site.
  */
@@ -46,19 +48,19 @@ final class SiteStats {
 	 * Create from API response data.
 	 *
 	 * @param array{site: string, api_calls?: int, total?: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool} $data
-	 * @throws \Automattic\Akismet\Exception\ServerException If required keys are missing.
+	 * @throws ServerException If required keys are missing.
 	 */
 	public static function fromResponse( array $data ): self {
 		foreach ( [ 'site', 'spam', 'ham', 'missed_spam', 'false_positives', 'is_revoked' ] as $key ) {
 			if ( ! array_key_exists( $key, $data ) ) {
-				throw \Automattic\Akismet\Exception\ServerException::unexpectedResponse(
+				throw ServerException::unexpectedResponse(
 					sprintf( 'Missing required key "%s" in site stats response', $key )
 				);
 			}
 		}
 
 		if ( ! isset( $data['api_calls'] ) && ! isset( $data['total'] ) ) {
-			throw \Automattic\Akismet\Exception\ServerException::unexpectedResponse(
+			throw ServerException::unexpectedResponse(
 				'Missing required key "api_calls" or "total" in site stats response'
 			);
 		}
