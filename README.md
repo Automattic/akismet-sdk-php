@@ -76,7 +76,19 @@ if ($result->isSpam()) {
 | `submitHam($content)` | Report false positive |
 | `getUsageLimit()` | Get API usage stats and limits |
 | `getKeySites()` | Get sites using your API key (JSON format only; CSV is not supported) |
-| `getAccessToken()` | Exchange API key for a scoped access token |
+| `getAccessToken()` | Exchange API key for a scoped access token (stats pages only, not for API calls) |
+
+## Integration Identification
+
+If you're building a framework integration (Drupal, Laravel, Symfony, etc.), identify your integration via `applicationUserAgent`. This is prepended to the SDK's User-Agent header so Akismet can track compatibility and usage:
+
+```php
+$akismet = Akismet::create(
+    apiKey: 'your-api-key',
+    site: 'https://your-site.com',
+    applicationUserAgent: 'MyDrupalModule/1.0.0'
+);
+```
 
 ## Framework Integration
 
@@ -151,6 +163,7 @@ try {
 |-----------|------|
 | `InvalidApiKeyException` | API key is invalid or revoked |
 | `ValidationException` | Invalid input (e.g., bad IP address, malformed month format) |
+| `ClientErrorException` | HTTP 4xx client errors (excluding 429) |
 | `RateLimitException` | HTTP 429 — too many requests |
 | `NetworkException` | Connection failures or DNS resolution errors |
 | `ServerException` | HTTP 5xx or unexpected API response body |

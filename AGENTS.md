@@ -19,7 +19,7 @@ src/
 └── Exception/               # AkismetException, InvalidApiKeyException, ClientErrorException, ServerException, NetworkException, RateLimitException, ValidationException
 ```
 
-**Design**: Immutable DTOs with `readonly` classes, native enums, PSR-18 HTTP via php-http/discovery, factory methods for PSR-7/Symfony integration, JSON serializable for queue storage.
+**Design**: Immutable DTOs with per-property `readonly` modifiers, native enums, PSR-18 HTTP via php-http/discovery, factory methods for PSR-7/Symfony integration, JSON serializable for queue storage.
 
 ## API Reference
 
@@ -42,13 +42,14 @@ Base: `https://rest.akismet.com/`
 
 ## Coding Standards
 
+- **PHP 8.1 minimum** — do NOT use features from 8.2+ (e.g., `readonly class`, DNF types, `true`/`false`/`null` standalone types)
 - PSR-12 + WordPress-Extra PHPCS (excluding filename rules)
 - PHPStan level: max
 - `declare(strict_types=1)` in all files
 - Namespace: `Automattic\Akismet`
 
 **Patterns**:
-- DTOs: `final readonly class` with constructor promotion, `toArray()`, optional `fromResponse()` / `fromJson()` factories
+- DTOs: `final class` with per-property `readonly` and constructor promotion, `toArray()`, optional `fromResponse()` / `fromJson()` factories
 - Client: `new Akismet(Configuration $config)` or `Akismet::create(apiKey, site)` convenience factory
 - Enums: Backed string enums (`enum ContentType: string`)
 - Exceptions: Interface `AkismetException extends Throwable`, static factory methods

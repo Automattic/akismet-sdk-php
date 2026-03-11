@@ -34,17 +34,14 @@ This project adheres to a [Code of Conduct](CODE-OF-CONDUCT.md). By participatin
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (with coverage if Xdebug is available)
 composer test
 
 # Run only unit tests
-./vendor/bin/phpunit --testsuite=unit
+composer test:unit
 
-# Run integration tests (requires API key)
-AKISMET_API_KEY=your_key_here ./vendor/bin/phpunit --testsuite=integration
-
-# Run with coverage (outputs to .phpunit.cache/coverage-html)
-composer test
+# Run integration tests (requires API key, runs without coverage)
+AKISMET_API_KEY=your_key_here composer test:integration
 ```
 
 ### Code Quality
@@ -197,11 +194,11 @@ We use Jetpack Changelogger for changelog management.
 ### Adding Changelog Entries
 
 ```bash
-# Add entry (interactive)
+# Add entry (interactive prompts for type, significance, and message)
 vendor/bin/changelogger add
 
-# Add specific type
-vendor/bin/changelogger add --type=added "Support for API 1.2 endpoints"
+# Add with flags to skip prompts
+vendor/bin/changelogger add --significance=minor --type=added --entry="Support for API 1.2 endpoints"
 ```
 
 ### Types
