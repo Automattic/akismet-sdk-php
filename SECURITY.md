@@ -6,9 +6,10 @@ We release patches for security vulnerabilities in the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.x.x   | :white_check_mark: |
+| 1.x.x   | :white_check_mark: |
+| < 1.0   | :x:                |
 
-This policy will be updated when the SDK reaches a stable 1.0 release. We recommend always using the latest version of the SDK.
+We recommend always using the latest version of the SDK.
 
 ## Reporting a Vulnerability
 
@@ -86,13 +87,13 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 ### Error Handling
 
-Don't expose sensitive information in error messages:
+The SDK automatically redacts API keys from exception messages, but you should still avoid exposing internal details to end users:
 
 ```php
 try {
     $result = $akismet->check($content);
 } catch (AkismetException $e) {
-    // Good: Log full details for debugging
+    // Good: Log full details for debugging (API keys are redacted automatically)
     error_log($e->getMessage());
 
     // Good: Show generic message to users
@@ -150,19 +151,23 @@ environments.
 
 ### IP Address Handling
 
-The SDK requires the user's IP address for spam checking. Ensure you're capturing the correct IP:
-
-- Behind a proxy: Use `X-Forwarded-For` header (validate first)
-- Behind Cloudflare: Use `CF-Connecting-IP` header
-- Direct connection: Use `$_SERVER['REMOTE_ADDR']`
+The SDK requires the user's IP address for spam checking. Use `ContentFactory::fromRequest()` with the `trustedProxies` parameter to safely resolve the real client IP behind proxies:
 
 ```php
-// WARNING: X-Forwarded-For can be spoofed by clients.
-// Only trust this header if your reverse proxy strips/overwrites it.
-$forwardedFor = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
-$ips = array_map('trim', explode(',', $forwardedFor));
-$userIp = filter_var($ips[0] ?? $_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP);
+use Automattic\Akismet\Factory\ContentFactory;
+
+// Trust specific proxy IPs — forwarded headers are only consulted
+// when the request comes from a listed proxy
+$content = ContentFactory::fromRequest(
+    request: $psr7Request,
+    body: $formData['message'],
+    trustedProxies: ['10.0.0.1', '10.0.0.2'],
+);
 ```
+
+The factory checks `X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, and `True-Client-IP` headers — but only when the direct connection IP matches a trusted proxy. Without `trustedProxies`, only `REMOTE_ADDR` is used.
+
+> **Warning**: Never trust forwarded headers unconditionally. Clients can spoof `X-Forwarded-For` and similar headers. Only list IPs of reverse proxies you control.
 
 ### User Agent
 
