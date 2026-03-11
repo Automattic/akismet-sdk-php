@@ -169,6 +169,8 @@ final class Content {
 	 *
 	 * @param string                  $reporter              Who reported the content (e.g., current user name).
 	 * @param CheckResponse|string    $commentCheckResponse  The original comment-check result.
+	 * @return self New Content with feedback fields set.
+	 * @throws ValidationException If commentCheckResponse is an invalid string.
 	 */
 	public function withFeedback( string $reporter, CheckResponse|string $commentCheckResponse ): self {
 		// Note: serverVariables are already filtered, but the constructor will
@@ -200,8 +202,8 @@ final class Content {
 	/**
 	 * Convert to array for API request.
 	 *
-	 * Server variables matching RESERVED_KEYS (e.g., 'user_ip', 'blog', 'api_key')
-	 * are silently skipped to prevent overwriting canonical Akismet fields.
+	 * Server variables have already been filtered at construction time
+	 * to exclude RESERVED_KEYS and honeypot field name collisions.
 	 *
 	 * @return array<string, string>
 	 */

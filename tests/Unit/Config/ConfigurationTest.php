@@ -96,6 +96,13 @@ final class ConfigurationTest extends TestCase {
 		$this->assertSame( 'Akismet-Drupal/1.0 | Drupal/11.0', $config->applicationUserAgent );
 	}
 
+	public function testThrowsOnWhitespaceOnlyApiKey(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'apiKey' );
+
+		new Configuration( '   ', 'https://example.com' );
+	}
+
 	public function testWithTestModePreservesApplicationUserAgent(): void {
 		$config     = new Configuration(
 			'key',

@@ -11,12 +11,14 @@ namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\SiteStats;
+use Automattic\Akismet\Exception\ServerException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( KeySitesResponse::class )]
 #[UsesClass( SiteStats::class )]
+#[UsesClass( ServerException::class )]
 final class KeySitesResponseTest extends TestCase {
 
 	public function testCreatesWithSites(): void {
@@ -93,23 +95,53 @@ final class KeySitesResponseTest extends TestCase {
 		$this->assertSame( 'example2.com', $response->sites[1]->site );
 	}
 
-	public function testFromResponseWithDefaultPagination(): void {
-		$data = [
-			'site-key' => [
-				'site'            => 'example.com',
-				'api_calls'       => 100,
-				'spam'            => 50,
-				'ham'             => 50,
-				'missed_spam'     => 0,
-				'false_positives' => 0,
-				'is_revoked'      => false,
-			],
-		];
+	public function testFromResponseThrowsWhenPaginationMissing(): void {
+		$this->expectException( ServerException::class );
 
-		$response = KeySitesResponse::fromResponse( $data );
+		KeySitesResponse::fromResponse(
+			[
+				'site-key' => [
+					'site'            => 'example.com',
+					'api_calls'       => 100,
+					'spam'            => 50,
+					'ham'             => 50,
+					'missed_spam'     => 0,
+					'false_positives' => 0,
+					'is_revoked'      => false,
+				],
+			]
+		);
+	}
 
-		$this->assertSame( 500, $response->limit );
-		$this->assertSame( 0, $response->offset );
-		$this->assertSame( 0, $response->total );
+	public function testFromResponseSkipsNonSiteEntries(): void {
+		$response = KeySitesResponse::fromResponse(
+			[
+				'site-key' => 'not-an-array',
+				'limit'    => 500,
+				'offset'   => 0,
+				'total'    => 1,
+			]
+		);
+
+		$this->assertCount( 0, $response->sites );
+	}
+
+	public function testFromResponseThrowsOnMissingPaginationFields(): void {
+		$this->expectException( ServerException::class );
+
+		// No limit, offset, or total keys provided.
+		KeySitesResponse::fromResponse(
+			[
+				'site-key' => [
+					'site'            => 'example.com',
+					'api_calls'       => 100,
+					'spam'            => 50,
+					'ham'             => 50,
+					'missed_spam'     => 0,
+					'false_positives' => 0,
+					'is_revoked'      => false,
+				],
+			]
+		);
 	}
 }

@@ -194,11 +194,11 @@ We use Jetpack Changelogger for changelog management.
 ### Adding Changelog Entries
 
 ```bash
-# Add entry (interactive)
+# Add entry (interactive prompts for type, significance, and message)
 vendor/bin/changelogger add
 
-# Add specific type
-vendor/bin/changelogger add --type=added "Support for API 1.2 endpoints"
+# Add with flags to skip prompts
+vendor/bin/changelogger add --significance=minor --type=added --entry="Support for API 1.2 endpoints"
 ```
 
 ### Types

@@ -143,8 +143,9 @@ composer update
 
 ### Test Mode
 
-Never use test mode in production. The `is_test` parameter is set at the API request
-level, not on the Content DTO. Ensure your application only enables it in development
+Never use test mode in production. Test mode is configured via `Configuration::$isTest`
+(or `Akismet::create(isTest: true)`) and is automatically applied to every API request.
+It is not a per-content setting. Ensure your application only enables it in development
 environments.
 
 ## Known Security Considerations
