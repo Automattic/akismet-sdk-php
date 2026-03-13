@@ -187,4 +187,55 @@ final class StatsBreakdownEntryTest extends TestCase {
 			]
 		);
 	}
+
+	public function testFromResponseThrowsOnNonNumericStringSpam(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'spam' );
+
+		StatsBreakdownEntry::fromResponse(
+			'2026-01',
+			[
+				'spam'            => 'abc',
+				'ham'             => '10',
+				'missed_spam'     => '0',
+				'false_positives' => '0',
+				'blogs'           => '1',
+				'da'              => '2026-01-01',
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnEmptyStringHam(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'ham' );
+
+		StatsBreakdownEntry::fromResponse(
+			'2026-01',
+			[
+				'spam'            => '5',
+				'ham'             => '',
+				'missed_spam'     => '0',
+				'false_positives' => '0',
+				'blogs'           => '1',
+				'da'              => '2026-01-01',
+			]
+		);
+	}
+
+	public function testFromResponseAcceptsNumericFloatStringBlogs(): void {
+		// "1.5" is numeric, so castToInt truncates it to 1 — accepted, not rejected.
+		$entry = StatsBreakdownEntry::fromResponse(
+			'2026-01',
+			[
+				'spam'            => '5',
+				'ham'             => '10',
+				'missed_spam'     => '0',
+				'false_positives' => '0',
+				'blogs'           => '1.5',
+				'da'              => '2026-01-01',
+			]
+		);
+
+		$this->assertSame( 1, $entry->blogs );
+	}
 }

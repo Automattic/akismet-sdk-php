@@ -37,7 +37,10 @@ final class Stats {
 	}
 
 	/**
-	 * Convert to an array matching the API response format.
+	 * Convert to an array.
+	 *
+	 * Note: breakdown entries include a `period` key (SDK context) not present in
+	 * the wire format.
 	 *
 	 * @return array{spam: int, ham: int, missed_spam: int, false_positives: int, accuracy: string, time_saved: int, breakdown: array<string, array<string, mixed>>}
 	 */
@@ -108,8 +111,8 @@ final class Stats {
 			throw ServerException::unexpectedResponse( 'Expected numeric "false_positives" in get-key-stats response' );
 		}
 
-		if ( ! is_numeric( $accuracy ) && ! is_string( $accuracy ) ) {
-			throw ServerException::unexpectedResponse( 'Expected numeric or string "accuracy" in get-key-stats response' );
+		if ( ! is_numeric( $accuracy ) ) {
+			throw ServerException::unexpectedResponse( 'Expected numeric "accuracy" in get-key-stats response' );
 		}
 
 		if ( ! is_numeric( $timeSaved ) ) {

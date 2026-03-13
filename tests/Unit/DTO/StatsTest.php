@@ -251,4 +251,36 @@ final class StatsTest extends TestCase {
 
 		Stats::fromResponse( [] );
 	}
+
+	public function testFromResponseThrowsOnNonNumericAccuracy(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'accuracy' );
+
+		Stats::fromResponse(
+			[
+				'spam'            => 0,
+				'ham'             => 0,
+				'missed_spam'     => 0,
+				'false_positives' => 0,
+				'accuracy'        => 'unknown',
+				'time_saved'      => 0,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnEmptyStringAccuracy(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'accuracy' );
+
+		Stats::fromResponse(
+			[
+				'spam'            => 0,
+				'ham'             => 0,
+				'missed_spam'     => 0,
+				'false_positives' => 0,
+				'accuracy'        => '',
+				'time_saved'      => 0,
+			]
+		);
+	}
 }

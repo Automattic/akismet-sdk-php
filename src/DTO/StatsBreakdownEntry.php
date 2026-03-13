@@ -43,6 +43,9 @@ final class StatsBreakdownEntry {
 	/**
 	 * Convert to an array.
 	 *
+	 * Note: includes a `period` key (the breakdown period string) which is SDK
+	 * context not present in the wire format.
+	 *
 	 * @return array{period: string, spam: int, ham: int, missed_spam: int, false_positives: int, blogs: int, da: string}
 	 */
 	public function toArray(): array {
@@ -93,19 +96,19 @@ final class StatsBreakdownEntry {
 	/**
 	 * Validate and cast a mixed API value to int.
 	 *
-	 * Accepts null (returns 0), int, float, or numeric string. Rejects other types
-	 * to ensure we don't silently swallow unexpected API responses.
+	 * Accepts null (returns 0), int, float, or numeric string. Rejects non-numeric
+	 * strings and other types to ensure we don't silently swallow malformed API responses.
 	 *
 	 * @param mixed  $value The raw value from the API response.
 	 * @param string $field The field name, used in error messages.
-	 * @throws ServerException If the value is not a castable type.
+	 * @throws ServerException If the value is not null, int, float, or a numeric string.
 	 */
 	private static function castToInt( mixed $value, string $field ): int {
 		if ( $value === null ) {
 			return 0;
 		}
 
-		if ( ! is_int( $value ) && ! is_float( $value ) && ! is_string( $value ) ) {
+		if ( ! is_int( $value ) && ! is_float( $value ) && ! ( is_string( $value ) && is_numeric( $value ) ) ) {
 			throw ServerException::unexpectedResponse(
 				sprintf( 'Expected numeric or null "%s" in stats breakdown entry', $field )
 			);
