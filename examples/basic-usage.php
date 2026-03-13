@@ -153,6 +153,15 @@ try {
         echo sprintf("  ... and %d more sites\n", $nextPage->total - count($sitesResponse->sites));
     }
 
+    // Step 7: Exchange API key for an access token
+    echo "\nGetting access token...\n";
+    try {
+        $token = $akismet->getAccessToken();
+        echo "✓ Access token retrieved (length: " . strlen($token) . ")\n";
+    } catch (InvalidApiKeyException $e) {
+        echo "✗ Failed to get access token: " . $e->getMessage() . "\n";
+    }
+
     // Example: Submit spam (if we got it wrong)
     if (!$result->isSpam()) {
         echo "\nIf this was actually spam, you could report it:\n";

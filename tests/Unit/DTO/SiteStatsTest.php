@@ -55,6 +55,37 @@ final class SiteStatsTest extends TestCase {
 		$this->assertSame( 100.0, $stats->getAccuracy() );
 	}
 
+	public function testToArrayReturnsApiFormat(): void {
+		$stats = new SiteStats(
+			site: 'example.com',
+			totalCalls: 1000,
+			spam: 400,
+			ham: 580,
+			missedSpam: 10,
+			falsePositives: 5,
+			isRevoked: false,
+		);
+
+		$this->assertSame(
+			[
+				'site'            => 'example.com',
+				'api_calls'       => 1000,
+				'spam'            => 400,
+				'ham'             => 580,
+				'missed_spam'     => 10,
+				'false_positives' => 5,
+				'is_revoked'      => false,
+			],
+			$stats->toArray()
+		);
+	}
+
+	public function testToArrayWithRevokedSite(): void {
+		$stats = new SiteStats( 'revoked.com', 500, 200, 295, 3, 2, true );
+
+		$this->assertTrue( $stats->toArray()['is_revoked'] );
+	}
+
 	public function testFromResponseWithApiCalls(): void {
 		$data = [
 			'site'            => 'test.example.com',

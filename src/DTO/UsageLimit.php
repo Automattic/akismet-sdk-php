@@ -41,6 +41,8 @@ final class UsageLimit {
 
 	/**
 	 * Check if the API key has unlimited usage.
+	 *
+	 * @return bool
 	 */
 	public function isUnlimited(): bool {
 		return $this->limit === null;
@@ -50,6 +52,8 @@ final class UsageLimit {
 	 * Get the remaining API calls for this month.
 	 *
 	 * Returns null if unlimited.
+	 *
+	 * @return int|null
 	 */
 	public function getRemaining(): ?int {
 		if ( $this->limit === null ) {
@@ -86,7 +90,7 @@ final class UsageLimit {
 	/**
 	 * Create from API JSON response.
 	 *
-	 * @param array{limit: int|string, usage: int|string, percentage: int|string, throttled: bool, notice_level?: mixed, upgrade?: mixed} $data
+	 * @param array{limit: mixed, usage: mixed, percentage: mixed, throttled: mixed, notice_level?: mixed, upgrade?: mixed} $data
 	 * @throws ServerException If required keys are missing or extended fields have unexpected types.
 	 */
 	public static function fromResponse( array $data ): self {
@@ -99,7 +103,30 @@ final class UsageLimit {
 		}
 
 		// limit can be an integer or "none" for unlimited
+		if ( $data['limit'] !== 'none' && ! is_numeric( $data['limit'] ) ) {
+			throw ServerException::unexpectedResponse(
+				'Expected numeric or "none" "limit" in usage-limit response'
+			);
+		}
 		$limit = $data['limit'] === 'none' ? null : (int) $data['limit'];
+
+		if ( ! is_numeric( $data['usage'] ) ) {
+			throw ServerException::unexpectedResponse(
+				'Expected numeric "usage" in usage-limit response'
+			);
+		}
+
+		if ( ! is_string( $data['percentage'] ) && ! is_numeric( $data['percentage'] ) ) {
+			throw ServerException::unexpectedResponse(
+				'Expected string or numeric "percentage" in usage-limit response'
+			);
+		}
+
+		if ( ! is_bool( $data['throttled'] ) ) {
+			throw ServerException::unexpectedResponse(
+				'Expected boolean "throttled" in usage-limit response'
+			);
+		}
 
 		// notice_level can be a string (e.g., "NOTICE_FIRST_MONTH_OVER_LIMIT"), an int
 		// (0 for no notice), or absent. Normalize to string or null.
@@ -130,7 +157,7 @@ final class UsageLimit {
 			$limit,
 			(int) $data['usage'],
 			(string) $data['percentage'],
-			(bool) $data['throttled'],
+			$data['throttled'],
 			$noticeLevel,
 			$upgrade,
 		);

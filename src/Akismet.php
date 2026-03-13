@@ -68,6 +68,7 @@ final class Akismet implements AkismetInterface {
 	 * @param ClientInterface|null         $httpClient           Custom PSR-18 HTTP client.
 	 * @param RequestFactoryInterface|null $requestFactory       Custom PSR-17 request factory.
 	 * @param StreamFactoryInterface|null  $streamFactory        Custom PSR-17 stream factory.
+	 * @return self
 	 */
 	public static function create(
 		string $apiKey,
@@ -260,6 +261,8 @@ final class Akismet implements AkismetInterface {
 
 	/**
 	 * Get the current configuration.
+	 *
+	 * @return Configuration
 	 */
 	public function getConfiguration(): Configuration {
 		return $this->config;

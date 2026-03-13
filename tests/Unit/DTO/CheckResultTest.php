@@ -167,21 +167,54 @@ final class CheckResultTest extends TestCase {
 		CheckResult::fromJson( [ 'verdict' => 'unknown' ] );
 	}
 
-	public function testJsonSerializeReturnsCorrectStructure(): void {
+	public function testToArrayReturnsCorrectStructure(): void {
 		$result = new CheckResult( SpamVerdict::Ham );
-		$json   = $result->jsonSerialize();
+		$array  = $result->toArray();
 
-		$this->assertArrayHasKey( 'verdict', $json );
-		$this->assertArrayHasKey( 'proTip', $json );
-		$this->assertArrayHasKey( 'debugHelp', $json );
-		$this->assertArrayHasKey( 'alertCode', $json );
-		$this->assertArrayHasKey( 'alertMessage', $json );
-		$this->assertArrayHasKey( 'guid', $json );
-		$this->assertArrayHasKey( 'alertMetadata', $json );
+		$this->assertArrayHasKey( 'verdict', $array );
+		$this->assertArrayHasKey( 'proTip', $array );
+		$this->assertArrayHasKey( 'debugHelp', $array );
+		$this->assertArrayHasKey( 'alertCode', $array );
+		$this->assertArrayHasKey( 'alertMessage', $array );
+		$this->assertArrayHasKey( 'guid', $array );
+		$this->assertArrayHasKey( 'alertMetadata', $array );
 
-		$this->assertSame( 'ham', $json['verdict'] );
-		$this->assertNull( $json['guid'] );
-		$this->assertNull( $json['alertMetadata'] );
+		$this->assertSame( 'ham', $array['verdict'] );
+		$this->assertNull( $array['guid'] );
+		$this->assertNull( $array['alertMetadata'] );
+	}
+
+	public function testToArrayIncludesAlertMetadata(): void {
+		$metadata = new AlertMetadata(
+			apiCalls: 15000,
+			usageLimit: 10000,
+			upgradePlan: 'Enterprise',
+		);
+		$result   = new CheckResult(
+			SpamVerdict::Spam,
+			'discard',
+			'debug info',
+			'10001',
+			'alert message',
+			'abc123def456',
+			$metadata,
+		);
+
+		$array = $result->toArray();
+
+		$this->assertSame( 'spam', $array['verdict'] );
+		$this->assertSame( 'discard', $array['proTip'] );
+		$this->assertSame( 'debug info', $array['debugHelp'] );
+		$this->assertSame( '10001', $array['alertCode'] );
+		$this->assertSame( 'alert message', $array['alertMessage'] );
+		$this->assertSame( 'abc123def456', $array['guid'] );
+		$this->assertIsArray( $array['alertMetadata'] );
+		$this->assertSame( 15000, $array['alertMetadata']['apiCalls'] );
+	}
+
+	public function testJsonSerializeDelegatesToToArray(): void {
+		$result = new CheckResult( SpamVerdict::Spam, 'discard' );
+		$this->assertSame( $result->toArray(), $result->jsonSerialize() );
 	}
 
 	public function testFromResponseParsesAlertMetadata(): void {

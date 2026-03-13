@@ -149,6 +149,50 @@ final class AlertMetadataTest extends TestCase {
 		$this->assertNull( $meta->upgradeType );
 	}
 
+	public function testToArrayReturnsAllFields(): void {
+		$meta = new AlertMetadata(
+			apiCalls: 15000,
+			usageLimit: 10000,
+			upgradePlan: 'Enterprise',
+			upgradeUrl: 'https://akismet.com/account/',
+			upgradeType: 'qty',
+			upgradeViaSupport: true,
+			recommendedPlanName: 'Akismet Pro (500)',
+		);
+
+		$this->assertSame(
+			[
+				'apiCalls'            => 15000,
+				'usageLimit'          => 10000,
+				'upgradePlan'         => 'Enterprise',
+				'upgradeUrl'          => 'https://akismet.com/account/',
+				'upgradeType'         => 'qty',
+				'upgradeViaSupport'   => true,
+				'recommendedPlanName' => 'Akismet Pro (500)',
+			],
+			$meta->toArray()
+		);
+	}
+
+	public function testToArrayHandlesNullFields(): void {
+		$meta = new AlertMetadata();
+
+		$array = $meta->toArray();
+
+		$this->assertNull( $array['apiCalls'] );
+		$this->assertNull( $array['usageLimit'] );
+		$this->assertNull( $array['upgradePlan'] );
+		$this->assertNull( $array['upgradeUrl'] );
+		$this->assertNull( $array['upgradeType'] );
+		$this->assertFalse( $array['upgradeViaSupport'] );
+		$this->assertNull( $array['recommendedPlanName'] );
+	}
+
+	public function testJsonSerializeDelegatesToToArray(): void {
+		$meta = new AlertMetadata( apiCalls: 5000, usageLimit: 10000 );
+		$this->assertSame( $meta->toArray(), $meta->jsonSerialize() );
+	}
+
 	public function testJsonRoundTrip(): void {
 		$original = new AlertMetadata(
 			apiCalls: 15000,

@@ -13,7 +13,7 @@ src/
 ├── Client/                  # PSR-18 HTTP client wrapper + auto-discovery
 ├── Config/Configuration.php # Immutable config
 ├── DTO/                     # Content, CheckResult, AlertMetadata, KeySitesResponse, SiteStats, Stats, StatsBreakdownEntry, Subscription, UpgradeRecommendation, UsageLimit
-├── Enum/                    # ContentType, SpamVerdict, StatsInterval, SubscriptionStatus, KeySitesOrder (PHP 8.1 enums)
+├── Enum/                    # CheckResponse, ContentType, SpamVerdict, StatsInterval, SubscriptionStatus, KeySitesOrder (PHP 8.1 enums)
 ├── Factory/                 # ContentFactory (from PSR-7 requests and arrays)
 ├── Validator/               # InputValidator (URL, IP, email)
 └── Exception/               # AkismetException, InvalidApiKeyException, ClientErrorException, ServerException, NetworkException, RateLimitException, ValidationException
@@ -31,6 +31,7 @@ Base: `https://rest.akismet.com/`
 | `/1.1/comment-check` | POST | Check spam (required: `api_key`, `blog`, `user_ip`) |
 | `/1.1/submit-spam` | POST | Report missed spam |
 | `/1.1/submit-ham` | POST | Report false positive |
+| `/1.1/token` | POST | Exchange API key for access token |
 | `/1.2/usage-limit` | GET | API usage/limits (returns: `limit`, `usage`, `percentage`, `throttled`) |
 | `/1.1/get-subscription` | POST | Account plan info (returns: `account_id`, `account_type`, `account_name`, `status`, `next_billing_date`, `limit_reached`) |
 | `/1.2/get-key-stats` | POST | Historical stats (params: `from`; returns: `spam`, `ham`, `missed_spam`, `false_positives`, `accuracy`, `time_saved`, `breakdown`) |

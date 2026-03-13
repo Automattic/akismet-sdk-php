@@ -37,6 +37,8 @@ final class Subscription {
 
 	/**
 	 * Check if the subscription is active.
+	 *
+	 * @return bool
 	 */
 	public function isActive(): bool {
 		return $this->status->isActive();
@@ -44,6 +46,8 @@ final class Subscription {
 
 	/**
 	 * Check if this is a paid plan.
+	 *
+	 * @return bool
 	 */
 	public function isPaid(): bool {
 		return $this->nextBillingDate !== null;
