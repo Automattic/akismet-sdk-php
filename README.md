@@ -63,9 +63,9 @@ if ($result->isSpam()) {
 ```mermaid
 flowchart LR
     A[Your App] --> B["Akismet::check()"]
-    B --> C{SpamVerdict}
+    B --> C{verdict}
     C -->|ham| D[Publish Content]
-    C -->|spam + discard| E[Drop Silently]
+    C -->|discard| E[Drop Silently]
     C -->|spam| F[Queue for Review]
 ```
 
@@ -171,13 +171,16 @@ try {
 ```
 
 ```mermaid
-flowchart TD
-    A["AkismetException<br/>(interface)"] --> B[InvalidApiKeyException]
-    A --> C[ValidationException]
-    A --> D[ClientErrorException]
-    A --> E[RateLimitException]
-    A --> F[NetworkException]
-    A --> G[ServerException]
+classDiagram
+    class AkismetException {
+        <<interface>>
+    }
+    InvalidApiKeyException ..|> AkismetException
+    ValidationException ..|> AkismetException
+    ClientErrorException ..|> AkismetException
+    RateLimitException ..|> AkismetException
+    NetworkException ..|> AkismetException
+    ServerException ..|> AkismetException
 ```
 
 | Exception | When |

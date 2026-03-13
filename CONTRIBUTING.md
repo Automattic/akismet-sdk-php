@@ -69,14 +69,17 @@ flowchart TD
     B --> C["HttpClient<br/>(PSR-18 Wrapper)"]
     C --> D[Akismet REST API]
 
-    E[ContentFactory] -->|creates| F[Content DTO]
-    F --> B
+    A -->|optional| E[ContentFactory]
+    E -->|creates| F[Content DTO]
+    F -->|"passed to check()"| B
     B -->|returns| G["CheckResult / UsageLimit<br/>KeySitesResponse"]
 
     H[Configuration] --> B
-    I[InputValidator] --> B
+    H --> C
+    H -->|uses| I[InputValidator]
 
-    D -->|errors| J[AkismetException hierarchy]
+    B -->|throws| J[AkismetException hierarchy]
+    C -->|throws| J
 ```
 
 ## Coding Standards
