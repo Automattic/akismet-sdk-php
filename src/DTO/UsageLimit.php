@@ -24,7 +24,7 @@ final class UsageLimit {
 	/**
 	 * @param int|null                  $limit       Monthly API call limit, or null if unlimited.
 	 * @param int                       $usage       Number of API calls this month.
-	 * @param string                    $percentage  Percentage of limit used (e.g., "45.2%").
+	 * @param string                    $percentage  Percentage of limit used (e.g., "45.2").
 	 * @param bool                      $throttled   Whether requests are being throttled.
 	 * @param string|null               $noticeLevel Usage threshold indicator (e.g., "NOTICE_NONE", "NOTICE_FIRST_MONTH_OVER_LIMIT"). Only present with extended=true. Integer 0 from the API is normalized to "0".
 	 * @param UpgradeRecommendation|null $upgrade    Recommended plan upgrade. Only present with extended=true.
@@ -57,6 +57,30 @@ final class UsageLimit {
 		}
 
 		return max( 0, $this->limit - $this->usage );
+	}
+
+	/**
+	 * Convert to an array matching the API response format.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function toArray(): array {
+		$data = [
+			'limit'      => $this->limit ?? 'none',
+			'usage'      => $this->usage,
+			'percentage' => $this->percentage,
+			'throttled'  => $this->throttled,
+		];
+
+		if ( $this->noticeLevel !== null ) {
+			$data['notice_level'] = $this->noticeLevel;
+		}
+
+		if ( $this->upgrade !== null ) {
+			$data['upgrade'] = $this->upgrade->toArray();
+		}
+
+		return $data;
 	}
 
 	/**
