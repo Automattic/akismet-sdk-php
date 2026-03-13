@@ -65,7 +65,7 @@ final class Stats {
 	 * Create from API JSON response.
 	 *
 	 * @param array<string, mixed> $data
-	 * @throws ServerException If required keys are missing.
+	 * @throws ServerException If required keys are missing or have invalid types.
 	 */
 	public static function fromResponse( array $data ): self {
 		foreach ( [ 'spam', 'ham', 'missed_spam', 'false_positives', 'accuracy', 'time_saved' ] as $key ) {
@@ -76,57 +76,59 @@ final class Stats {
 			}
 		}
 
-		$breakdown    = [];
-		$rawBreakdown = $data['breakdown'] ?? [];
+		$breakdown = [];
 
-		if ( is_array( $rawBreakdown ) ) {
+		if ( array_key_exists( 'breakdown', $data ) ) {
+			$rawBreakdown = $data['breakdown'];
+
+			if ( ! is_array( $rawBreakdown ) ) {
+				throw ServerException::unexpectedResponse(
+					'Expected array "breakdown" in get-key-stats response'
+				);
+			}
+
 			foreach ( $rawBreakdown as $period => $entry ) {
-				if ( is_array( $entry ) ) {
-					/** @var array<string, mixed> $entry */
-					$breakdown[ (string) $period ] = StatsBreakdownEntry::fromResponse( (string) $period, $entry );
+				if ( ! is_array( $entry ) ) {
+					throw ServerException::unexpectedResponse(
+						sprintf( 'Expected array for breakdown period "%s" in get-key-stats response', (string) $period )
+					);
 				}
+				/** @var array<string, mixed> $entry */
+				$breakdown[ (string) $period ] = StatsBreakdownEntry::fromResponse( (string) $period, $entry );
 			}
 		}
 
-		$spam           = $data['spam'];
-		$ham            = $data['ham'];
-		$missedSpam     = $data['missed_spam'];
-		$falsePositives = $data['false_positives'];
-		$accuracy       = $data['accuracy'];
-		$timeSaved      = $data['time_saved'];
-
-		if ( ! is_numeric( $spam ) ) {
-			throw ServerException::unexpectedResponse( 'Expected numeric "spam" in get-key-stats response' );
-		}
-
-		if ( ! is_numeric( $ham ) ) {
-			throw ServerException::unexpectedResponse( 'Expected numeric "ham" in get-key-stats response' );
-		}
-
-		if ( ! is_numeric( $missedSpam ) ) {
-			throw ServerException::unexpectedResponse( 'Expected numeric "missed_spam" in get-key-stats response' );
-		}
-
-		if ( ! is_numeric( $falsePositives ) ) {
-			throw ServerException::unexpectedResponse( 'Expected numeric "false_positives" in get-key-stats response' );
-		}
+		$accuracy = $data['accuracy'];
 
 		if ( ! is_numeric( $accuracy ) ) {
 			throw ServerException::unexpectedResponse( 'Expected numeric "accuracy" in get-key-stats response' );
 		}
 
-		if ( ! is_numeric( $timeSaved ) ) {
-			throw ServerException::unexpectedResponse( 'Expected numeric "time_saved" in get-key-stats response' );
-		}
-
 		return new self(
-			(int) $spam,
-			(int) $ham,
-			(int) $missedSpam,
-			(int) $falsePositives,
+			self::castToInt( $data['spam'], 'spam' ),
+			self::castToInt( $data['ham'], 'ham' ),
+			self::castToInt( $data['missed_spam'], 'missed_spam' ),
+			self::castToInt( $data['false_positives'], 'false_positives' ),
 			(string) $accuracy,
-			(int) $timeSaved,
+			self::castToInt( $data['time_saved'], 'time_saved' ),
 			$breakdown,
 		);
+	}
+
+	/**
+	 * Validate and cast a mixed API value to int.
+	 *
+	 * @param mixed  $value The raw value from the API response.
+	 * @param string $field The field name, used in error messages.
+	 * @throws ServerException If the value is not numeric.
+	 */
+	private static function castToInt( mixed $value, string $field ): int {
+		if ( ! is_numeric( $value ) ) {
+			throw ServerException::unexpectedResponse(
+				sprintf( 'Expected numeric "%s" in get-key-stats response', $field )
+			);
+		}
+
+		return (int) $value;
 	}
 }

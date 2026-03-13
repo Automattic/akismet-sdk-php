@@ -181,25 +181,59 @@ final class StatsTest extends TestCase {
 		$this->assertSame( '94.88', $stats->accuracy );
 	}
 
-	public function testFromResponseWithNonArrayBreakdownDefaultsToEmpty(): void {
-		$data = [
-			'spam'            => 10,
-			'ham'             => 20,
-			'missed_spam'     => 0,
-			'false_positives' => 0,
-			'accuracy'        => '99.0',
-			'time_saved'      => 100,
-			'breakdown'       => 'not-an-array',
-		];
+	public function testFromResponseThrowsOnNonArrayBreakdown(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'breakdown' );
 
-		$stats = Stats::fromResponse( $data );
+		Stats::fromResponse(
+			[
+				'spam'            => 10,
+				'ham'             => 20,
+				'missed_spam'     => 0,
+				'false_positives' => 0,
+				'accuracy'        => '99.0',
+				'time_saved'      => 100,
+				'breakdown'       => 'not-an-array',
+			]
+		);
+	}
 
-		$this->assertSame( [], $stats->breakdown );
+	public function testFromResponseThrowsOnNonArrayBreakdownEntry(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( '2026-01' );
+
+		Stats::fromResponse(
+			[
+				'spam'            => 10,
+				'ham'             => 20,
+				'missed_spam'     => 0,
+				'false_positives' => 0,
+				'accuracy'        => '99.0',
+				'time_saved'      => 100,
+				'breakdown'       => [ '2026-01' => 'invalid' ],
+			]
+		);
 	}
 
 	// =========================================================================
 	// fromResponse Validation Tests
 	// =========================================================================
+
+	public function testFromResponseThrowsOnNonNumericSpam(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'spam' );
+
+		Stats::fromResponse(
+			[
+				'spam'            => 'abc',
+				'ham'             => 0,
+				'missed_spam'     => 0,
+				'false_positives' => 0,
+				'accuracy'        => '0',
+				'time_saved'      => 0,
+			]
+		);
+	}
 
 	public function testFromResponseThrowsOnMissingSpam(): void {
 		$this->expectException( ServerException::class );

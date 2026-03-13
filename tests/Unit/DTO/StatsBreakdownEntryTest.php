@@ -222,6 +222,23 @@ final class StatsBreakdownEntryTest extends TestCase {
 		);
 	}
 
+	public function testFromResponseThrowsOnBooleanSpam(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'spam' );
+
+		StatsBreakdownEntry::fromResponse(
+			'2026-01',
+			[
+				'spam'            => true,
+				'ham'             => '10',
+				'missed_spam'     => '0',
+				'false_positives' => '0',
+				'blogs'           => '1',
+				'da'              => '2026-01-01',
+			]
+		);
+	}
+
 	public function testFromResponseAcceptsNumericFloatStringBlogs(): void {
 		// "1.5" is numeric, so castToInt truncates it to 1 — accepted, not rejected.
 		$entry = StatsBreakdownEntry::fromResponse(

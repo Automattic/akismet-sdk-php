@@ -167,6 +167,7 @@ final class Akismet implements AkismetInterface {
 		$response = $this->httpClient->post(
 			'/1.2/get-key-stats',
 			[
+				// The get-key-stats endpoint requires the 'key' wire parameter (not 'api_key').
 				'key'  => $this->config->apiKey,
 				'from' => $interval->value,
 			]
