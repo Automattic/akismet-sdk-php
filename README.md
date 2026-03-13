@@ -172,7 +172,7 @@ try {
 
 ```mermaid
 flowchart TD
-    A["AkismetException\n(interface)"] --> B[InvalidApiKeyException]
+    A["AkismetException<br/>(interface)"] --> B[InvalidApiKeyException]
     A --> C[ValidationException]
     A --> D[ClientErrorException]
     A --> E[RateLimitException]
