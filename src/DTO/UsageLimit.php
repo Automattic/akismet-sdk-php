@@ -22,16 +22,20 @@ use Automattic\Akismet\Exception\ServerException;
 final class UsageLimit {
 
 	/**
-	 * @param int|null $limit      Monthly API call limit, or null if unlimited.
-	 * @param int      $usage      Number of API calls this month.
-	 * @param string   $percentage Percentage of limit used (e.g., "45.2%").
-	 * @param bool     $throttled  Whether requests are being throttled.
+	 * @param int|null                  $limit       Monthly API call limit, or null if unlimited.
+	 * @param int                       $usage       Number of API calls this month.
+	 * @param string                    $percentage  Percentage of limit used (e.g., "45.2%").
+	 * @param bool                      $throttled   Whether requests are being throttled.
+	 * @param string|null               $noticeLevel Usage threshold indicator (e.g., "NOTICE_NONE"). Only present with extended=true.
+	 * @param UpgradeRecommendation|null $upgrade    Recommended plan upgrade. Only present with extended=true.
 	 */
 	public function __construct(
 		public readonly ?int $limit,
 		public readonly int $usage,
 		public readonly string $percentage,
 		public readonly bool $throttled,
+		public readonly ?string $noticeLevel = null,
+		public readonly ?UpgradeRecommendation $upgrade = null,
 	) {
 	}
 
@@ -58,7 +62,7 @@ final class UsageLimit {
 	/**
 	 * Create from API JSON response.
 	 *
-	 * @param array{limit: int|string, usage: int|string, percentage: int|string, throttled: bool} $data
+	 * @param array{limit: int|string, usage: int|string, percentage: int|string, throttled: bool, notice_level?: mixed, upgrade?: mixed} $data
 	 * @throws ServerException If required keys are missing.
 	 */
 	public static function fromResponse( array $data ): self {
@@ -73,11 +77,25 @@ final class UsageLimit {
 		// limit can be an integer or "none" for unlimited
 		$limit = $data['limit'] === 'none' ? null : (int) $data['limit'];
 
+		$noticeLevel = isset( $data['notice_level'] ) && is_string( $data['notice_level'] )
+			? $data['notice_level']
+			: null;
+
+		// The API returns false when no upgrade is recommended, or an object otherwise.
+		$upgrade = null;
+		if ( isset( $data['upgrade'] ) && is_array( $data['upgrade'] ) ) {
+			/** @var array{plan: string, name: string, url: string} $upgradeData */
+			$upgradeData = $data['upgrade'];
+			$upgrade     = UpgradeRecommendation::fromResponse( $upgradeData );
+		}
+
 		return new self(
 			$limit,
 			(int) $data['usage'],
 			(string) $data['percentage'],
 			(bool) $data['throttled'],
+			$noticeLevel,
+			$upgrade,
 		);
 	}
 }
