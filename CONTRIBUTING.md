@@ -61,6 +61,24 @@ composer test          # PHPUnit
 composer lint:fix
 ```
 
+## Architecture
+
+```mermaid
+flowchart TD
+    A[Your App] --> B["Akismet\n(Facade)"]
+    B --> C["HttpClient\n(PSR-18 Wrapper)"]
+    C --> D[Akismet REST API]
+
+    E[ContentFactory] -->|creates| F[Content DTO]
+    F --> B
+    B -->|returns| G["CheckResult / UsageLimit\nKeySitesResponse"]
+
+    H[Configuration] --> B
+    I[InputValidator] --> B
+
+    D -->|errors| J[AkismetException hierarchy]
+```
+
 ## Coding Standards
 
 ### PSR-12 + WordPress Coding Standards
