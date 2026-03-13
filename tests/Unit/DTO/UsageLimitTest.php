@@ -264,6 +264,21 @@ final class UsageLimitTest extends TestCase {
 		);
 	}
 
+	public function testFromResponseThrowsOnBooleanTrueUpgrade(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'upgrade' );
+
+		UsageLimit::fromResponse(
+			[
+				'limit'      => 10000,
+				'usage'      => 4500,
+				'percentage' => '45.0%',
+				'throttled'  => false,
+				'upgrade'    => true,
+			]
+		);
+	}
+
 	public function testFromResponseWithNullUpgrade(): void {
 		$data = [
 			'limit'      => 10000,

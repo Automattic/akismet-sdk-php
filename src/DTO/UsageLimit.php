@@ -26,7 +26,7 @@ final class UsageLimit {
 	 * @param int                       $usage       Number of API calls this month.
 	 * @param string                    $percentage  Percentage of limit used (e.g., "45.2%").
 	 * @param bool                      $throttled   Whether requests are being throttled.
-	 * @param string|null               $noticeLevel Usage threshold indicator (e.g., "NOTICE_NONE"). Only present with extended=true.
+	 * @param string|null               $noticeLevel Usage threshold indicator (e.g., "NOTICE_NONE", "NOTICE_FIRST_MONTH_OVER_LIMIT"). Only present with extended=true. Integer 0 from the API is normalized to "0".
 	 * @param UpgradeRecommendation|null $upgrade    Recommended plan upgrade. Only present with extended=true.
 	 */
 	public function __construct(
@@ -97,7 +97,7 @@ final class UsageLimit {
 					'Expected array or false "upgrade" in usage-limit response'
 				);
 			}
-			/** @var array{plan: string, name: string, url: string} $upgradeData */
+			/** @var array<string, mixed> $upgradeData */
 			$upgradeData = $data['upgrade'];
 			$upgrade     = UpgradeRecommendation::fromResponse( $upgradeData );
 		}

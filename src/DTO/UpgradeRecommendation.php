@@ -45,8 +45,8 @@ final class UpgradeRecommendation {
 	/**
 	 * Create from API response data.
 	 *
-	 * @param array{plan: string, name: string, url: string} $data
-	 * @throws ServerException If required keys are missing.
+	 * @param array<string, mixed> $data
+	 * @throws ServerException If required keys are missing or have unexpected types.
 	 */
 	public static function fromResponse( array $data ): self {
 		foreach ( [ 'plan', 'name', 'url' ] as $key ) {
@@ -55,12 +55,20 @@ final class UpgradeRecommendation {
 					sprintf( 'Missing required key "%s" in upgrade recommendation', $key )
 				);
 			}
+			if ( ! is_string( $data[ $key ] ) ) {
+				throw ServerException::unexpectedResponse(
+					sprintf( 'Expected string "%s" in upgrade recommendation', $key )
+				);
+			}
 		}
 
-		return new self(
-			(string) $data['plan'],
-			(string) $data['name'],
-			(string) $data['url'],
-		);
+		/** @var string $plan */
+		$plan = $data['plan'];
+		/** @var string $name */
+		$name = $data['name'];
+		/** @var string $url */
+		$url = $data['url'];
+
+		return new self( $plan, $name, $url );
 	}
 }

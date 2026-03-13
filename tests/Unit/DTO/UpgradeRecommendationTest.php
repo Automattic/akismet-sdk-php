@@ -90,4 +90,17 @@ final class UpgradeRecommendationTest extends TestCase {
 			]
 		);
 	}
+
+	public function testFromResponseThrowsOnNonStringValue(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'plan' );
+
+		UpgradeRecommendation::fromResponse(
+			[
+				'plan' => 42,
+				'name' => 'Plus',
+				'url'  => 'https://akismet.com/upgrade/plus',
+			]
+		);
+	}
 }

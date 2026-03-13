@@ -106,7 +106,7 @@ interface AkismetInterface {
 	 * a notice_level threshold indicator and an optional upgrade recommendation
 	 * for accounts approaching or exceeding their plan limits.
 	 *
-	 * @return UsageLimit Current usage information with noticeLevel and upgrade populated.
+	 * @return UsageLimit Current usage information including extended fields (upgrade may be null if no upgrade is recommended).
 	 * @throws InvalidApiKeyException If the API key is invalid.
 	 * @throws ServerException If the API returns malformed JSON.
 	 * @throws AkismetException On network or API errors.
