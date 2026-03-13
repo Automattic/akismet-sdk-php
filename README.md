@@ -88,6 +88,7 @@ flowchart LR
 | `getSubscription()` | Get subscription / account plan information |
 | `getStats($interval)` | Get historical spam/ham statistics and breakdown |
 | `getUsageLimit()` | Get API usage stats and limits |
+| `getExtendedUsageLimit()` | Get usage stats with notice level and upgrade recommendation |
 | `getKeySites()` | Get sites using your API key (JSON format only; CSV is not supported) |
 | `getAccessToken()` | Exchange API key for a scoped access token (stats pages only, not for API calls) |
 

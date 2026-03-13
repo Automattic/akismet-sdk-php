@@ -113,6 +113,25 @@ try {
         echo "⚠ Warning: You are being throttled\n";
     }
 
+    // Step 5b: Extended usage limit (notice level + upgrade recommendation)
+    echo "\nChecking extended usage info...\n";
+    $extendedUsage = $akismet->getExtendedUsageLimit();
+
+    if ($extendedUsage->noticeLevel !== null) {
+        echo sprintf("Notice level: %s\n", $extendedUsage->noticeLevel);
+    }
+
+    if ($extendedUsage->upgrade !== null) {
+        echo sprintf(
+            "Upgrade recommended: %s (%s) — %s\n",
+            $extendedUsage->upgrade->name,
+            $extendedUsage->upgrade->plan,
+            $extendedUsage->upgrade->url
+        );
+    } else {
+        echo "No upgrade recommended\n";
+    }
+
     // Step 6: List sites using this API key
     echo "\nListing sites for this API key...\n";
     $sitesResponse = $akismet->getKeySites(limit: 10);
