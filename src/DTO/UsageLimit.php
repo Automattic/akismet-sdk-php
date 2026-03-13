@@ -89,7 +89,7 @@ final class UsageLimit {
 			$noticeLevel = (string) $data['notice_level'];
 		}
 
-		// The API returns false when no upgrade is recommended, or an array otherwise.
+		// The API returns false when no upgrade is recommended, null when absent, or an array otherwise.
 		$upgrade = null;
 		if ( array_key_exists( 'upgrade', $data ) && $data['upgrade'] !== false && $data['upgrade'] !== null ) {
 			if ( ! is_array( $data['upgrade'] ) ) {
