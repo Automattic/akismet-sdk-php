@@ -98,6 +98,16 @@ interface AkismetInterface {
 	public function getUsageLimit(): UsageLimit;
 
 	/**
+	 * Get subscription / account plan information.
+	 *
+	 * @return Subscription Current subscription details.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns malformed JSON.
+	 * @throws AkismetException On network or API errors.
+	 */
+	public function getSubscription(): Subscription;
+
+	/**
 	 * Get sites using this API key with their statistics.
 	 *
 	 * @param string|null $month  Month to get stats for (YYYY-MM format, month 01-12). Defaults to current month.
@@ -118,16 +128,6 @@ interface AkismetInterface {
 		int $offset = 0,
 		?KeySitesOrder $order = null,
 	): KeySitesResponse;
-
-	/**
-	 * Get subscription / account plan information.
-	 *
-	 * @return Subscription Current subscription details.
-	 * @throws InvalidApiKeyException If the API key is invalid.
-	 * @throws ServerException If the API returns malformed JSON.
-	 * @throws AkismetException On network or API errors.
-	 */
-	public function getSubscription(): Subscription;
 
 	/**
 	 * Exchange the API key for a scoped access token.

@@ -154,7 +154,7 @@ final class Akismet implements AkismetInterface {
 		$response = $this->httpClient->post( '/1.1/get-subscription', [] );
 		$data     = $this->decodeJsonResponse( $response );
 
-		/** @var array{account_id: int|string, account_type: string, account_name: string, status: string, next_billing_date: int|string|false, limit_reached: bool} $data */
+		/** @var array{account_id: mixed, account_type: mixed, account_name: mixed, status: mixed, next_billing_date: mixed, limit_reached: mixed} $data */
 		return Subscription::fromResponse( $data );
 	}
 

@@ -13,7 +13,7 @@ src/
 ├── Client/                  # PSR-18 HTTP client wrapper + auto-discovery
 ├── Config/Configuration.php # Immutable config
 ├── DTO/                     # Content, CheckResult, AlertMetadata, KeySitesResponse, SiteStats, Subscription, UsageLimit
-├── Enum/                    # ContentType, SpamVerdict, KeySitesOrder (PHP 8.1 enums)
+├── Enum/                    # ContentType, SpamVerdict, SubscriptionStatus, KeySitesOrder (PHP 8.1 enums)
 ├── Factory/                 # ContentFactory (from PSR-7 requests and arrays)
 ├── Validator/               # InputValidator (URL, IP, email)
 └── Exception/               # AkismetException, InvalidApiKeyException, ClientErrorException, ServerException, NetworkException, RateLimitException, ValidationException

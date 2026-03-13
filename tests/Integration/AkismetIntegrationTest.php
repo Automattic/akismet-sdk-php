@@ -346,12 +346,12 @@ final class AkismetIntegrationTest extends TestCase {
 		$this->assertGreaterThan( 0, $subscription->accountId, 'Account ID should be positive' );
 		$this->assertIsString( $subscription->slug );
 		$this->assertIsString( $subscription->displayName );
-		$this->assertContains(
-			$subscription->status,
-			[ 'active', 'missing', 'suspended', 'cancelled', 'no-sub' ],
-			'Status should be a known value'
-		);
+		$this->assertInstanceOf( \Automattic\Akismet\Enum\SubscriptionStatus::class, $subscription->status );
 		$this->assertIsBool( $subscription->limitReached );
+
+		if ( $subscription->nextBillingDate !== null ) {
+			$this->assertGreaterThan( 0, $subscription->nextBillingDate, 'Billing date should be a positive timestamp' );
+		}
 	}
 
 	public function testGetSubscriptionWithInvalidKey(): void {

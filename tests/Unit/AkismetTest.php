@@ -21,6 +21,7 @@ use Automattic\Akismet\DTO\Subscription;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Enum\SpamVerdict;
+use Automattic\Akismet\Enum\SubscriptionStatus;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
 use Automattic\Akismet\Exception\ValidationException;
@@ -46,6 +47,7 @@ use Psr\Http\Message\ResponseInterface;
 #[UsesClass( SpamVerdict::class )]
 #[UsesClass( Content::class )]
 #[UsesClass( Subscription::class )]
+#[UsesClass( SubscriptionStatus::class )]
 #[UsesClass( UsageLimit::class )]
 #[UsesClass( KeySitesResponse::class )]
 #[UsesClass( SiteStats::class )]
@@ -506,7 +508,9 @@ final class AkismetTest extends TestCase {
 		$this->assertSame( 123, $result->accountId );
 		$this->assertSame( 'pro', $result->slug );
 		$this->assertSame( 'Professional', $result->displayName );
-		$this->assertSame( 'active', $result->status );
+		$this->assertSame( SubscriptionStatus::Active, $result->status );
+		$this->assertSame( 1741824000, $result->nextBillingDate );
+		$this->assertFalse( $result->limitReached );
 		$this->assertTrue( $result->isActive() );
 	}
 
@@ -524,6 +528,17 @@ final class AkismetTest extends TestCase {
 	public function testGetSubscriptionThrowsOnMalformedJson(): void {
 		$akismet = $this->createAkismetWithResponse(
 			new Response( 200, [], 'not-json{' )
+		);
+
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
+
+		$akismet->getSubscription();
+	}
+
+	public function testGetSubscriptionThrowsOnJsonScalar(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], 'null' )
 		);
 
 		$this->expectException( ServerException::class );

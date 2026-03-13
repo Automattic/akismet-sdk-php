@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\Subscription;
+use Automattic\Akismet\Enum\SubscriptionStatus;
 use Automattic\Akismet\Exception\ServerException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -17,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass( Subscription::class )]
 #[UsesClass( ServerException::class )]
+#[UsesClass( SubscriptionStatus::class )]
 final class SubscriptionTest extends TestCase {
 
 	public function testCreatesWithPaidPlan(): void {
@@ -24,7 +26,7 @@ final class SubscriptionTest extends TestCase {
 			accountId: 123,
 			slug: 'pro',
 			displayName: 'Professional',
-			status: 'active',
+			status: SubscriptionStatus::Active,
 			nextBillingDate: 1741824000,
 			limitReached: false,
 		);
@@ -32,7 +34,7 @@ final class SubscriptionTest extends TestCase {
 		$this->assertSame( 123, $sub->accountId );
 		$this->assertSame( 'pro', $sub->slug );
 		$this->assertSame( 'Professional', $sub->displayName );
-		$this->assertSame( 'active', $sub->status );
+		$this->assertSame( SubscriptionStatus::Active, $sub->status );
 		$this->assertSame( 1741824000, $sub->nextBillingDate );
 		$this->assertFalse( $sub->limitReached );
 	}
@@ -42,7 +44,7 @@ final class SubscriptionTest extends TestCase {
 			accountId: 456,
 			slug: 'free-api-key',
 			displayName: 'Free',
-			status: 'active',
+			status: SubscriptionStatus::Active,
 			nextBillingDate: null,
 			limitReached: false,
 		);
@@ -51,30 +53,78 @@ final class SubscriptionTest extends TestCase {
 		$this->assertNull( $sub->nextBillingDate );
 	}
 
+	// =========================================================================
+	// isActive Tests
+	// =========================================================================
+
 	public function testIsActiveReturnsTrueForActiveStatus(): void {
-		$sub = new Subscription( 1, 'pro', 'Professional', 'active', 1741824000, false );
+		$sub = new Subscription( 1, 'pro', 'Professional', SubscriptionStatus::Active, 1741824000, false );
 		$this->assertTrue( $sub->isActive() );
 	}
 
 	public function testIsActiveReturnsFalseForCancelledStatus(): void {
-		$sub = new Subscription( 1, 'pro', 'Professional', 'cancelled', null, false );
+		$sub = new Subscription( 1, 'pro', 'Professional', SubscriptionStatus::Cancelled, null, false );
 		$this->assertFalse( $sub->isActive() );
 	}
 
 	public function testIsActiveReturnsFalseForSuspendedStatus(): void {
-		$sub = new Subscription( 1, 'pro', 'Professional', 'suspended', null, false );
+		$sub = new Subscription( 1, 'pro', 'Professional', SubscriptionStatus::Suspended, null, false );
 		$this->assertFalse( $sub->isActive() );
 	}
 
 	public function testIsActiveReturnsFalseForMissingStatus(): void {
-		$sub = new Subscription( 1, '', '', 'missing', null, false );
+		$sub = new Subscription( 1, '', '', SubscriptionStatus::Missing, null, false );
 		$this->assertFalse( $sub->isActive() );
 	}
 
 	public function testIsActiveReturnsFalseForNoSubStatus(): void {
-		$sub = new Subscription( 1, '', '', 'no-sub', null, false );
+		$sub = new Subscription( 1, '', '', SubscriptionStatus::NoSub, null, false );
 		$this->assertFalse( $sub->isActive() );
 	}
+
+	// =========================================================================
+	// isPaid Tests
+	// =========================================================================
+
+	public function testIsPaidReturnsTrueWithBillingDate(): void {
+		$sub = new Subscription( 1, 'pro', 'Professional', SubscriptionStatus::Active, 1741824000, false );
+		$this->assertTrue( $sub->isPaid() );
+	}
+
+	public function testIsPaidReturnsFalseWithNullBillingDate(): void {
+		$sub = new Subscription( 1, 'free-api-key', 'Free', SubscriptionStatus::Active, null, false );
+		$this->assertFalse( $sub->isPaid() );
+	}
+
+	// =========================================================================
+	// toArray Tests
+	// =========================================================================
+
+	public function testToArrayReturnsApiFormat(): void {
+		$sub = new Subscription( 123, 'pro', 'Professional', SubscriptionStatus::Active, 1741824000, false );
+
+		$this->assertSame(
+			[
+				'account_id'        => 123,
+				'account_type'      => 'pro',
+				'account_name'      => 'Professional',
+				'status'            => 'active',
+				'next_billing_date' => 1741824000,
+				'limit_reached'     => false,
+			],
+			$sub->toArray()
+		);
+	}
+
+	public function testToArrayReturnsFalseForNullBillingDate(): void {
+		$sub = new Subscription( 1, 'free-api-key', 'Free', SubscriptionStatus::Active, null, false );
+
+		$this->assertFalse( $sub->toArray()['next_billing_date'] );
+	}
+
+	// =========================================================================
+	// fromResponse Tests
+	// =========================================================================
 
 	public function testFromResponseWithPaidPlan(): void {
 		$data = [
@@ -91,69 +141,90 @@ final class SubscriptionTest extends TestCase {
 		$this->assertSame( 123, $sub->accountId );
 		$this->assertSame( 'pro', $sub->slug );
 		$this->assertSame( 'Professional', $sub->displayName );
-		$this->assertSame( 'active', $sub->status );
+		$this->assertSame( SubscriptionStatus::Active, $sub->status );
 		$this->assertSame( 1741824000, $sub->nextBillingDate );
 		$this->assertFalse( $sub->limitReached );
 	}
 
 	public function testFromResponseWithFreePlanFalseBillingDate(): void {
-		$data = [
-			'account_id'        => 456,
-			'account_type'      => 'free-api-key',
-			'account_name'      => 'Free',
-			'status'            => 'active',
-			'next_billing_date' => false,
-			'limit_reached'     => false,
-		];
+		$sub = Subscription::fromResponse(
+			[
+				'account_id'        => 456,
+				'account_type'      => 'free-api-key',
+				'account_name'      => 'Free',
+				'status'            => 'active',
+				'next_billing_date' => false,
+				'limit_reached'     => false,
+			]
+		);
 
-		$sub = Subscription::fromResponse( $data );
+		$this->assertNull( $sub->nextBillingDate );
+	}
+
+	public function testFromResponseWithNullBillingDate(): void {
+		$sub = Subscription::fromResponse(
+			[
+				'account_id'        => 456,
+				'account_type'      => 'free-api-key',
+				'account_name'      => 'Free',
+				'status'            => 'active',
+				'next_billing_date' => null,
+				'limit_reached'     => false,
+			]
+		);
 
 		$this->assertNull( $sub->nextBillingDate );
 	}
 
 	public function testFromResponseWithNoSubscription(): void {
-		$data = [
-			'account_id'        => 789,
-			'account_type'      => '',
-			'account_name'      => '',
-			'status'            => 'no-sub',
-			'next_billing_date' => false,
-			'limit_reached'     => false,
-		];
-
-		$sub = Subscription::fromResponse( $data );
+		$sub = Subscription::fromResponse(
+			[
+				'account_id'        => 789,
+				'account_type'      => '',
+				'account_name'      => '',
+				'status'            => 'no-sub',
+				'next_billing_date' => false,
+				'limit_reached'     => false,
+			]
+		);
 
 		$this->assertSame( '', $sub->slug );
-		$this->assertSame( 'no-sub', $sub->status );
+		$this->assertSame( SubscriptionStatus::NoSub, $sub->status );
 		$this->assertFalse( $sub->isActive() );
 	}
 
+	public function testFromResponseCastsStringAccountId(): void {
+		$sub = Subscription::fromResponse(
+			[
+				'account_id'        => '999',
+				'account_type'      => 'plus',
+				'account_name'      => 'Plus',
+				'status'            => 'active',
+				'next_billing_date' => '1741824000',
+				'limit_reached'     => false,
+			]
+		);
+
+		$this->assertSame( 999, $sub->accountId );
+		$this->assertSame( 1741824000, $sub->nextBillingDate );
+	}
+
+	// =========================================================================
+	// fromResponse Validation Tests
+	// =========================================================================
+
 	public function testFromResponseThrowsOnMissingKeys(): void {
 		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'account_type' );
 
 		Subscription::fromResponse( [ 'account_id' => 123 ] );
 	}
 
 	public function testFromResponseThrowsOnEmptyArray(): void {
 		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'account_id' );
 
 		Subscription::fromResponse( [] );
-	}
-
-	public function testFromResponseCastsStringAccountId(): void {
-		$data = [
-			'account_id'        => '999',
-			'account_type'      => 'plus',
-			'account_name'      => 'Plus',
-			'status'            => 'active',
-			'next_billing_date' => '1741824000',
-			'limit_reached'     => false,
-		];
-
-		$sub = Subscription::fromResponse( $data );
-
-		$this->assertSame( 999, $sub->accountId );
-		$this->assertSame( 1741824000, $sub->nextBillingDate );
 	}
 
 	public function testFromResponseThrowsOnNonNumericAccountId(): void {
@@ -166,6 +237,54 @@ final class SubscriptionTest extends TestCase {
 				'account_type'      => 'pro',
 				'account_name'      => 'Professional',
 				'status'            => 'active',
+				'next_billing_date' => 1741824000,
+				'limit_reached'     => false,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnZeroAccountId(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'account_id' );
+
+		Subscription::fromResponse(
+			[
+				'account_id'        => 0,
+				'account_type'      => 'pro',
+				'account_name'      => 'Professional',
+				'status'            => 'active',
+				'next_billing_date' => 1741824000,
+				'limit_reached'     => false,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnNegativeAccountId(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'account_id' );
+
+		Subscription::fromResponse(
+			[
+				'account_id'        => -1,
+				'account_type'      => 'pro',
+				'account_name'      => 'Professional',
+				'status'            => 'active',
+				'next_billing_date' => 1741824000,
+				'limit_reached'     => false,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnUnknownStatus(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'Unknown status' );
+
+		Subscription::fromResponse(
+			[
+				'account_id'        => 123,
+				'account_type'      => 'pro',
+				'account_name'      => 'Professional',
+				'status'            => 'banana',
 				'next_billing_date' => 1741824000,
 				'limit_reached'     => false,
 			]
