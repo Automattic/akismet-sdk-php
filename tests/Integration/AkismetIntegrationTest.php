@@ -336,6 +336,36 @@ final class AkismetIntegrationTest extends TestCase {
 	}
 
 	// =========================================================================
+	// Subscription Tests
+	// =========================================================================
+
+	public function testGetSubscriptionReturnsValidData(): void {
+		$subscription = $this->akismet->getSubscription();
+
+		$this->assertIsInt( $subscription->accountId );
+		$this->assertGreaterThan( 0, $subscription->accountId, 'Account ID should be positive' );
+		$this->assertIsString( $subscription->slug );
+		$this->assertIsString( $subscription->displayName );
+		$this->assertContains(
+			$subscription->status,
+			[ 'active', 'missing', 'suspended', 'cancelled', 'no-sub' ],
+			'Status should be a known value'
+		);
+		$this->assertIsBool( $subscription->limitReached );
+	}
+
+	public function testGetSubscriptionWithInvalidKey(): void {
+		$akismet = Akismet::create(
+			apiKey: 'invalid-key-that-does-not-exist',
+			site: $this->siteUrl,
+			isTest: true
+		);
+
+		$this->expectException( InvalidApiKeyException::class );
+		$akismet->getSubscription();
+	}
+
+	// =========================================================================
 	// Access Token Tests
 	// =========================================================================
 

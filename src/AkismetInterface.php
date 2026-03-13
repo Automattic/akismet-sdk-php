@@ -12,6 +12,7 @@ namespace Automattic\Akismet;
 use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Content;
 use Automattic\Akismet\DTO\KeySitesResponse;
+use Automattic\Akismet\DTO\Subscription;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Exception\AkismetException;
@@ -117,6 +118,16 @@ interface AkismetInterface {
 		int $offset = 0,
 		?KeySitesOrder $order = null,
 	): KeySitesResponse;
+
+	/**
+	 * Get subscription / account plan information.
+	 *
+	 * @return Subscription Current subscription details.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns malformed JSON.
+	 * @throws AkismetException On network or API errors.
+	 */
+	public function getSubscription(): Subscription;
 
 	/**
 	 * Exchange the API key for a scoped access token.

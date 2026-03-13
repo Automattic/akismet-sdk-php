@@ -17,6 +17,7 @@ use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Content;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\SiteStats;
+use Automattic\Akismet\DTO\Subscription;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Enum\SpamVerdict;
@@ -44,6 +45,7 @@ use Psr\Http\Message\ResponseInterface;
 #[UsesClass( KeySitesOrder::class )]
 #[UsesClass( SpamVerdict::class )]
 #[UsesClass( Content::class )]
+#[UsesClass( Subscription::class )]
 #[UsesClass( UsageLimit::class )]
 #[UsesClass( KeySitesResponse::class )]
 #[UsesClass( SiteStats::class )]
@@ -478,6 +480,85 @@ final class AkismetTest extends TestCase {
 		$this->assertNotNull( $capturedRequest );
 		$this->assertSame( 'POST', $capturedRequest->getMethod() );
 		$this->assertStringContainsString( '/1.1/token', (string) $capturedRequest->getUri() );
+	}
+
+	// =========================================================================
+	// getSubscription Tests
+	// =========================================================================
+
+	public function testGetSubscriptionReturnsDto(): void {
+		$json    = json_encode(
+			[
+				'account_id'        => 123,
+				'account_type'      => 'pro',
+				'account_name'      => 'Professional',
+				'status'            => 'active',
+				'next_billing_date' => 1741824000,
+				'limit_reached'     => false,
+			]
+		);
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], $json )
+		);
+
+		$result = $akismet->getSubscription();
+
+		$this->assertSame( 123, $result->accountId );
+		$this->assertSame( 'pro', $result->slug );
+		$this->assertSame( 'Professional', $result->displayName );
+		$this->assertSame( 'active', $result->status );
+		$this->assertTrue( $result->isActive() );
+	}
+
+	public function testGetSubscriptionThrowsOnInvalidBody(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [ 'X-akismet-debug-help' => 'Bad key' ], 'invalid' )
+		);
+
+		$this->expectException( InvalidApiKeyException::class );
+		$this->expectExceptionMessage( 'Bad key' );
+
+		$akismet->getSubscription();
+	}
+
+	public function testGetSubscriptionThrowsOnMalformedJson(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], 'not-json{' )
+		);
+
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
+
+		$akismet->getSubscription();
+	}
+
+	public function testGetSubscriptionPostsToCorrectEndpoint(): void {
+		$capturedRequest = null;
+		$json            = json_encode(
+			[
+				'account_id'        => 1,
+				'account_type'      => 'free-api-key',
+				'account_name'      => 'Free',
+				'status'            => 'active',
+				'next_billing_date' => false,
+				'limit_reached'     => false,
+			]
+		);
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], $json ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->getSubscription();
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertSame( 'POST', $capturedRequest->getMethod() );
+		$this->assertStringContainsString( '/1.1/get-subscription', (string) $capturedRequest->getUri() );
 	}
 
 	// =========================================================================
