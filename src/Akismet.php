@@ -141,13 +141,22 @@ final class Akismet implements AkismetInterface {
 	/**
 	 * @inheritDoc
 	 */
-	public function getUsageLimit( bool $extended = false ): UsageLimit {
-		$params = $extended ? [ 'extended' => 'true' ] : [];
-
-		$response = $this->httpClient->get( '/1.2/usage-limit', $params );
+	public function getUsageLimit(): UsageLimit {
+		$response = $this->httpClient->get( '/1.2/usage-limit' );
 		$data     = $this->decodeJsonResponse( $response );
 
-		/** @var array{limit: int|string, usage: int, percentage: string, throttled: bool, notice_level?: string, upgrade?: array{plan: string, name: string, url: string}|false} $data */
+		/** @var array{limit: int|string, usage: int, percentage: string, throttled: bool} $data */
+		return UsageLimit::fromResponse( $data );
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getExtendedUsageLimit(): UsageLimit {
+		$response = $this->httpClient->get( '/1.2/usage-limit', [ 'extended' => 'true' ] );
+		$data     = $this->decodeJsonResponse( $response );
+
+		/** @var array{limit: int|string, usage: int|string, percentage: int|string, throttled: bool, notice_level?: mixed, upgrade?: mixed} $data */
 		return UsageLimit::fromResponse( $data );
 	}
 

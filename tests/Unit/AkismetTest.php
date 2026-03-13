@@ -260,7 +260,11 @@ final class AkismetTest extends TestCase {
 		$akismet->getUsageLimit();
 	}
 
-	public function testGetUsageLimitExtendedReturnsDto(): void {
+	// =========================================================================
+	// getExtendedUsageLimit Tests
+	// =========================================================================
+
+	public function testGetExtendedUsageLimitReturnsDto(): void {
 		$json    = json_encode(
 			[
 				'limit'        => 10000,
@@ -279,7 +283,7 @@ final class AkismetTest extends TestCase {
 			new Response( 200, [], $json )
 		);
 
-		$result = $akismet->getUsageLimit( extended: true );
+		$result = $akismet->getExtendedUsageLimit();
 
 		$this->assertSame( 'NOTICE_FIRST_MONTH_OVER_LIMIT', $result->noticeLevel );
 		$this->assertNotNull( $result->upgrade );
@@ -288,7 +292,7 @@ final class AkismetTest extends TestCase {
 		$this->assertSame( 'https://akismet.com/upgrade/plus', $result->upgrade->url );
 	}
 
-	public function testGetUsageLimitExtendedPassesQueryParam(): void {
+	public function testGetExtendedUsageLimitPassesQueryParam(): void {
 		$capturedRequest = null;
 		$json            = json_encode(
 			[
@@ -309,13 +313,13 @@ final class AkismetTest extends TestCase {
 			httpClient: $mockClient,
 		);
 
-		$akismet->getUsageLimit( extended: true );
+		$akismet->getExtendedUsageLimit();
 
 		$this->assertNotNull( $capturedRequest );
 		$this->assertStringContainsString( 'extended=true', (string) $capturedRequest->getUri() );
 	}
 
-	public function testGetUsageLimitWithoutExtendedOmitsQueryParam(): void {
+	public function testGetUsageLimitOmitsExtendedQueryParam(): void {
 		$capturedRequest = null;
 		$json            = json_encode(
 			[

@@ -312,8 +312,8 @@ final class AkismetIntegrationTest extends TestCase {
 		}
 	}
 
-	public function testGetUsageLimitExtendedReturnsValidData(): void {
-		$usage = $this->akismet->getUsageLimit( extended: true );
+	public function testGetExtendedUsageLimitReturnsValidData(): void {
+		$usage = $this->akismet->getExtendedUsageLimit();
 
 		$this->assertGreaterThanOrEqual( 0, $usage->usage, 'Usage should be non-negative' );
 

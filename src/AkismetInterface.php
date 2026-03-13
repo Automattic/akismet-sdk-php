@@ -92,17 +92,26 @@ interface AkismetInterface {
 	/**
 	 * Get API usage statistics and limits.
 	 *
-	 * When $extended is true, the response includes a notice_level threshold
-	 * indicator and an optional upgrade recommendation for accounts approaching
-	 * or exceeding their plan limits.
-	 *
-	 * @param bool $extended Request extended fields (notice_level, upgrade).
 	 * @return UsageLimit Current usage information.
 	 * @throws InvalidApiKeyException If the API key is invalid.
 	 * @throws ServerException If the API returns malformed JSON.
 	 * @throws AkismetException On network or API errors.
 	 */
-	public function getUsageLimit( bool $extended = false ): UsageLimit;
+	public function getUsageLimit(): UsageLimit;
+
+	/**
+	 * Get API usage statistics and limits with extended fields.
+	 *
+	 * Requests the usage-limit endpoint with extended=true, which includes
+	 * a notice_level threshold indicator and an optional upgrade recommendation
+	 * for accounts approaching or exceeding their plan limits.
+	 *
+	 * @return UsageLimit Current usage information with noticeLevel and upgrade populated.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns malformed JSON.
+	 * @throws AkismetException On network or API errors.
+	 */
+	public function getExtendedUsageLimit(): UsageLimit;
 
 	/**
 	 * Get subscription / account plan information.

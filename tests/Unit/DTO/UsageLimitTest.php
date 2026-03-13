@@ -205,4 +205,76 @@ final class UsageLimitTest extends TestCase {
 		$this->assertNull( $usage->noticeLevel );
 		$this->assertNull( $usage->upgrade );
 	}
+
+	public function testFromResponseWithNullNoticeLevel(): void {
+		$data = [
+			'limit'        => 10000,
+			'usage'        => 4500,
+			'percentage'   => '45.0%',
+			'throttled'    => false,
+			'notice_level' => null,
+		];
+
+		$usage = UsageLimit::fromResponse( $data );
+
+		$this->assertNull( $usage->noticeLevel );
+	}
+
+	public function testFromResponseWithIntNoticeLevel(): void {
+		$data = [
+			'limit'        => 10000,
+			'usage'        => 4500,
+			'percentage'   => '45.0%',
+			'throttled'    => false,
+			'notice_level' => 0,
+		];
+
+		$usage = UsageLimit::fromResponse( $data );
+
+		$this->assertSame( '0', $usage->noticeLevel );
+	}
+
+	public function testFromResponseThrowsOnInvalidNoticeLevel(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'notice_level' );
+
+		UsageLimit::fromResponse(
+			[
+				'limit'        => 10000,
+				'usage'        => 4500,
+				'percentage'   => '45.0%',
+				'throttled'    => false,
+				'notice_level' => [ 'unexpected' ],
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnNonArrayUpgrade(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'upgrade' );
+
+		UsageLimit::fromResponse(
+			[
+				'limit'      => 10000,
+				'usage'      => 4500,
+				'percentage' => '45.0%',
+				'throttled'  => false,
+				'upgrade'    => 'invalid',
+			]
+		);
+	}
+
+	public function testFromResponseWithNullUpgrade(): void {
+		$data = [
+			'limit'      => 10000,
+			'usage'      => 4500,
+			'percentage' => '45.0%',
+			'throttled'  => false,
+			'upgrade'    => null,
+		];
+
+		$usage = UsageLimit::fromResponse( $data );
+
+		$this->assertNull( $usage->upgrade );
+	}
 }
