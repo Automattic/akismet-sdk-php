@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add getSubscription() method and Subscription DTO for retrieving account plan information via the get-subscription endpoint.

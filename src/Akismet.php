@@ -14,6 +14,7 @@ use Automattic\Akismet\Config\Configuration;
 use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Content;
 use Automattic\Akismet\DTO\KeySitesResponse;
+use Automattic\Akismet\DTO\Subscription;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
@@ -144,6 +145,17 @@ final class Akismet implements AkismetInterface {
 
 		/** @var array{limit: int|string, usage: int, percentage: string, throttled: bool} $data */
 		return UsageLimit::fromResponse( $data );
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getSubscription(): Subscription {
+		$response = $this->httpClient->post( '/1.1/get-subscription', [] );
+		$data     = $this->decodeJsonResponse( $response );
+
+		/** @var array{account_id: mixed, account_type: mixed, account_name: mixed, status: mixed, next_billing_date: mixed, limit_reached: mixed} $data */
+		return Subscription::fromResponse( $data );
 	}
 
 	/**

@@ -66,7 +66,22 @@ try {
         echo "This comment appears to be legitimate\n";
     }
 
-    // Step 3: Check usage limits
+    // Step 3: Check subscription info
+    echo "\nChecking subscription...\n";
+    $subscription = $akismet->getSubscription();
+
+    echo sprintf(
+        "Plan: %s (%s) - Status: %s\n",
+        $subscription->displayName,
+        $subscription->slug,
+        $subscription->status->value
+    );
+
+    if ($subscription->limitReached) {
+        echo "⚠ Warning: Usage limit reached\n";
+    }
+
+    // Step 4: Check usage limits (API 1.2)
     echo "\nChecking API usage...\n";
     $usage = $akismet->getUsageLimit();
 
@@ -81,7 +96,7 @@ try {
         echo "⚠ Warning: You are being throttled\n";
     }
 
-    // Step 4: List sites using this API key
+    // Step 5: List sites using this API key
     echo "\nListing sites for this API key...\n";
     $sitesResponse = $akismet->getKeySites(limit: 10);
 

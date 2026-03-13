@@ -72,7 +72,7 @@ flowchart TD
     A -->|optional| E[ContentFactory]
     E -->|creates| F[Content DTO]
     F -->|"passed to check()"| B
-    B -->|returns| G["CheckResult / UsageLimit<br/>KeySitesResponse"]
+    B -->|returns| G["CheckResult / UsageLimit<br/>Subscription / KeySitesResponse"]
 
     H[Configuration] --> B
     H --> C
