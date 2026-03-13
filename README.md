@@ -58,6 +58,17 @@ if ($result->isSpam()) {
 }
 ```
 
+### How It Works
+
+```mermaid
+flowchart LR
+    A[Your App] --> B["Akismet::check()"]
+    B --> C{verdict}
+    C -->|ham| D[Publish Content]
+    C -->|discard| E[Drop Silently]
+    C -->|spam| F[Queue for Review]
+```
+
 ## Features
 
 - Full support for Akismet API 1.1 and 1.2 endpoints
@@ -157,6 +168,19 @@ try {
 } catch (AkismetException $e) {
     // Catch-all for network errors, server errors, validation errors, etc.
 }
+```
+
+```mermaid
+classDiagram
+    class AkismetException {
+        <<interface>>
+    }
+    InvalidApiKeyException ..|> AkismetException
+    ValidationException ..|> AkismetException
+    ClientErrorException ..|> AkismetException
+    RateLimitException ..|> AkismetException
+    NetworkException ..|> AkismetException
+    ServerException ..|> AkismetException
 ```
 
 | Exception | When |
