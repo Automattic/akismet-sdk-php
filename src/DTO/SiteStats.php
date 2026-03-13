@@ -28,6 +28,23 @@ final class SiteStats {
 	}
 
 	/**
+	 * Convert to an array matching the API response format.
+	 *
+	 * @return array{site: string, api_calls: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool}
+	 */
+	public function toArray(): array {
+		return [
+			'site'            => $this->site,
+			'api_calls'       => $this->totalCalls,
+			'spam'            => $this->spam,
+			'ham'             => $this->ham,
+			'missed_spam'     => $this->missedSpam,
+			'false_positives' => $this->falsePositives,
+			'is_revoked'      => $this->isRevoked,
+		];
+	}
+
+	/**
 	 * Calculate the spam detection accuracy percentage.
 	 *
 	 * Returns null if there are no calls to calculate from. The result is

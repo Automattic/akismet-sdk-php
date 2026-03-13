@@ -111,9 +111,11 @@ final class CheckResult implements JsonSerializable {
 	}
 
 	/**
-	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array<string, mixed>|null}
+	 * Convert to an array.
+	 *
+	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null}
 	 */
-	public function jsonSerialize(): array {
+	public function toArray(): array {
 		return [
 			'verdict'       => $this->verdict->value,
 			'proTip'        => $this->proTip,
@@ -121,7 +123,14 @@ final class CheckResult implements JsonSerializable {
 			'alertCode'     => $this->alertCode,
 			'alertMessage'  => $this->alertMessage,
 			'guid'          => $this->guid,
-			'alertMetadata' => $this->alertMetadata?->jsonSerialize(),
+			'alertMetadata' => $this->alertMetadata?->toArray(),
 		];
+	}
+
+	/**
+	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null}
+	 */
+	public function jsonSerialize(): array {
+		return $this->toArray();
 	}
 }

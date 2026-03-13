@@ -59,6 +59,39 @@ final class KeySitesResponseTest extends TestCase {
 		$this->assertSame( 1000, $response2->getNextOffset() );
 	}
 
+	public function testToArrayReturnsApiFormat(): void {
+		$sites = [
+			new SiteStats( 'site1.com', 1000, 400, 590, 5, 5, false ),
+			new SiteStats( 'site2.com', 500, 200, 295, 3, 2, true ),
+		];
+
+		$response = new KeySitesResponse( $sites, 500, 0, 2 );
+		$array    = $response->toArray();
+
+		$this->assertSame( 500, $array['limit'] );
+		$this->assertSame( 0, $array['offset'] );
+		$this->assertSame( 2, $array['total'] );
+		$this->assertCount( 2, $array['sites'] );
+
+		$this->assertSame( 'site1.com', $array['sites'][0]['site'] );
+		$this->assertSame( 1000, $array['sites'][0]['api_calls'] );
+		$this->assertFalse( $array['sites'][0]['is_revoked'] );
+
+		$this->assertSame( 'site2.com', $array['sites'][1]['site'] );
+		$this->assertSame( 500, $array['sites'][1]['api_calls'] );
+		$this->assertTrue( $array['sites'][1]['is_revoked'] );
+	}
+
+	public function testToArrayWithEmptySites(): void {
+		$response = new KeySitesResponse( [], 500, 0, 0 );
+		$array    = $response->toArray();
+
+		$this->assertSame( [], $array['sites'] );
+		$this->assertSame( 500, $array['limit'] );
+		$this->assertSame( 0, $array['offset'] );
+		$this->assertSame( 0, $array['total'] );
+	}
+
 	public function testFromResponseParsesCorrectly(): void {
 		$data = [
 			'2024-01' => [

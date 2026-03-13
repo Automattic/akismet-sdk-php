@@ -22,6 +22,8 @@ enum SubscriptionStatus: string {
 
 	/**
 	 * Check if this status represents an active subscription.
+	 *
+	 * @return bool
 	 */
 	public function isActive(): bool {
 		return $this === self::Active;

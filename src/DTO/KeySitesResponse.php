@@ -31,6 +31,25 @@ final class KeySitesResponse {
 	}
 
 	/**
+	 * Convert to an array matching the API response format.
+	 *
+	 * @return array{sites: array<int, array{site: string, api_calls: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool}>, limit: int, offset: int, total: int}
+	 */
+	public function toArray(): array {
+		$sites = [];
+		foreach ( $this->sites as $site ) {
+			$sites[] = $site->toArray();
+		}
+
+		return [
+			'sites'  => $sites,
+			'limit'  => $this->limit,
+			'offset' => $this->offset,
+			'total'  => $this->total,
+		];
+	}
+
+	/**
 	 * Check if there are more pages of results.
 	 */
 	public function hasMore(): bool {

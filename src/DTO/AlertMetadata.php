@@ -100,9 +100,11 @@ final class AlertMetadata implements JsonSerializable {
 	}
 
 	/**
+	 * Convert to an array.
+	 *
 	 * @return array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}
 	 */
-	public function jsonSerialize(): array {
+	public function toArray(): array {
 		return [
 			'apiCalls'            => $this->apiCalls,
 			'usageLimit'          => $this->usageLimit,
@@ -112,5 +114,12 @@ final class AlertMetadata implements JsonSerializable {
 			'upgradeViaSupport'   => $this->upgradeViaSupport,
 			'recommendedPlanName' => $this->recommendedPlanName,
 		];
+	}
+
+	/**
+	 * @return array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}
+	 */
+	public function jsonSerialize(): array {
+		return $this->toArray();
 	}
 }

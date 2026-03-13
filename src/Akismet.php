@@ -68,6 +68,7 @@ final class Akismet implements AkismetInterface {
 	 * @param ClientInterface|null         $httpClient           Custom PSR-18 HTTP client.
 	 * @param RequestFactoryInterface|null $requestFactory       Custom PSR-17 request factory.
 	 * @param StreamFactoryInterface|null  $streamFactory        Custom PSR-17 stream factory.
+	 * @return self
 	 */
 	public static function create(
 		string $apiKey,
@@ -162,7 +163,7 @@ final class Akismet implements AkismetInterface {
 		$response = $this->httpClient->get( '/1.2/usage-limit', $params );
 		$data     = $this->decodeJsonResponse( $response );
 
-		/** @var array{limit: int|string, usage: int|string, percentage: int|string, throttled: bool, notice_level?: mixed, upgrade?: mixed} $data */
+		/** @var array{limit: mixed, usage: mixed, percentage: mixed, throttled: mixed, notice_level?: mixed, upgrade?: mixed} $data */
 		return UsageLimit::fromResponse( $data );
 	}
 
@@ -184,7 +185,9 @@ final class Akismet implements AkismetInterface {
 		$response = $this->httpClient->post(
 			'/1.2/get-key-stats',
 			[
-				// The get-key-stats endpoint requires the 'key' wire parameter (not 'api_key').
+				// This endpoint reads 'key', not 'api_key'. HttpClient::post()
+				// also appends 'api_key' — the API ignores the extra param
+				// (same pattern as verify-key).
 				'key'  => $this->config->apiKey,
 				'from' => $interval->value,
 			]
@@ -258,6 +261,8 @@ final class Akismet implements AkismetInterface {
 
 	/**
 	 * Get the current configuration.
+	 *
+	 * @return Configuration
 	 */
 	public function getConfiguration(): Configuration {
 		return $this->config;
