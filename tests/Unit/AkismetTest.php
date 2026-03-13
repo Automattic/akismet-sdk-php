@@ -17,10 +17,13 @@ use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Content;
 use Automattic\Akismet\DTO\KeySitesResponse;
 use Automattic\Akismet\DTO\SiteStats;
+use Automattic\Akismet\DTO\Stats;
+use Automattic\Akismet\DTO\StatsBreakdownEntry;
 use Automattic\Akismet\DTO\Subscription;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Enum\SpamVerdict;
+use Automattic\Akismet\Enum\StatsInterval;
 use Automattic\Akismet\Enum\SubscriptionStatus;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
@@ -51,6 +54,9 @@ use Psr\Http\Message\ResponseInterface;
 #[UsesClass( UsageLimit::class )]
 #[UsesClass( KeySitesResponse::class )]
 #[UsesClass( SiteStats::class )]
+#[UsesClass( Stats::class )]
+#[UsesClass( StatsBreakdownEntry::class )]
+#[UsesClass( StatsInterval::class )]
 #[UsesClass( ValidationException::class )]
 final class AkismetTest extends TestCase {
 
@@ -574,6 +580,168 @@ final class AkismetTest extends TestCase {
 		$this->assertNotNull( $capturedRequest );
 		$this->assertSame( 'POST', $capturedRequest->getMethod() );
 		$this->assertStringContainsString( '/1.1/get-subscription', (string) $capturedRequest->getUri() );
+	}
+
+	// =========================================================================
+	// getStats Tests
+	// =========================================================================
+
+	public function testGetStatsReturnsDto(): void {
+		$json    = json_encode(
+			[
+				'spam'            => 149,
+				'ham'             => 242,
+				'missed_spam'     => 10,
+				'false_positives' => 10,
+				'accuracy'        => '94.88',
+				'time_saved'      => 7455,
+				'breakdown'       => [
+					'2026-01' => [
+						'spam'            => '5',
+						'ham'             => '5',
+						'missed_spam'     => '0',
+						'false_positives' => '0',
+						'blogs'           => '1',
+						'da'              => '2026-01-01',
+					],
+				],
+			]
+		);
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], $json )
+		);
+
+		$result = $akismet->getStats();
+
+		$this->assertSame( 149, $result->spam );
+		$this->assertSame( 242, $result->ham );
+		$this->assertSame( '94.88', $result->accuracy );
+		$this->assertSame( 7455, $result->timeSaved );
+		$this->assertCount( 1, $result->breakdown );
+		$this->assertSame( 5, $result->breakdown['2026-01']->spam );
+	}
+
+	public function testGetStatsThrowsOnInvalidBody(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [ 'X-akismet-debug-help' => 'Bad key' ], 'invalid' )
+		);
+
+		$this->expectException( InvalidApiKeyException::class );
+		$this->expectExceptionMessage( 'Bad key' );
+
+		$akismet->getStats();
+	}
+
+	public function testGetStatsThrowsOnMalformedJson(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], 'not-json{' )
+		);
+
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
+
+		$akismet->getStats();
+	}
+
+	public function testGetStatsThrowsOnJsonScalar(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], 'null' )
+		);
+
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
+
+		$akismet->getStats();
+	}
+
+	public function testGetStatsPostsToCorrectEndpoint(): void {
+		$capturedRequest = null;
+		$json            = json_encode(
+			[
+				'spam'            => 0,
+				'ham'             => 0,
+				'missed_spam'     => 0,
+				'false_positives' => 0,
+				'accuracy'        => 0,
+				'time_saved'      => 0,
+				'breakdown'       => [],
+			]
+		);
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], $json ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->getStats();
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertSame( 'POST', $capturedRequest->getMethod() );
+		$this->assertStringContainsString( '/1.2/get-key-stats', (string) $capturedRequest->getUri() );
+	}
+
+	public function testGetStatsPassesIntervalParameter(): void {
+		$capturedRequest = null;
+		$json            = json_encode(
+			[
+				'spam'            => 0,
+				'ham'             => 0,
+				'missed_spam'     => 0,
+				'false_positives' => 0,
+				'accuracy'        => 0,
+				'time_saved'      => 0,
+				'breakdown'       => [],
+			]
+		);
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], $json ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->getStats( StatsInterval::All );
+
+		$this->assertNotNull( $capturedRequest );
+		$body = (string) $capturedRequest->getBody();
+		$this->assertStringContainsString( 'from=all', $body );
+	}
+
+	public function testGetStatsDefaultsToSixMonths(): void {
+		$capturedRequest = null;
+		$json            = json_encode(
+			[
+				'spam'            => 0,
+				'ham'             => 0,
+				'missed_spam'     => 0,
+				'false_positives' => 0,
+				'accuracy'        => 0,
+				'time_saved'      => 0,
+				'breakdown'       => [],
+			]
+		);
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], $json ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->getStats();
+
+		$this->assertNotNull( $capturedRequest );
+		$body = (string) $capturedRequest->getBody();
+		$this->assertStringContainsString( 'from=6-months', $body );
 	}
 
 	// =========================================================================

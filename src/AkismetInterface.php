@@ -12,9 +12,11 @@ namespace Automattic\Akismet;
 use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Content;
 use Automattic\Akismet\DTO\KeySitesResponse;
+use Automattic\Akismet\DTO\Stats;
 use Automattic\Akismet\DTO\Subscription;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
+use Automattic\Akismet\Enum\StatsInterval;
 use Automattic\Akismet\Exception\AkismetException;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
@@ -106,6 +108,17 @@ interface AkismetInterface {
 	 * @throws AkismetException On network or API errors.
 	 */
 	public function getSubscription(): Subscription;
+
+	/**
+	 * Get historical spam/ham statistics for this API key.
+	 *
+	 * @param StatsInterval $interval Time range for statistics.
+	 * @return Stats Aggregate counts and per-period breakdown.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns malformed JSON.
+	 * @throws AkismetException On network or API errors.
+	 */
+	public function getStats( StatsInterval $interval = StatsInterval::SixMonths ): Stats;
 
 	/**
 	 * Get sites using this API key with their statistics.
