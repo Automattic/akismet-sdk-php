@@ -14,9 +14,11 @@ use Automattic\Akismet\Config\Configuration;
 use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Content;
 use Automattic\Akismet\DTO\KeySitesResponse;
+use Automattic\Akismet\DTO\Stats;
 use Automattic\Akismet\DTO\Subscription;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
+use Automattic\Akismet\Enum\StatsInterval;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
 use Automattic\Akismet\Exception\ValidationException;
@@ -156,6 +158,24 @@ final class Akismet implements AkismetInterface {
 
 		/** @var array{account_id: mixed, account_type: mixed, account_name: mixed, status: mixed, next_billing_date: mixed, limit_reached: mixed} $data */
 		return Subscription::fromResponse( $data );
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getStats( StatsInterval $interval = StatsInterval::SixMonths ): Stats {
+		$response = $this->httpClient->post(
+			'/1.2/get-key-stats',
+			[
+				// The get-key-stats endpoint requires the 'key' wire parameter (not 'api_key').
+				'key'  => $this->config->apiKey,
+				'from' => $interval->value,
+			]
+		);
+		$data     = $this->decodeJsonResponse( $response );
+
+		/** @var array<string, mixed> $data */
+		return Stats::fromResponse( $data );
 	}
 
 	/**

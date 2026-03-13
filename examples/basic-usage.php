@@ -81,7 +81,24 @@ try {
         echo "⚠ Warning: Usage limit reached\n";
     }
 
-    // Step 4: Check usage limits (API 1.2)
+    // Step 4: Check historical stats (API 1.2)
+    echo "\nChecking stats...\n";
+    $stats = $akismet->getStats(\Automattic\Akismet\Enum\StatsInterval::SixMonths);
+
+    echo sprintf(
+        "Last 6 months: %d spam, %d ham (accuracy: %s%%)\n",
+        $stats->spam,
+        $stats->ham,
+        $stats->accuracy
+    );
+
+    if ($stats->timeSaved > 0) {
+        echo sprintf("Time saved: %d hours\n", intdiv($stats->timeSaved, 3600));
+    }
+
+    echo sprintf("Breakdown periods: %d\n", count($stats->breakdown));
+
+    // Step 5: Check usage limits (API 1.2)
     echo "\nChecking API usage...\n";
     $usage = $akismet->getUsageLimit();
 
@@ -96,7 +113,7 @@ try {
         echo "⚠ Warning: You are being throttled\n";
     }
 
-    // Step 5: List sites using this API key
+    // Step 6: List sites using this API key
     echo "\nListing sites for this API key...\n";
     $sitesResponse = $akismet->getKeySites(limit: 10);
 

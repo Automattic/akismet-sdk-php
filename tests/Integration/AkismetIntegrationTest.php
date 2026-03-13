@@ -366,6 +366,59 @@ final class AkismetIntegrationTest extends TestCase {
 	}
 
 	// =========================================================================
+	// Stats Tests
+	// =========================================================================
+
+	public function testGetStatsReturnsValidData(): void {
+		$stats = $this->akismet->getStats();
+
+		$this->assertIsInt( $stats->spam );
+		$this->assertGreaterThanOrEqual( 0, $stats->spam, 'Spam count should be non-negative' );
+		$this->assertIsInt( $stats->ham );
+		$this->assertGreaterThanOrEqual( 0, $stats->ham, 'Ham count should be non-negative' );
+		$this->assertIsInt( $stats->missedSpam );
+		$this->assertIsInt( $stats->falsePositives );
+		$this->assertIsString( $stats->accuracy );
+		$this->assertIsInt( $stats->timeSaved );
+		$this->assertGreaterThanOrEqual( 0, $stats->timeSaved, 'Time saved should be non-negative' );
+		$this->assertIsArray( $stats->breakdown );
+
+		if ( count( $stats->breakdown ) > 0 ) {
+			$breakdown  = $stats->breakdown;
+			$firstEntry = reset( $breakdown );
+			$this->assertInstanceOf( \Automattic\Akismet\DTO\StatsBreakdownEntry::class, $firstEntry );
+			$this->assertIsString( $firstEntry->period );
+			$this->assertIsString( $firstEntry->date );
+		}
+	}
+
+	public function testGetStatsWithDifferentIntervals(): void {
+		$intervals = [
+			\Automattic\Akismet\Enum\StatsInterval::SixtyDays,
+			\Automattic\Akismet\Enum\StatsInterval::SixMonths,
+			\Automattic\Akismet\Enum\StatsInterval::Year,
+			\Automattic\Akismet\Enum\StatsInterval::All,
+		];
+
+		foreach ( $intervals as $interval ) {
+			$stats = $this->akismet->getStats( $interval );
+			$this->assertIsInt( $stats->spam, "Failed for interval: {$interval->value}" );
+			$this->assertIsArray( $stats->breakdown, "Failed for interval: {$interval->value}" );
+		}
+	}
+
+	public function testGetStatsWithInvalidKey(): void {
+		$akismet = Akismet::create(
+			apiKey: 'invalid-key-that-does-not-exist',
+			site: $this->siteUrl,
+			isTest: true
+		);
+
+		$this->expectException( InvalidApiKeyException::class );
+		$akismet->getStats();
+	}
+
+	// =========================================================================
 	// Access Token Tests
 	// =========================================================================
 
