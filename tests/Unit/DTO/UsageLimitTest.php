@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet\Tests\Unit\DTO;
 
+use Automattic\Akismet\DTO\UpgradeRecommendation;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Exception\ServerException;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -17,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass( UsageLimit::class )]
 #[UsesClass( ServerException::class )]
+#[UsesClass( UpgradeRecommendation::class )]
 final class UsageLimitTest extends TestCase {
 
 	public function testCreatesWithLimitedPlan(): void {
@@ -111,5 +113,183 @@ final class UsageLimitTest extends TestCase {
 		$this->expectException( ServerException::class );
 
 		UsageLimit::fromResponse( [] );
+	}
+
+	// Extended mode tests
+
+	public function testExtendedFieldsDefaultToNull(): void {
+		$usage = new UsageLimit( 10000, 4500, '45.0%', false );
+
+		$this->assertNull( $usage->noticeLevel );
+		$this->assertNull( $usage->upgrade );
+	}
+
+	public function testConstructorAcceptsExtendedFields(): void {
+		$upgrade = new UpgradeRecommendation( 'plus', 'Plus', 'https://akismet.com/upgrade/plus' );
+		$usage   = new UsageLimit(
+			limit: 10000,
+			usage: 9500,
+			percentage: '95.0%',
+			throttled: false,
+			noticeLevel: 'NOTICE_FIRST_MONTH_OVER_LIMIT',
+			upgrade: $upgrade,
+		);
+
+		$this->assertSame( 'NOTICE_FIRST_MONTH_OVER_LIMIT', $usage->noticeLevel );
+		$this->assertSame( $upgrade, $usage->upgrade );
+	}
+
+	public function testFromResponseWithExtendedFields(): void {
+		$data = [
+			'limit'        => 10000,
+			'usage'        => 9500,
+			'percentage'   => '95.0%',
+			'throttled'    => false,
+			'notice_level' => 'NOTICE_FIRST_MONTH_OVER_LIMIT',
+			'upgrade'      => [
+				'plan' => 'plus',
+				'name' => 'Plus',
+				'url'  => 'https://akismet.com/upgrade/plus',
+			],
+		];
+
+		$usage = UsageLimit::fromResponse( $data );
+
+		$this->assertSame( 'NOTICE_FIRST_MONTH_OVER_LIMIT', $usage->noticeLevel );
+		$this->assertNotNull( $usage->upgrade );
+		$this->assertSame( 'plus', $usage->upgrade->plan );
+		$this->assertSame( 'Plus', $usage->upgrade->name );
+		$this->assertSame( 'https://akismet.com/upgrade/plus', $usage->upgrade->url );
+	}
+
+	public function testFromResponseWithNoticeLevelOnly(): void {
+		$data = [
+			'limit'        => 10000,
+			'usage'        => 4500,
+			'percentage'   => '45.0%',
+			'throttled'    => false,
+			'notice_level' => 'NOTICE_NONE',
+		];
+
+		$usage = UsageLimit::fromResponse( $data );
+
+		$this->assertSame( 'NOTICE_NONE', $usage->noticeLevel );
+		$this->assertNull( $usage->upgrade );
+	}
+
+	public function testFromResponseWithUpgradeFalse(): void {
+		$data = [
+			'limit'        => 10000,
+			'usage'        => 4500,
+			'percentage'   => '45.0%',
+			'throttled'    => false,
+			'notice_level' => 'NOTICE_NONE',
+			'upgrade'      => false,
+		];
+
+		$usage = UsageLimit::fromResponse( $data );
+
+		$this->assertNull( $usage->upgrade );
+	}
+
+	public function testFromResponseWithoutExtendedFields(): void {
+		$data = [
+			'limit'      => 10000,
+			'usage'      => 4500,
+			'percentage' => '45.0%',
+			'throttled'  => false,
+		];
+
+		$usage = UsageLimit::fromResponse( $data );
+
+		$this->assertNull( $usage->noticeLevel );
+		$this->assertNull( $usage->upgrade );
+	}
+
+	public function testFromResponseWithNullNoticeLevel(): void {
+		$data = [
+			'limit'        => 10000,
+			'usage'        => 4500,
+			'percentage'   => '45.0%',
+			'throttled'    => false,
+			'notice_level' => null,
+		];
+
+		$usage = UsageLimit::fromResponse( $data );
+
+		$this->assertNull( $usage->noticeLevel );
+	}
+
+	public function testFromResponseWithIntNoticeLevel(): void {
+		$data = [
+			'limit'        => 10000,
+			'usage'        => 4500,
+			'percentage'   => '45.0%',
+			'throttled'    => false,
+			'notice_level' => 0,
+		];
+
+		$usage = UsageLimit::fromResponse( $data );
+
+		$this->assertSame( '0', $usage->noticeLevel );
+	}
+
+	public function testFromResponseThrowsOnInvalidNoticeLevel(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'notice_level' );
+
+		UsageLimit::fromResponse(
+			[
+				'limit'        => 10000,
+				'usage'        => 4500,
+				'percentage'   => '45.0%',
+				'throttled'    => false,
+				'notice_level' => [ 'unexpected' ],
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnNonArrayUpgrade(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'upgrade' );
+
+		UsageLimit::fromResponse(
+			[
+				'limit'      => 10000,
+				'usage'      => 4500,
+				'percentage' => '45.0%',
+				'throttled'  => false,
+				'upgrade'    => 'invalid',
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnBooleanTrueUpgrade(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'upgrade' );
+
+		UsageLimit::fromResponse(
+			[
+				'limit'      => 10000,
+				'usage'      => 4500,
+				'percentage' => '45.0%',
+				'throttled'  => false,
+				'upgrade'    => true,
+			]
+		);
+	}
+
+	public function testFromResponseWithNullUpgrade(): void {
+		$data = [
+			'limit'      => 10000,
+			'usage'      => 4500,
+			'percentage' => '45.0%',
+			'throttled'  => false,
+			'upgrade'    => null,
+		];
+
+		$usage = UsageLimit::fromResponse( $data );
+
+		$this->assertNull( $usage->upgrade );
 	}
 }

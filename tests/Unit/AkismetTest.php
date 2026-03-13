@@ -20,6 +20,7 @@ use Automattic\Akismet\DTO\SiteStats;
 use Automattic\Akismet\DTO\Stats;
 use Automattic\Akismet\DTO\StatsBreakdownEntry;
 use Automattic\Akismet\DTO\Subscription;
+use Automattic\Akismet\DTO\UpgradeRecommendation;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Enum\SpamVerdict;
@@ -51,6 +52,7 @@ use Psr\Http\Message\ResponseInterface;
 #[UsesClass( Content::class )]
 #[UsesClass( Subscription::class )]
 #[UsesClass( SubscriptionStatus::class )]
+#[UsesClass( UpgradeRecommendation::class )]
 #[UsesClass( UsageLimit::class )]
 #[UsesClass( KeySitesResponse::class )]
 #[UsesClass( SiteStats::class )]
@@ -256,6 +258,91 @@ final class AkismetTest extends TestCase {
 		$this->expectExceptionMessage( 'Unexpected Akismet API response' );
 
 		$akismet->getUsageLimit();
+	}
+
+	// =========================================================================
+	// getExtendedUsageLimit Tests
+	// =========================================================================
+
+	public function testGetExtendedUsageLimitReturnsDto(): void {
+		$json    = json_encode(
+			[
+				'limit'        => 10000,
+				'usage'        => 9500,
+				'percentage'   => '95.0',
+				'throttled'    => false,
+				'notice_level' => 'NOTICE_FIRST_MONTH_OVER_LIMIT',
+				'upgrade'      => [
+					'plan' => 'plus',
+					'name' => 'Plus',
+					'url'  => 'https://akismet.com/upgrade/plus',
+				],
+			]
+		);
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], $json )
+		);
+
+		$result = $akismet->getExtendedUsageLimit();
+
+		$this->assertSame( 'NOTICE_FIRST_MONTH_OVER_LIMIT', $result->noticeLevel );
+		$this->assertNotNull( $result->upgrade );
+		$this->assertSame( 'plus', $result->upgrade->plan );
+		$this->assertSame( 'Plus', $result->upgrade->name );
+		$this->assertSame( 'https://akismet.com/upgrade/plus', $result->upgrade->url );
+	}
+
+	public function testGetExtendedUsageLimitPassesQueryParam(): void {
+		$capturedRequest = null;
+		$json            = json_encode(
+			[
+				'limit'        => 10000,
+				'usage'        => 500,
+				'percentage'   => '5.0',
+				'throttled'    => false,
+				'notice_level' => 'NOTICE_NONE',
+			]
+		);
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], $json ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->getExtendedUsageLimit();
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertStringContainsString( 'extended=true', (string) $capturedRequest->getUri() );
+	}
+
+	public function testGetUsageLimitOmitsExtendedQueryParam(): void {
+		$capturedRequest = null;
+		$json            = json_encode(
+			[
+				'limit'      => 10000,
+				'usage'      => 500,
+				'percentage' => '5.0',
+				'throttled'  => false,
+			]
+		);
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], $json ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->getUsageLimit();
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertStringNotContainsString( 'extended', (string) $capturedRequest->getUri() );
 	}
 
 	// =========================================================================

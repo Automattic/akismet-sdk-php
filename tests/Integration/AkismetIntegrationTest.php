@@ -312,6 +312,25 @@ final class AkismetIntegrationTest extends TestCase {
 		}
 	}
 
+	public function testGetExtendedUsageLimitReturnsValidData(): void {
+		$usage = $this->akismet->getExtendedUsageLimit();
+
+		$this->assertGreaterThanOrEqual( 0, $usage->usage, 'Usage should be non-negative' );
+
+		// Extended fields are present but may be null depending on account state.
+		// notice_level is null when no threshold is triggered; upgrade is null when
+		// no upgrade is recommended or the account is not approaching its limit.
+		if ( $usage->noticeLevel !== null ) {
+			$this->assertIsString( $usage->noticeLevel, 'Notice level should be a string when present' );
+		}
+
+		if ( $usage->upgrade !== null ) {
+			$this->assertNotEmpty( $usage->upgrade->plan, 'Upgrade plan slug should not be empty' );
+			$this->assertNotEmpty( $usage->upgrade->name, 'Upgrade plan name should not be empty' );
+			$this->assertNotEmpty( $usage->upgrade->url, 'Upgrade URL should not be empty' );
+		}
+	}
+
 	// =========================================================================
 	// Key Sites Tests
 	// =========================================================================

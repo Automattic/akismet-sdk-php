@@ -12,7 +12,7 @@ src/
 ├── AkismetInterface.php     # Interface for mocking
 ├── Client/                  # PSR-18 HTTP client wrapper + auto-discovery
 ├── Config/Configuration.php # Immutable config
-├── DTO/                     # Content, CheckResult, AlertMetadata, KeySitesResponse, SiteStats, Stats, StatsBreakdownEntry, Subscription, UsageLimit
+├── DTO/                     # Content, CheckResult, AlertMetadata, KeySitesResponse, SiteStats, Stats, StatsBreakdownEntry, Subscription, UpgradeRecommendation, UsageLimit
 ├── Enum/                    # ContentType, SpamVerdict, StatsInterval, SubscriptionStatus, KeySitesOrder (PHP 8.1 enums)
 ├── Factory/                 # ContentFactory (from PSR-7 requests and arrays)
 ├── Validator/               # InputValidator (URL, IP, email)
