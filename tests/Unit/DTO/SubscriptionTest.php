@@ -155,4 +155,52 @@ final class SubscriptionTest extends TestCase {
 		$this->assertSame( 999, $sub->accountId );
 		$this->assertSame( 1741824000, $sub->nextBillingDate );
 	}
+
+	public function testFromResponseThrowsOnNonNumericAccountId(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'account_id' );
+
+		Subscription::fromResponse(
+			[
+				'account_id'        => 'abc',
+				'account_type'      => 'pro',
+				'account_name'      => 'Professional',
+				'status'            => 'active',
+				'next_billing_date' => 1741824000,
+				'limit_reached'     => false,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnNonNumericNextBillingDate(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'next_billing_date' );
+
+		Subscription::fromResponse(
+			[
+				'account_id'        => 123,
+				'account_type'      => 'pro',
+				'account_name'      => 'Professional',
+				'status'            => 'active',
+				'next_billing_date' => 'tomorrow',
+				'limit_reached'     => false,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsOnNonBoolLimitReached(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessage( 'limit_reached' );
+
+		Subscription::fromResponse(
+			[
+				'account_id'        => 123,
+				'account_type'      => 'pro',
+				'account_name'      => 'Professional',
+				'status'            => 'active',
+				'next_billing_date' => 1741824000,
+				'limit_reached'     => 'yes',
+			]
+		);
+	}
 }

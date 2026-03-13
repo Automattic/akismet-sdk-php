@@ -44,8 +44,8 @@ final class Subscription {
 	/**
 	 * Create from API JSON response.
 	 *
-	 * @param array{account_id: int|string, account_type: string, account_name: string, status: string, next_billing_date: int|string|false, limit_reached: bool} $data
-	 * @throws ServerException If required keys are missing.
+	 * @param array{account_id: mixed, account_type: string, account_name: string, status: string, next_billing_date: mixed, limit_reached: mixed} $data
+	 * @throws ServerException If required keys are missing or have invalid types.
 	 */
 	public static function fromResponse( array $data ): self {
 		foreach ( [ 'account_id', 'account_type', 'account_name', 'status', 'next_billing_date', 'limit_reached' ] as $key ) {
@@ -56,7 +56,24 @@ final class Subscription {
 			}
 		}
 
-		// next_billing_date is a Unix timestamp for paid plans, false for free plans.
+		if ( ! is_numeric( $data['account_id'] ) ) {
+			throw ServerException::unexpectedResponse(
+				'Expected numeric "account_id" in get-subscription response'
+			);
+		}
+
+		if ( $data['next_billing_date'] !== false && ! is_numeric( $data['next_billing_date'] ) ) {
+			throw ServerException::unexpectedResponse(
+				'Expected numeric or false "next_billing_date" in get-subscription response'
+			);
+		}
+
+		if ( ! is_bool( $data['limit_reached'] ) ) {
+			throw ServerException::unexpectedResponse(
+				'Expected boolean "limit_reached" in get-subscription response'
+			);
+		}
+
 		$nextBillingDate = $data['next_billing_date'] === false
 			? null
 			: (int) $data['next_billing_date'];

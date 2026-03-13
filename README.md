@@ -85,6 +85,7 @@ flowchart LR
 | `check($content)` | Check if content is spam |
 | `submitSpam($content)` | Report missed spam (false negative) |
 | `submitHam($content)` | Report false positive |
+| `getSubscription()` | Get subscription / account plan information |
 | `getUsageLimit()` | Get API usage stats and limits |
 | `getKeySites()` | Get sites using your API key (JSON format only; CSV is not supported) |
 | `getAccessToken()` | Exchange API key for a scoped access token (stats pages only, not for API calls) |
