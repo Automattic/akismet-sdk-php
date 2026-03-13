@@ -62,7 +62,7 @@ final class UsageLimit {
 	/**
 	 * Convert to an array matching the API response format.
 	 *
-	 * @return array<string, mixed>
+	 * @return array{limit: int|string, usage: int, percentage: string, throttled: bool, notice_level?: string, upgrade?: array{plan: string, name: string, url: string}}
 	 */
 	public function toArray(): array {
 		$data = [

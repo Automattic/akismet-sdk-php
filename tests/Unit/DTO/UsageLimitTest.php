@@ -359,4 +359,17 @@ final class UsageLimitTest extends TestCase {
 
 		$this->assertSame( $data, $usage->toArray() );
 	}
+
+	public function testToArrayFromResponseRoundTripUnlimited(): void {
+		$data = [
+			'limit'      => 'none',
+			'usage'      => 100000,
+			'percentage' => '0',
+			'throttled'  => false,
+		];
+
+		$usage = UsageLimit::fromResponse( $data );
+
+		$this->assertSame( $data, $usage->toArray() );
+	}
 }
