@@ -52,21 +52,15 @@ final class UpgradeRecommendation {
 	public static function fromJson( array $data ): self {
 		foreach ( [ 'plan', 'name', 'url' ] as $key ) {
 			if ( ! array_key_exists( $key, $data ) ) {
-				throw ValidationException::invalidValue( $key, 'is required in upgrade recommendation' );
+				throw ValidationException::missingRequired( [ $key ] );
 			}
 			if ( ! is_string( $data[ $key ] ) ) {
 				throw ValidationException::invalidValue( $key, 'must be a string in upgrade recommendation' );
 			}
 		}
 
-		/** @var string $plan */
-		$plan = $data['plan'];
-		/** @var string $name */
-		$name = $data['name'];
-		/** @var string $url */
-		$url = $data['url'];
-
-		return new self( $plan, $name, $url );
+		/** @var array{plan: string, name: string, url: string} $data */
+		return new self( $data['plan'], $data['name'], $data['url'] );
 	}
 
 	/**
@@ -89,13 +83,7 @@ final class UpgradeRecommendation {
 			}
 		}
 
-		/** @var string $plan */
-		$plan = $data['plan'];
-		/** @var string $name */
-		$name = $data['name'];
-		/** @var string $url */
-		$url = $data['url'];
-
-		return new self( $plan, $name, $url );
+		/** @var array{plan: string, name: string, url: string} $data */
+		return new self( $data['plan'], $data['name'], $data['url'] );
 	}
 }
