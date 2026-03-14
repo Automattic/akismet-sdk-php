@@ -1,5 +1,18 @@
-## 1.1.0 - 2026-03-13
+## 1.2.0 - 2026-03-14
 
+### Added
+- `getConfiguration()` on `AkismetInterface` for mock/decorator access to immutable configuration.
+- `UpgradeRecommendation::fromJson()` factory for JSON round-trip serialization, with strict validation via `ValidationException`.
+
+### Fixed
+- Add missing unit test for `KeySitesOrder` enum — was the only source class without test coverage.
+
+### Improved
+- `UpgradeRecommendation` factory methods use single array-shape `@var` annotation instead of per-variable annotations.
+- `UpgradeRecommendation::fromJson()` uses `ValidationException::missingRequired()` for missing keys and `invalidValue()` for type errors, matching the semantic intent of each factory method.
+- GitHub Actions updated to Node.js 24 compatible versions.
+
+## 1.1.0 - 2026-03-13
 ### Added
 - `getSubscription()` method and `Subscription` DTO for retrieving account plan information via the `get-subscription` endpoint. Includes `SubscriptionStatus` enum with `isActive()` helper.
 - `getStats()` method, `Stats` DTO, `StatsBreakdownEntry` DTO, and `StatsInterval` enum for retrieving historical spam/ham statistics via the `get-key-stats` endpoint.
