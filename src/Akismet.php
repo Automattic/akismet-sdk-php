@@ -260,9 +260,7 @@ final class Akismet implements AkismetInterface {
 	}
 
 	/**
-	 * Get the current configuration.
-	 *
-	 * @return Configuration
+	 * @inheritDoc
 	 */
 	public function getConfiguration(): Configuration {
 		return $this->config;

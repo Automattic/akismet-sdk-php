@@ -11,12 +11,14 @@ namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\UpgradeRecommendation;
 use Automattic\Akismet\Exception\ServerException;
+use Automattic\Akismet\Exception\ValidationException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( UpgradeRecommendation::class )]
 #[UsesClass( ServerException::class )]
+#[UsesClass( ValidationException::class )]
 final class UpgradeRecommendationTest extends TestCase {
 
 	public function testConstructorSetsProperties(): void {
@@ -87,6 +89,82 @@ final class UpgradeRecommendationTest extends TestCase {
 			[
 				'plan' => 'plus',
 				'name' => 'Plus',
+			]
+		);
+	}
+
+	public function testFromJsonRoundTrip(): void {
+		$original = new UpgradeRecommendation(
+			plan: 'plus',
+			name: 'Plus',
+			url: 'https://akismet.com/upgrade/plus',
+		);
+
+		$restored = UpgradeRecommendation::fromJson( $original->toArray() );
+
+		$this->assertSame( $original->plan, $restored->plan );
+		$this->assertSame( $original->name, $restored->name );
+		$this->assertSame( $original->url, $restored->url );
+	}
+
+	public function testFromJsonThrowsOnMissingPlan(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'plan' );
+
+		UpgradeRecommendation::fromJson(
+			[
+				'name' => 'Plus',
+				'url'  => 'https://example.com',
+			]
+		);
+	}
+
+	public function testFromJsonThrowsOnMissingName(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'name' );
+
+		UpgradeRecommendation::fromJson(
+			[
+				'plan' => 'plus',
+				'url'  => 'https://example.com',
+			]
+		);
+	}
+
+	public function testFromJsonThrowsOnMissingUrl(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'url' );
+
+		UpgradeRecommendation::fromJson(
+			[
+				'plan' => 'plus',
+				'name' => 'Plus',
+			]
+		);
+	}
+
+	public function testFromJsonThrowsOnNonStringValue(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'name' );
+
+		UpgradeRecommendation::fromJson(
+			[
+				'plan' => 'plus',
+				'name' => 42,
+				'url'  => 'https://example.com',
+			]
+		);
+	}
+
+	public function testFromJsonThrowsOnNullValue(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'url' );
+
+		UpgradeRecommendation::fromJson(
+			[
+				'plan' => 'plus',
+				'name' => 'Plus',
+				'url'  => null,
 			]
 		);
 	}

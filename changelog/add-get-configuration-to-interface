@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add getConfiguration() to AkismetInterface for mock/decorator access to immutable config

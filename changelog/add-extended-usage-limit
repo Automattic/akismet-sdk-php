@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Add getExtendedUsageLimit() method and UpgradeRecommendation DTO for retrieving usage notice level and upgrade recommendations via the extended usage-limit endpoint.
