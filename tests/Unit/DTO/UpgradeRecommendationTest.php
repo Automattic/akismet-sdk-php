@@ -11,12 +11,14 @@ namespace Automattic\Akismet\Tests\Unit\DTO;
 
 use Automattic\Akismet\DTO\UpgradeRecommendation;
 use Automattic\Akismet\Exception\ServerException;
+use Automattic\Akismet\Exception\ValidationException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( UpgradeRecommendation::class )]
 #[UsesClass( ServerException::class )]
+#[UsesClass( ValidationException::class )]
 final class UpgradeRecommendationTest extends TestCase {
 
 	public function testConstructorSetsProperties(): void {
@@ -105,12 +107,22 @@ final class UpgradeRecommendationTest extends TestCase {
 		$this->assertSame( $original->url, $restored->url );
 	}
 
-	public function testFromJsonWithMissingKeysDefaultsToEmpty(): void {
-		$upgrade = UpgradeRecommendation::fromJson( [] );
+	public function testFromJsonThrowsOnMissingKey(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'plan' );
 
-		$this->assertSame( '', $upgrade->plan );
-		$this->assertSame( '', $upgrade->name );
-		$this->assertSame( '', $upgrade->url );
+		UpgradeRecommendation::fromJson( [] );
+	}
+
+	public function testFromJsonThrowsOnNonStringValue(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'name' );
+
+		UpgradeRecommendation::fromJson( [
+			'plan' => 'plus',
+			'name' => 42,
+			'url'  => 'https://example.com',
+		] );
 	}
 
 	public function testFromResponseThrowsOnNonStringValue(): void {

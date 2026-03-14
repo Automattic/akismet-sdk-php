@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Automattic\Akismet\DTO;
 
 use Automattic\Akismet\Exception\ServerException;
+use Automattic\Akismet\Exception\ValidationException;
 
 /**
  * Represents an upgrade recommendation returned when the API key is
@@ -46,13 +47,26 @@ final class UpgradeRecommendation {
 	 * Create from a previously serialized array (e.g., from toArray() or JSON round-trip).
 	 *
 	 * @param array<string, mixed> $data
+	 * @throws ValidationException If required keys are missing or have unexpected types.
 	 */
 	public static function fromJson( array $data ): self {
-		return new self(
-			plan: isset( $data['plan'] ) && is_string( $data['plan'] ) ? $data['plan'] : '',
-			name: isset( $data['name'] ) && is_string( $data['name'] ) ? $data['name'] : '',
-			url: isset( $data['url'] ) && is_string( $data['url'] ) ? $data['url'] : '',
-		);
+		foreach ( [ 'plan', 'name', 'url' ] as $key ) {
+			if ( ! array_key_exists( $key, $data ) ) {
+				throw ValidationException::invalidValue( $key, 'is required in upgrade recommendation' );
+			}
+			if ( ! is_string( $data[ $key ] ) ) {
+				throw ValidationException::invalidValue( $key, 'must be a string in upgrade recommendation' );
+			}
+		}
+
+		/** @var string $plan */
+		$plan = $data['plan'];
+		/** @var string $name */
+		$name = $data['name'];
+		/** @var string $url */
+		$url = $data['url'];
+
+		return new self( $plan, $name, $url );
 	}
 
 	/**
