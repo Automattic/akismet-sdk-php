@@ -53,7 +53,7 @@ Base: `https://rest.akismet.com/`
 
 **Patterns**:
 - DTOs: `final class` with per-property `readonly` and constructor promotion, `toArray()`, optional `fromResponse()` / `fromJson()` factories
-- Client: `new Akismet(Configuration $config)` or `Akismet::create(apiKey, site)` convenience factory
+- Client: `new Akismet(Configuration $config)` or `Akismet::create(apiKey, site)` convenience factory; `AkismetInterface` includes `getConfiguration()` for mock/decorator access
 - Enums: Backed string enums (`enum ContentType: string`)
 - Exceptions: Interface `AkismetException extends Throwable`, static factory methods
 
