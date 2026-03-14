@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Automattic\Akismet;
 
+use Automattic\Akismet\Config\Configuration;
 use Automattic\Akismet\DTO\CheckResult;
 use Automattic\Akismet\DTO\Content;
 use Automattic\Akismet\DTO\KeySitesResponse;
@@ -168,4 +169,11 @@ interface AkismetInterface {
 	 * @throws AkismetException On network or API errors.
 	 */
 	public function getAccessToken(): string;
+
+	/**
+	 * Get the current configuration.
+	 *
+	 * @return Configuration
+	 */
+	public function getConfiguration(): Configuration;
 }

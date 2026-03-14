@@ -91,6 +91,28 @@ final class UpgradeRecommendationTest extends TestCase {
 		);
 	}
 
+	public function testFromJsonRoundTrip(): void {
+		$original = new UpgradeRecommendation(
+			plan: 'plus',
+			name: 'Plus',
+			url: 'https://akismet.com/upgrade/plus',
+		);
+
+		$restored = UpgradeRecommendation::fromJson( $original->toArray() );
+
+		$this->assertSame( $original->plan, $restored->plan );
+		$this->assertSame( $original->name, $restored->name );
+		$this->assertSame( $original->url, $restored->url );
+	}
+
+	public function testFromJsonWithMissingKeysDefaultsToEmpty(): void {
+		$upgrade = UpgradeRecommendation::fromJson( [] );
+
+		$this->assertSame( '', $upgrade->plan );
+		$this->assertSame( '', $upgrade->name );
+		$this->assertSame( '', $upgrade->url );
+	}
+
 	public function testFromResponseThrowsOnNonStringValue(): void {
 		$this->expectException( ServerException::class );
 		$this->expectExceptionMessage( 'plan' );

@@ -43,6 +43,19 @@ final class UpgradeRecommendation {
 	}
 
 	/**
+	 * Create from a previously serialized array (e.g., from toArray() or JSON round-trip).
+	 *
+	 * @param array<string, mixed> $data
+	 */
+	public static function fromJson( array $data ): self {
+		return new self(
+			plan: isset( $data['plan'] ) && is_string( $data['plan'] ) ? $data['plan'] : '',
+			name: isset( $data['name'] ) && is_string( $data['name'] ) ? $data['name'] : '',
+			url: isset( $data['url'] ) && is_string( $data['url'] ) ? $data['url'] : '',
+		);
+	}
+
+	/**
 	 * Create from API response data.
 	 *
 	 * @param array<string, mixed> $data
