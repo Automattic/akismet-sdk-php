@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Add getStats() method, Stats DTO, StatsBreakdownEntry DTO, and StatsInterval enum for retrieving historical spam/ham statistics via the get-key-stats endpoint.
