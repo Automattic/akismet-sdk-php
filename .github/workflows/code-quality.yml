@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@2.36.0
         with:
           php-version: '8.3'
           coverage: none
@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@2.36.0
         with:
           php-version: '8.3'
           coverage: none
@@ -80,7 +80,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@2.36.0
         with:
           php-version: '8.3'
           coverage: xdebug
