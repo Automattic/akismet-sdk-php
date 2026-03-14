@@ -107,22 +107,66 @@ final class UpgradeRecommendationTest extends TestCase {
 		$this->assertSame( $original->url, $restored->url );
 	}
 
-	public function testFromJsonThrowsOnMissingKey(): void {
+	public function testFromJsonThrowsOnMissingPlan(): void {
 		$this->expectException( ValidationException::class );
 		$this->expectExceptionMessage( 'plan' );
 
-		UpgradeRecommendation::fromJson( [] );
+		UpgradeRecommendation::fromJson(
+			[
+				'name' => 'Plus',
+				'url'  => 'https://example.com',
+			]
+		);
+	}
+
+	public function testFromJsonThrowsOnMissingName(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'name' );
+
+		UpgradeRecommendation::fromJson(
+			[
+				'plan' => 'plus',
+				'url'  => 'https://example.com',
+			]
+		);
+	}
+
+	public function testFromJsonThrowsOnMissingUrl(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'url' );
+
+		UpgradeRecommendation::fromJson(
+			[
+				'plan' => 'plus',
+				'name' => 'Plus',
+			]
+		);
 	}
 
 	public function testFromJsonThrowsOnNonStringValue(): void {
 		$this->expectException( ValidationException::class );
 		$this->expectExceptionMessage( 'name' );
 
-		UpgradeRecommendation::fromJson( [
-			'plan' => 'plus',
-			'name' => 42,
-			'url'  => 'https://example.com',
-		] );
+		UpgradeRecommendation::fromJson(
+			[
+				'plan' => 'plus',
+				'name' => 42,
+				'url'  => 'https://example.com',
+			]
+		);
+	}
+
+	public function testFromJsonThrowsOnNullValue(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'url' );
+
+		UpgradeRecommendation::fromJson(
+			[
+				'plan' => 'plus',
+				'name' => 'Plus',
+				'url'  => null,
+			]
+		);
 	}
 
 	public function testFromResponseThrowsOnNonStringValue(): void {
