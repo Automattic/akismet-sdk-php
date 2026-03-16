@@ -154,6 +154,43 @@ final class AkismetTest extends TestCase {
 		$akismet->check( $this->createContent() );
 	}
 
+	public function testCheckSurfacesRecheckAfterHeader(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [ 'X-Akismet-Recheck-After' => '120' ], 'false' )
+		);
+
+		$result = $akismet->check( $this->createContent() );
+
+		$this->assertSame( 120, $result->recheckAfter );
+		$this->assertTrue( $result->shouldRecheck() );
+		$this->assertSame( SpamVerdict::Ham, $result->verdict );
+	}
+
+	public function testCheckSendsCallbackInPostBody(): void {
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], 'false' ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$content = new Content(
+			userIp: '127.0.0.1',
+			callback: 'https://example.com/webhook',
+		);
+
+		$akismet->check( $content );
+
+		$this->assertNotNull( $capturedRequest );
+		$body = (string) $capturedRequest->getBody();
+		$this->assertStringContainsString( 'callback=', $body );
+		$this->assertStringContainsString( urlencode( 'https://example.com/webhook' ), $body );
+	}
+
 	// =========================================================================
 	// submitSpam / submitHam Tests
 	// =========================================================================
