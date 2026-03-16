@@ -356,4 +356,46 @@ final class CheckResultTest extends TestCase {
 		$this->assertSame( $original->alertMetadata->apiCalls, $restored->alertMetadata->apiCalls );
 		$this->assertSame( $original->alertMetadata->usageLimit, $restored->alertMetadata->usageLimit );
 	}
+
+	public function testFromResponseTreatsNonNumericRecheckAfterAsNull(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[ 'X-Akismet-Recheck-After' => 'soon' ]
+		);
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
+
+	public function testFromResponseTreatsZeroRecheckAfterAsNull(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[ 'X-Akismet-Recheck-After' => '0' ]
+		);
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
+
+	public function testFromResponseTreatsNegativeRecheckAfterAsNull(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[ 'X-Akismet-Recheck-After' => '-5' ]
+		);
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
+
+	public function testFromJsonTreatsNonNumericRecheckAfterAsNull(): void {
+		$data = [
+			'verdict'      => 'ham',
+			'recheckAfter' => 'abc',
+		];
+
+		$result = CheckResult::fromJson( $data );
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
 }

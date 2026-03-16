@@ -57,9 +57,9 @@ final class CheckResult implements JsonSerializable {
 	/**
 	 * Check if the verdict is provisional and should be rechecked.
 	 *
-	 * When true, the API is still processing async checks (URL resolution,
-	 * image scanning) and the verdict may change. Use recheckAfter for the
-	 * delay in seconds before rechecking.
+	 * When true, the API is still processing additional checks and the
+	 * verdict may change. Use recheckAfter for the delay in seconds before
+	 * rechecking.
 	 */
 	public function shouldRecheck(): bool {
 		return $this->recheckAfter !== null;
@@ -82,7 +82,7 @@ final class CheckResult implements JsonSerializable {
 		$guid         = $nullIfEmpty( $headers['x-akismet-guid'] ?? null );
 
 		$recheckAfterRaw = $nullIfEmpty( $headers['x-akismet-recheck-after'] ?? null );
-		$recheckAfter    = ( $recheckAfterRaw !== null && is_numeric( $recheckAfterRaw ) )
+		$recheckAfter    = ( $recheckAfterRaw !== null && is_numeric( $recheckAfterRaw ) && (int) $recheckAfterRaw > 0 )
 			? (int) $recheckAfterRaw
 			: null;
 
@@ -101,7 +101,7 @@ final class CheckResult implements JsonSerializable {
 	/**
 	 * Create result from JSON data.
 	 *
-	 * @param array{verdict?: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null, alertMetadata?: mixed, recheckAfter?: int|null} $data
+	 * @param array{verdict?: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null, alertMetadata?: mixed, recheckAfter?: mixed} $data
 	 */
 	public static function fromJson( array $data ): self {
 		$verdict = SpamVerdict::tryFrom( $data['verdict'] ?? '' );
@@ -116,6 +116,10 @@ final class CheckResult implements JsonSerializable {
 			? AlertMetadata::fromJson( $data['alertMetadata'] )
 			: null;
 
+		$recheckAfter = ( isset( $data['recheckAfter'] ) && is_numeric( $data['recheckAfter'] ) && (int) $data['recheckAfter'] > 0 )
+			? (int) $data['recheckAfter']
+			: null;
+
 		return new self(
 			$verdict,
 			$data['proTip'] ?? null,
@@ -124,7 +128,7 @@ final class CheckResult implements JsonSerializable {
 			$data['alertMessage'] ?? null,
 			$data['guid'] ?? null,
 			$alertMetadata,
-			isset( $data['recheckAfter'] ) ? (int) $data['recheckAfter'] : null,
+			$recheckAfter,
 		);
 	}
 
