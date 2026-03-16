@@ -187,6 +187,16 @@ final class ContentTest extends TestCase {
 		$this->assertArrayNotHasKey( 'permalink', $content->toArray() );
 	}
 
+	public function testNormalizesEmptyStringToNullForCallback(): void {
+		$content = new Content(
+			userIp: '192.168.1.1',
+			callback: '',
+		);
+
+		$this->assertNull( $content->callback );
+		$this->assertArrayNotHasKey( 'callback', $content->toArray() );
+	}
+
 	public function testValidatesAuthorUrl(): void {
 		$this->expectException( ValidationException::class );
 		$this->expectExceptionMessage( 'authorUrl' );
@@ -472,7 +482,7 @@ final class ContentTest extends TestCase {
 		$this->assertSame( 'https://example.com/webhook', $array['callback'] );
 	}
 
-	public function testWithFeedbackPreservesCallback(): void {
+	public function testWithFeedbackStripsCallback(): void {
 		$original = new Content(
 			userIp: '192.168.1.1',
 			callback: 'https://example.com/webhook',
@@ -480,6 +490,6 @@ final class ContentTest extends TestCase {
 
 		$feedback = $original->withFeedback( 'admin', 'true' );
 
-		$this->assertSame( 'https://example.com/webhook', $feedback->callback );
+		$this->assertNull( $feedback->callback );
 	}
 }

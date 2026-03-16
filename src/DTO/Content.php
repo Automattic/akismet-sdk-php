@@ -66,6 +66,11 @@ final class Content {
 	public readonly ?string $permalink;
 
 	/**
+	 * Webhook URL for verdict update callbacks (normalized from empty string to null).
+	 */
+	public readonly ?string $callback;
+
+	/**
 	 * The original comment-check result, coerced to an enum.
 	 */
 	public readonly ?CheckResponse $commentCheckResponse;
@@ -129,7 +134,7 @@ final class Content {
 		public readonly ?string $context = null,
 		public readonly ?string $reporter = null,
 		CheckResponse|string|null $commentCheckResponse = null,
-		public readonly ?string $callback = null,
+		?string $callback = null,
 		array $serverVariables = [],
 	) {
 		// Normalize empty strings to null for fields with URL/email validation.
@@ -138,6 +143,7 @@ final class Content {
 		$this->authorEmail = self::nullIfEmpty( $authorEmail );
 		$this->authorUrl   = self::nullIfEmpty( $authorUrl );
 		$this->permalink   = self::nullIfEmpty( $permalink );
+		$this->callback    = self::nullIfEmpty( $callback );
 
 		// Coerce string to enum when possible, validate otherwise.
 		$this->commentCheckResponse = self::resolveCheckResponse( $commentCheckResponse );
@@ -201,7 +207,6 @@ final class Content {
 			context: $this->context,
 			reporter: $reporter,
 			commentCheckResponse: $commentCheckResponse,
-			callback: $this->callback,
 			serverVariables: $this->serverVariables,
 		);
 	}

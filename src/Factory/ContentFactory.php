@@ -156,6 +156,7 @@ final class ContentFactory {
 			context: self::getString( $data, 'context', 'comment_context' ),
 			reporter: self::getString( $data, 'reporter' ),
 			commentCheckResponse: self::getString( $data, 'commentCheckResponse', 'comment_check_response' ),
+			callback: self::getString( $data, 'callback' ),
 			serverVariables: $serverVariables,
 		);
 	}

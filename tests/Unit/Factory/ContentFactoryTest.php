@@ -521,6 +521,7 @@ final class ContentFactoryTest extends TestCase {
 			context: 'sidebar-widget',
 			reporter: 'admin',
 			commentCheckResponse: CheckResponse::Spam,
+			callback: 'https://example.com/webhook',
 		);
 
 		$array         = $original->toArray();
@@ -547,6 +548,7 @@ final class ContentFactoryTest extends TestCase {
 		$this->assertSame( $original->context, $reconstructed->context );
 		$this->assertSame( $original->reporter, $reconstructed->reporter );
 		$this->assertSame( CheckResponse::Spam, $reconstructed->commentCheckResponse );
+		$this->assertSame( $original->callback, $reconstructed->callback );
 	}
 
 	public function testFromArrayWithEmptyArrayThrowsValidation(): void {
