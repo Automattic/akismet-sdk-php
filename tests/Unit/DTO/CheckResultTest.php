@@ -259,6 +259,44 @@ final class CheckResultTest extends TestCase {
 		$this->assertNull( $result->alertMetadata );
 	}
 
+	public function testFromResponseParsesRecheckAfterHeader(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[
+				'X-Akismet-Recheck-After' => '120',
+			]
+		);
+
+		$this->assertSame( 120, $result->recheckAfter );
+		$this->assertTrue( $result->shouldRecheck() );
+		$this->assertSame( SpamVerdict::Ham, $result->verdict );
+	}
+
+	public function testFromResponseWithoutRecheckAfterHeader(): void {
+		$result = CheckResult::fromResponse( 'false' );
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
+
+	public function testFromResponseTreatsEmptyRecheckAfterAsNull(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[ 'X-Akismet-Recheck-After' => '' ]
+		);
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
+
+	public function testShouldRecheckReturnsTrueOnlyWhenRecheckAfterIsSet(): void {
+		$withRecheck    = new CheckResult( SpamVerdict::Ham, recheckAfter: 120 );
+		$withoutRecheck = new CheckResult( SpamVerdict::Ham );
+
+		$this->assertTrue( $withRecheck->shouldRecheck() );
+		$this->assertFalse( $withoutRecheck->shouldRecheck() );
+	}
+
 	public function testJsonRoundTripWithAlertMetadata(): void {
 		$original = CheckResult::fromResponse(
 			'true',

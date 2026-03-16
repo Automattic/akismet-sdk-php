@@ -34,6 +34,7 @@ final class CheckResult implements JsonSerializable {
 		public readonly ?string $alertMessage = null,
 		public readonly ?string $guid = null,
 		public readonly ?AlertMetadata $alertMetadata = null,
+		public readonly ?int $recheckAfter = null,
 	) {
 	}
 
@@ -54,6 +55,17 @@ final class CheckResult implements JsonSerializable {
 	}
 
 	/**
+	 * Check if the verdict is provisional and should be rechecked.
+	 *
+	 * When true, the API is still processing async checks (URL resolution,
+	 * image scanning) and the verdict may change. Use recheckAfter for the
+	 * delay in seconds before rechecking.
+	 */
+	public function shouldRecheck(): bool {
+		return $this->recheckAfter !== null;
+	}
+
+	/**
 	 * Create result from API response.
 	 *
 	 * @param string               $body         Response body ('true', 'false', or 'invalid').
@@ -69,6 +81,11 @@ final class CheckResult implements JsonSerializable {
 		$alertMessage = $nullIfEmpty( $headers['x-akismet-alert-msg'] ?? null );
 		$guid         = $nullIfEmpty( $headers['x-akismet-guid'] ?? null );
 
+		$recheckAfterRaw = $nullIfEmpty( $headers['x-akismet-recheck-after'] ?? null );
+		$recheckAfter    = ( $recheckAfterRaw !== null && is_numeric( $recheckAfterRaw ) )
+			? (int) $recheckAfterRaw
+			: null;
+
 		// Determine verdict
 		if ( $body === 'true' ) {
 			$verdict = ( $proTip === 'discard' ) ? SpamVerdict::Discard : SpamVerdict::Spam;
@@ -78,7 +95,7 @@ final class CheckResult implements JsonSerializable {
 
 		$alertMetadata = AlertMetadata::fromHeaders( $headers );
 
-		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage, $guid, $alertMetadata );
+		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage, $guid, $alertMetadata, $recheckAfter );
 	}
 
 	/**
