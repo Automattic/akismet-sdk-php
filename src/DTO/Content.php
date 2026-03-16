@@ -47,6 +47,7 @@ final class Content {
 		'is_test'                   => true,
 		'reporter'                  => true,
 		'comment_check_response'    => true,
+		'callback'                  => true,
 	];
 
 	/**
@@ -102,10 +103,11 @@ final class Content {
 	 * @param string|null             $context                 The context or location of the content within the website.
 	 * @param string|null               $reporter                Who reported the content (e.g., current user name).
 	 * @param CheckResponse|string|null $commentCheckResponse    The original comment-check result ('true' or 'false').
+	 * @param string|null               $callback                Webhook URL for verdict update callbacks.
 	 * @param array<string, string>     $serverVariables         Additional server variables to include. Keys matching
 	 *                                                            RESERVED_KEYS and the honeypot field name are filtered
 	 *                                                            out at construction time.
-	 * @throws ValidationException If userIp, authorEmail, authorUrl, or permalink is invalid.
+	 * @throws ValidationException If userIp, authorEmail, authorUrl, permalink, or callback is invalid.
 	 */
 	public function __construct(
 		public readonly string $userIp,
@@ -127,6 +129,7 @@ final class Content {
 		public readonly ?string $context = null,
 		public readonly ?string $reporter = null,
 		CheckResponse|string|null $commentCheckResponse = null,
+		public readonly ?string $callback = null,
 		array $serverVariables = [],
 	) {
 		// Normalize empty strings to null for fields with URL/email validation.
@@ -151,6 +154,9 @@ final class Content {
 		}
 		if ( $this->permalink !== null ) {
 			InputValidator::validateUrl( $this->permalink, 'permalink' );
+		}
+		if ( $this->callback !== null ) {
+			InputValidator::validateUrl( $this->callback, 'callback' );
 		}
 		if ( $this->honeypotFieldValue !== null && $this->honeypotFieldName === null ) {
 			throw ValidationException::invalidValue( 'honeypotFieldValue', 'requires honeypotFieldName to be set' );
@@ -195,6 +201,7 @@ final class Content {
 			context: $this->context,
 			reporter: $reporter,
 			commentCheckResponse: $commentCheckResponse,
+			callback: $this->callback,
 			serverVariables: $this->serverVariables,
 		);
 	}
@@ -283,6 +290,10 @@ final class Content {
 
 		if ( $this->commentCheckResponse !== null ) {
 			$data['comment_check_response'] = $this->commentCheckResponse->value;
+		}
+
+		if ( $this->callback !== null ) {
+			$data['callback'] = $this->callback;
 		}
 
 		// Server variables are pre-filtered at construction time.

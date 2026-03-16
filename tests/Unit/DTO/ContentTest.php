@@ -429,4 +429,57 @@ final class ContentTest extends TestCase {
 
 		$content->withFeedback( 'admin', 'invalid' );
 	}
+
+	public function testToArrayIncludesCallback(): void {
+		$content = new Content(
+			userIp: '192.168.1.1',
+			callback: 'https://example.com/webhook',
+		);
+
+		$array = $content->toArray();
+
+		$this->assertSame( 'https://example.com/webhook', $array['callback'] );
+	}
+
+	public function testCallbackNullOmittedFromToArray(): void {
+		$content = new Content( userIp: '192.168.1.1' );
+
+		$this->assertNull( $content->callback );
+		$this->assertArrayNotHasKey( 'callback', $content->toArray() );
+	}
+
+	public function testValidatesCallbackUrl(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'callback' );
+
+		new Content(
+			userIp: '192.168.1.1',
+			callback: 'not-a-valid-url',
+		);
+	}
+
+	public function testServerVariablesCannotOverrideCallback(): void {
+		$content = new Content(
+			userIp: '192.168.1.1',
+			callback: 'https://example.com/webhook',
+			serverVariables: [
+				'callback' => 'https://evil.com/hook',
+			],
+		);
+
+		$array = $content->toArray();
+
+		$this->assertSame( 'https://example.com/webhook', $array['callback'] );
+	}
+
+	public function testWithFeedbackPreservesCallback(): void {
+		$original = new Content(
+			userIp: '192.168.1.1',
+			callback: 'https://example.com/webhook',
+		);
+
+		$feedback = $original->withFeedback( 'admin', 'true' );
+
+		$this->assertSame( 'https://example.com/webhook', $feedback->callback );
+	}
 }
