@@ -101,7 +101,7 @@ final class CheckResult implements JsonSerializable {
 	/**
 	 * Create result from JSON data.
 	 *
-	 * @param array{verdict?: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null, alertMetadata?: mixed} $data
+	 * @param array{verdict?: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null, alertMetadata?: mixed, recheckAfter?: int|null} $data
 	 */
 	public static function fromJson( array $data ): self {
 		$verdict = SpamVerdict::tryFrom( $data['verdict'] ?? '' );
@@ -124,13 +124,14 @@ final class CheckResult implements JsonSerializable {
 			$data['alertMessage'] ?? null,
 			$data['guid'] ?? null,
 			$alertMetadata,
+			isset( $data['recheckAfter'] ) ? (int) $data['recheckAfter'] : null,
 		);
 	}
 
 	/**
 	 * Convert to an array.
 	 *
-	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null}
+	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null, recheckAfter: int|null}
 	 */
 	public function toArray(): array {
 		return [
@@ -141,11 +142,12 @@ final class CheckResult implements JsonSerializable {
 			'alertMessage'  => $this->alertMessage,
 			'guid'          => $this->guid,
 			'alertMetadata' => $this->alertMetadata?->toArray(),
+			'recheckAfter'  => $this->recheckAfter,
 		];
 	}
 
 	/**
-	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null}
+	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null, recheckAfter: int|null}
 	 */
 	public function jsonSerialize(): array {
 		return $this->toArray();

@@ -297,6 +297,44 @@ final class CheckResultTest extends TestCase {
 		$this->assertFalse( $withoutRecheck->shouldRecheck() );
 	}
 
+	public function testToArrayIncludesRecheckAfter(): void {
+		$result = new CheckResult( SpamVerdict::Ham, recheckAfter: 120 );
+		$array  = $result->toArray();
+
+		$this->assertArrayHasKey( 'recheckAfter', $array );
+		$this->assertSame( 120, $array['recheckAfter'] );
+	}
+
+	public function testToArrayIncludesNullRecheckAfterWhenAbsent(): void {
+		$result = new CheckResult( SpamVerdict::Ham );
+		$array  = $result->toArray();
+
+		$this->assertArrayHasKey( 'recheckAfter', $array );
+		$this->assertNull( $array['recheckAfter'] );
+	}
+
+	public function testJsonRoundTripWithRecheckAfter(): void {
+		$original = new CheckResult( SpamVerdict::Ham, recheckAfter: 120 );
+
+		$json     = json_encode( $original );
+		$decoded  = json_decode( $json, true );
+		$restored = CheckResult::fromJson( $decoded );
+
+		$this->assertSame( 120, $restored->recheckAfter );
+		$this->assertTrue( $restored->shouldRecheck() );
+	}
+
+	public function testJsonRoundTripWithoutRecheckAfter(): void {
+		$original = new CheckResult( SpamVerdict::Ham );
+
+		$json     = json_encode( $original );
+		$decoded  = json_decode( $json, true );
+		$restored = CheckResult::fromJson( $decoded );
+
+		$this->assertNull( $restored->recheckAfter );
+		$this->assertFalse( $restored->shouldRecheck() );
+	}
+
 	public function testJsonRoundTripWithAlertMetadata(): void {
 		$original = CheckResult::fromResponse(
 			'true',
