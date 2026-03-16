@@ -159,6 +159,21 @@ final class ContentFactoryTest extends TestCase {
 		$this->assertSame( 'sidebar-widget', $content->context );
 	}
 
+	public function testFromRequestAcceptsCallbackParameter(): void {
+		$request = $this->createMockRequest(
+			[ 'REMOTE_ADDR' => '203.0.113.1' ],
+			[ 'User-Agent' => 'TestBot/1.0' ],
+		);
+
+		$content = ContentFactory::fromRequest(
+			$request,
+			callback: 'https://example.com/webhook',
+		);
+
+		$this->assertSame( 'https://example.com/webhook', $content->callback );
+		$this->assertSame( 'https://example.com/webhook', $content->toArray()['callback'] );
+	}
+
 	public function testFromRequestExtractsServerVariables(): void {
 		$request = $this->createMockRequest(
 			serverParams: [
@@ -521,6 +536,7 @@ final class ContentFactoryTest extends TestCase {
 			context: 'sidebar-widget',
 			reporter: 'admin',
 			commentCheckResponse: CheckResponse::Spam,
+			callback: 'https://example.com/webhook',
 		);
 
 		$array         = $original->toArray();
@@ -547,6 +563,7 @@ final class ContentFactoryTest extends TestCase {
 		$this->assertSame( $original->context, $reconstructed->context );
 		$this->assertSame( $original->reporter, $reconstructed->reporter );
 		$this->assertSame( CheckResponse::Spam, $reconstructed->commentCheckResponse );
+		$this->assertSame( $original->callback, $reconstructed->callback );
 	}
 
 	public function testFromArrayWithEmptyArrayThrowsValidation(): void {

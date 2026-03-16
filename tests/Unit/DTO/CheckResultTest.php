@@ -259,6 +259,82 @@ final class CheckResultTest extends TestCase {
 		$this->assertNull( $result->alertMetadata );
 	}
 
+	public function testFromResponseParsesRecheckAfterHeader(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[
+				'X-Akismet-Recheck-After' => '120',
+			]
+		);
+
+		$this->assertSame( 120, $result->recheckAfter );
+		$this->assertTrue( $result->shouldRecheck() );
+		$this->assertSame( SpamVerdict::Ham, $result->verdict );
+	}
+
+	public function testFromResponseWithoutRecheckAfterHeader(): void {
+		$result = CheckResult::fromResponse( 'false' );
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
+
+	public function testFromResponseTreatsEmptyRecheckAfterAsNull(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[ 'X-Akismet-Recheck-After' => '' ]
+		);
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
+
+	public function testShouldRecheckReturnsTrueOnlyWhenRecheckAfterIsSet(): void {
+		$withRecheck    = new CheckResult( SpamVerdict::Ham, recheckAfter: 120 );
+		$withoutRecheck = new CheckResult( SpamVerdict::Ham );
+
+		$this->assertTrue( $withRecheck->shouldRecheck() );
+		$this->assertFalse( $withoutRecheck->shouldRecheck() );
+	}
+
+	public function testToArrayIncludesRecheckAfter(): void {
+		$result = new CheckResult( SpamVerdict::Ham, recheckAfter: 120 );
+		$array  = $result->toArray();
+
+		$this->assertArrayHasKey( 'recheckAfter', $array );
+		$this->assertSame( 120, $array['recheckAfter'] );
+	}
+
+	public function testToArrayIncludesNullRecheckAfterWhenAbsent(): void {
+		$result = new CheckResult( SpamVerdict::Ham );
+		$array  = $result->toArray();
+
+		$this->assertArrayHasKey( 'recheckAfter', $array );
+		$this->assertNull( $array['recheckAfter'] );
+	}
+
+	public function testJsonRoundTripWithRecheckAfter(): void {
+		$original = new CheckResult( SpamVerdict::Ham, recheckAfter: 120 );
+
+		$json     = json_encode( $original );
+		$decoded  = json_decode( $json, true );
+		$restored = CheckResult::fromJson( $decoded );
+
+		$this->assertSame( 120, $restored->recheckAfter );
+		$this->assertTrue( $restored->shouldRecheck() );
+	}
+
+	public function testJsonRoundTripWithoutRecheckAfter(): void {
+		$original = new CheckResult( SpamVerdict::Ham );
+
+		$json     = json_encode( $original );
+		$decoded  = json_decode( $json, true );
+		$restored = CheckResult::fromJson( $decoded );
+
+		$this->assertNull( $restored->recheckAfter );
+		$this->assertFalse( $restored->shouldRecheck() );
+	}
+
 	public function testJsonRoundTripWithAlertMetadata(): void {
 		$original = CheckResult::fromResponse(
 			'true',
@@ -279,5 +355,47 @@ final class CheckResultTest extends TestCase {
 		$this->assertSame( $original->alertMetadata->upgradeUrl, $restored->alertMetadata->upgradeUrl );
 		$this->assertSame( $original->alertMetadata->apiCalls, $restored->alertMetadata->apiCalls );
 		$this->assertSame( $original->alertMetadata->usageLimit, $restored->alertMetadata->usageLimit );
+	}
+
+	public function testFromResponseTreatsNonNumericRecheckAfterAsNull(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[ 'X-Akismet-Recheck-After' => 'soon' ]
+		);
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
+
+	public function testFromResponseTreatsZeroRecheckAfterAsNull(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[ 'X-Akismet-Recheck-After' => '0' ]
+		);
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
+
+	public function testFromResponseTreatsNegativeRecheckAfterAsNull(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[ 'X-Akismet-Recheck-After' => '-5' ]
+		);
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
+
+	public function testFromJsonTreatsNonNumericRecheckAfterAsNull(): void {
+		$data = [
+			'verdict'      => 'ham',
+			'recheckAfter' => 'abc',
+		];
+
+		$result = CheckResult::fromJson( $data );
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
 	}
 }

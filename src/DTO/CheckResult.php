@@ -34,6 +34,7 @@ final class CheckResult implements JsonSerializable {
 		public readonly ?string $alertMessage = null,
 		public readonly ?string $guid = null,
 		public readonly ?AlertMetadata $alertMetadata = null,
+		public readonly ?int $recheckAfter = null,
 	) {
 	}
 
@@ -54,6 +55,17 @@ final class CheckResult implements JsonSerializable {
 	}
 
 	/**
+	 * Check if the verdict is provisional and should be rechecked.
+	 *
+	 * When true, the API is still processing additional checks and the
+	 * verdict may change. Use recheckAfter for the delay in seconds before
+	 * rechecking.
+	 */
+	public function shouldRecheck(): bool {
+		return $this->recheckAfter !== null;
+	}
+
+	/**
 	 * Create result from API response.
 	 *
 	 * @param string               $body         Response body ('true', 'false', or 'invalid').
@@ -69,6 +81,9 @@ final class CheckResult implements JsonSerializable {
 		$alertMessage = $nullIfEmpty( $headers['x-akismet-alert-msg'] ?? null );
 		$guid         = $nullIfEmpty( $headers['x-akismet-guid'] ?? null );
 
+		$recheckAfterRaw = $nullIfEmpty( $headers['x-akismet-recheck-after'] ?? null );
+		$recheckAfter    = self::parseRecheckAfter( $recheckAfterRaw );
+
 		// Determine verdict
 		if ( $body === 'true' ) {
 			$verdict = ( $proTip === 'discard' ) ? SpamVerdict::Discard : SpamVerdict::Spam;
@@ -78,13 +93,13 @@ final class CheckResult implements JsonSerializable {
 
 		$alertMetadata = AlertMetadata::fromHeaders( $headers );
 
-		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage, $guid, $alertMetadata );
+		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage, $guid, $alertMetadata, $recheckAfter );
 	}
 
 	/**
 	 * Create result from JSON data.
 	 *
-	 * @param array{verdict?: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null, alertMetadata?: mixed} $data
+	 * @param array{verdict?: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null, alertMetadata?: mixed, recheckAfter?: mixed} $data
 	 */
 	public static function fromJson( array $data ): self {
 		$verdict = SpamVerdict::tryFrom( $data['verdict'] ?? '' );
@@ -99,6 +114,8 @@ final class CheckResult implements JsonSerializable {
 			? AlertMetadata::fromJson( $data['alertMetadata'] )
 			: null;
 
+		$recheckAfter = self::parseRecheckAfter( $data['recheckAfter'] ?? null );
+
 		return new self(
 			$verdict,
 			$data['proTip'] ?? null,
@@ -107,13 +124,14 @@ final class CheckResult implements JsonSerializable {
 			$data['alertMessage'] ?? null,
 			$data['guid'] ?? null,
 			$alertMetadata,
+			$recheckAfter,
 		);
 	}
 
 	/**
 	 * Convert to an array.
 	 *
-	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null}
+	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null, recheckAfter: int|null}
 	 */
 	public function toArray(): array {
 		return [
@@ -124,13 +142,36 @@ final class CheckResult implements JsonSerializable {
 			'alertMessage'  => $this->alertMessage,
 			'guid'          => $this->guid,
 			'alertMetadata' => $this->alertMetadata?->toArray(),
+			'recheckAfter'  => $this->recheckAfter,
 		];
 	}
 
 	/**
-	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null}
+	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null, recheckAfter: int|null}
 	 */
 	public function jsonSerialize(): array {
 		return $this->toArray();
+	}
+
+	/**
+	 * Parse a recheck-after value into a positive integer or null.
+	 *
+	 * Accepts string or int inputs. Returns null for absent, non-numeric,
+	 * zero, or negative values.
+	 */
+	private static function parseRecheckAfter( mixed $value ): ?int {
+		if ( $value === null ) {
+			return null;
+		}
+
+		if ( is_int( $value ) ) {
+			return $value > 0 ? $value : null;
+		}
+
+		if ( is_string( $value ) && ctype_digit( $value ) && (int) $value > 0 ) {
+			return (int) $value;
+		}
+
+		return null;
 	}
 }
