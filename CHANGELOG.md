@@ -1,5 +1,13 @@
-## 1.2.0 - 2026-03-14
+## 1.3.0 - 2026-03-16
+### Added
+- `recheckAfter` property and `shouldRecheck()` method on `CheckResult` for deferred verdict handling via the `X-akismet-recheck-after` response header.
+- `callback` property on `Content` for webhook verdict update callbacks, with URL validation. Intentionally omitted from `withFeedback()` since callbacks are only relevant for comment-check requests.
+- `callback` parameter on `ContentFactory::fromRequest()` and `ContentFactory::fromArray()`.
 
+### Fixed
+- `CheckResult::parseRecheckAfter()` now correctly handles float values (e.g., `120.0` from JSON) instead of silently returning null.
+
+## 1.2.0 - 2026-03-14
 ### Added
 - `getConfiguration()` on `AkismetInterface` for mock/decorator access to immutable configuration.
 - `UpgradeRecommendation::fromJson()` factory for JSON round-trip serialization, with strict validation via `ValidationException`.

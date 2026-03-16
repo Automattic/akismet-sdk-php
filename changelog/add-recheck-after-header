@@ -1,4 +1,0 @@
-Significance: minor
-Type: added
-
-Add recheckAfter property and shouldRecheck() method to CheckResult for deferred verdict handling. Add callback property to Content for webhook verdict updates.
