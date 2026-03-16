@@ -188,7 +188,7 @@ final class AkismetTest extends TestCase {
 		$this->assertNotNull( $capturedRequest );
 		$body = (string) $capturedRequest->getBody();
 		$this->assertStringContainsString( 'callback=', $body );
-		$this->assertStringContainsString( urlencode( 'https://example.com/webhook' ), $body );
+		$this->assertStringContainsString( rawurlencode( 'https://example.com/webhook' ), $body );
 	}
 
 	// =========================================================================

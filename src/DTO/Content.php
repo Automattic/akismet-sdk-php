@@ -179,6 +179,9 @@ final class Content {
 	/**
 	 * Create a copy with feedback fields set for submit-spam/submit-ham requests.
 	 *
+	 * Note: callback is intentionally omitted — webhook callbacks are only
+	 * relevant for comment-check requests, not feedback submissions.
+	 *
 	 * @param string                  $reporter              Who reported the content (e.g., current user name).
 	 * @param CheckResponse|string    $commentCheckResponse  The original comment-check result.
 	 * @return self New Content with feedback fields set.

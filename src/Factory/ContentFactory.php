@@ -64,6 +64,7 @@ final class ContentFactory {
 	 * @param string|null              $honeypotFieldName  Name of honeypot field.
 	 * @param string|null              $honeypotFieldValue Value of honeypot field.
 	 * @param string|null              $context            The context or location of the content.
+	 * @param string|null              $callback            Webhook URL for verdict update callbacks.
 	 * @param array<string>           $trustedProxies     List of trusted proxy IPs. Use ['*'] to trust all proxies.
 	 */
 	public static function fromRequest(
@@ -80,6 +81,7 @@ final class ContentFactory {
 		?string $honeypotFieldName = null,
 		?string $honeypotFieldValue = null,
 		?string $context = null,
+		?string $callback = null,
 		array $trustedProxies = [],
 	): Content {
 		/** @var array<string, mixed> $serverParams */
@@ -115,6 +117,7 @@ final class ContentFactory {
 			honeypotFieldName: $honeypotFieldName,
 			honeypotFieldValue: $honeypotFieldValue,
 			context: $context,
+			callback: $callback,
 			serverVariables: $serverVariables,
 		);
 	}
