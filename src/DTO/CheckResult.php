@@ -82,9 +82,7 @@ final class CheckResult implements JsonSerializable {
 		$guid         = $nullIfEmpty( $headers['x-akismet-guid'] ?? null );
 
 		$recheckAfterRaw = $nullIfEmpty( $headers['x-akismet-recheck-after'] ?? null );
-		$recheckAfter    = ( $recheckAfterRaw !== null && is_numeric( $recheckAfterRaw ) && (int) $recheckAfterRaw > 0 )
-			? (int) $recheckAfterRaw
-			: null;
+		$recheckAfter    = self::parseRecheckAfter( $recheckAfterRaw );
 
 		// Determine verdict
 		if ( $body === 'true' ) {
@@ -116,9 +114,7 @@ final class CheckResult implements JsonSerializable {
 			? AlertMetadata::fromJson( $data['alertMetadata'] )
 			: null;
 
-		$recheckAfter = ( isset( $data['recheckAfter'] ) && is_numeric( $data['recheckAfter'] ) && (int) $data['recheckAfter'] > 0 )
-			? (int) $data['recheckAfter']
-			: null;
+		$recheckAfter = self::parseRecheckAfter( $data['recheckAfter'] ?? null );
 
 		return new self(
 			$verdict,
@@ -155,5 +151,27 @@ final class CheckResult implements JsonSerializable {
 	 */
 	public function jsonSerialize(): array {
 		return $this->toArray();
+	}
+
+	/**
+	 * Parse a recheck-after value into a positive integer or null.
+	 *
+	 * Accepts string or int inputs. Returns null for absent, non-numeric,
+	 * zero, or negative values.
+	 */
+	private static function parseRecheckAfter( mixed $value ): ?int {
+		if ( $value === null ) {
+			return null;
+		}
+
+		if ( is_int( $value ) ) {
+			return $value > 0 ? $value : null;
+		}
+
+		if ( is_string( $value ) && ctype_digit( $value ) && (int) $value > 0 ) {
+			return (int) $value;
+		}
+
+		return null;
 	}
 }
