@@ -398,4 +398,28 @@ final class CheckResultTest extends TestCase {
 		$this->assertNull( $result->recheckAfter );
 		$this->assertFalse( $result->shouldRecheck() );
 	}
+
+	public function testFromJsonTreatsFloatRecheckAfterAsInt(): void {
+		$data = [
+			'verdict'      => 'ham',
+			'recheckAfter' => 120.0,
+		];
+
+		$result = CheckResult::fromJson( $data );
+
+		$this->assertSame( 120, $result->recheckAfter );
+		$this->assertTrue( $result->shouldRecheck() );
+	}
+
+	public function testFromJsonTreatsNegativeFloatRecheckAfterAsNull(): void {
+		$data = [
+			'verdict'      => 'ham',
+			'recheckAfter' => -5.5,
+		];
+
+		$result = CheckResult::fromJson( $data );
+
+		$this->assertNull( $result->recheckAfter );
+		$this->assertFalse( $result->shouldRecheck() );
+	}
 }

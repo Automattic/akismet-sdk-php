@@ -164,8 +164,8 @@ final class CheckResult implements JsonSerializable {
 			return null;
 		}
 
-		if ( is_int( $value ) ) {
-			return $value > 0 ? $value : null;
+		if ( is_int( $value ) || is_float( $value ) ) {
+			return $value > 0 ? (int) $value : null;
 		}
 
 		if ( is_string( $value ) && ctype_digit( $value ) && (int) $value > 0 ) {

@@ -184,7 +184,7 @@ final class Content {
 	 *
 	 * @param string                  $reporter              Who reported the content (e.g., current user name).
 	 * @param CheckResponse|string    $commentCheckResponse  The original comment-check result.
-	 * @return self New Content with feedback fields set.
+	 * @return self New Content with feedback fields set and callback cleared.
 	 * @throws ValidationException If commentCheckResponse is an invalid string.
 	 */
 	public function withFeedback( string $reporter, CheckResponse|string $commentCheckResponse ): self {
