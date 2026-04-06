@@ -42,6 +42,17 @@ interface AkismetInterface {
 	public function verifyKey(): void;
 
 	/**
+	 * Notify the Akismet API that this site is deactivating.
+	 *
+	 * Signals that the API key is no longer in use on the configured site,
+	 * allowing the backend to clean up stale key-site associations.
+	 * This is a best-effort call — the response body is not inspected.
+	 *
+	 * @throws AkismetException On network or API errors.
+	 */
+	public function deactivate(): void;
+
+	/**
 	 * Check if content is spam.
 	 *
 	 * @param Content $content The content to check.
