@@ -46,7 +46,9 @@ interface AkismetInterface {
 	 *
 	 * Signals that the API key is no longer in use on the configured site,
 	 * allowing the backend to clean up stale key-site associations.
-	 * This is a best-effort call — the response body is not inspected.
+	 * This is a best-effort call — the response body is not inspected
+	 * and an invalid key response is silently ignored. Transport and
+	 * network failures still throw.
 	 *
 	 * @throws AkismetException On network or API errors.
 	 */

@@ -150,7 +150,7 @@ final class AkismetTest extends TestCase {
 		$this->assertSame( 'POST', $capturedRequest->getMethod() );
 		$this->assertStringContainsString( '/1.1/deactivate', (string) $capturedRequest->getUri() );
 		$body = (string) $capturedRequest->getBody();
-		$this->assertStringContainsString( 'key=test-key', $body );
+		$this->assertMatchesRegularExpression( '/(?:^|&)key=test-key(?:&|$)/', $body );
 		$this->assertStringContainsString( 'blog=https%3A%2F%2Fexample.com', $body );
 	}
 
