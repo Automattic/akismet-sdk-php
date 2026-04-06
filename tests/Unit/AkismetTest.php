@@ -99,6 +99,62 @@ final class AkismetTest extends TestCase {
 	}
 
 	// =========================================================================
+	// deactivate Tests
+	// =========================================================================
+
+	public function testDeactivateReturnsOnSuccess(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], 'deactivated' )
+		);
+
+		$akismet->deactivate();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	public function testDeactivateReturnsOnInvalidKey(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [ 'X-akismet-debug-help' => 'Key not found' ], 'invalid' )
+		);
+
+		$akismet->deactivate();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	public function testDeactivateReturnsOnUnexpectedBody(): void {
+		$akismet = $this->createAkismetWithResponse(
+			new Response( 200, [], 'something-unexpected' )
+		);
+
+		$akismet->deactivate();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	public function testDeactivateSendsCorrectRequest(): void {
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], 'deactivated' ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->deactivate();
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertSame( 'POST', $capturedRequest->getMethod() );
+		$this->assertStringContainsString( '/1.1/deactivate', (string) $capturedRequest->getUri() );
+		$body = (string) $capturedRequest->getBody();
+		$this->assertMatchesRegularExpression( '/(?:^|&)key=test-key(?:&|$)/', $body );
+		$this->assertStringContainsString( 'blog=https%3A%2F%2Fexample.com', $body );
+	}
+
+	// =========================================================================
 	// check Tests
 	// =========================================================================
 

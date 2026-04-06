@@ -70,6 +70,16 @@ final class AkismetIntegrationTest extends TestCase {
 	}
 
 	// =========================================================================
+	// Deactivate Tests
+	// =========================================================================
+
+	public function testDeactivateWithValidKey(): void {
+		$this->akismet->deactivate();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	// =========================================================================
 	// Content Check Tests - Ham (Not Spam)
 	// =========================================================================
 

@@ -110,6 +110,18 @@ final class Akismet implements AkismetInterface {
 	/**
 	 * @inheritDoc
 	 */
+	public function deactivate(): void {
+		$this->httpClient->post(
+			'/1.1/deactivate',
+			[
+				'key' => $this->config->apiKey,
+			]
+		);
+	}
+
+	/**
+	 * @inheritDoc
+	 */
 	public function check( Content $content ): CheckResult {
 		$response = $this->httpClient->post( '/1.1/comment-check', $content->toArray() );
 		$body     = HttpClient::getBody( $response );

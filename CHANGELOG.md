@@ -1,3 +1,7 @@
+## 1.4.0 - 2026-04-06
+### Added
+- Add deactivate() method to notify API when a site stops using its API key.
+
 ## 1.3.0 - 2026-03-16
 ### Added
 - `recheckAfter` property and `shouldRecheck()` method on `CheckResult` for deferred verdict handling via the `X-akismet-recheck-after` response header.

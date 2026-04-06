@@ -31,6 +31,7 @@ Base: `https://rest.akismet.com/`
 | `/1.1/comment-check` | POST | Check spam (required: `api_key`, `blog`, `user_ip`) |
 | `/1.1/submit-spam` | POST | Report missed spam |
 | `/1.1/submit-ham` | POST | Report false positive |
+| `/1.1/deactivate` | POST | Notify key deactivation (params: `key`, `blog`; best-effort, response not inspected) |
 | `/1.1/token` | POST | Exchange API key for access token |
 | `/1.2/usage-limit` | GET | API usage/limits (returns: `limit`, `usage`, `percentage`, `throttled`) |
 | `/1.1/get-subscription` | POST | Account plan info (returns: `account_id`, `account_type`, `account_name`, `status`, `next_billing_date`, `limit_reached`) |
