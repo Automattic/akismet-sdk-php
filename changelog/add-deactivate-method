@@ -1,0 +1,4 @@
+Significance: minor
+Type: added
+
+Add deactivate() method to notify API when a site stops using its API key.
