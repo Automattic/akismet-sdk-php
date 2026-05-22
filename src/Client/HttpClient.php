@@ -63,8 +63,8 @@ final class HttpClient {
 	/**
 	 * Send a POST request with form data.
 	 *
-	 * @param string               $endpoint API endpoint path.
-	 * @param array<string, string> $data    Form data to send.
+	 * @param string                              $endpoint API endpoint path.
+	 * @param array<string, string|array<int, string>> $data Form data to send.
 	 * @return ResponseInterface
 	 * @throws ClientErrorException
 	 * @throws NetworkException
@@ -81,7 +81,7 @@ final class HttpClient {
 			$data['is_test'] = '1';
 		}
 
-		$body = http_build_query( $data, '', '&' );
+		$body = self::buildFormBody( $data );
 
 		$request = $this->requestFactory
 			->createRequest( 'POST', $url )
@@ -113,6 +113,29 @@ final class HttpClient {
 			->withHeader( 'User-Agent', $this->userAgent );
 
 		return $this->send( $request );
+	}
+
+	/**
+	 * Build an application/x-www-form-urlencoded body.
+	 *
+	 * List values are encoded as repeated PHP-style array fields such as
+	 * comment_context[]=contact-form&comment_context[]=pricing-page.
+	 *
+	 * @param array<string, string|array<int, string>> $data Form data.
+	 */
+	private static function buildFormBody( array $data ): string {
+		$pairs = [];
+		foreach ( $data as $key => $value ) {
+			if ( is_array( $value ) ) {
+				foreach ( $value as $item ) {
+					$pairs[] = http_build_query( [ $key . '[]' => $item ], '', '&' );
+				}
+				continue;
+			}
+			$pairs[] = http_build_query( [ $key => $value ], '', '&' );
+		}
+
+		return implode( '&', $pairs );
 	}
 
 	/**

@@ -239,11 +239,46 @@ final class ContentTest extends TestCase {
 		$this->assertSame( 'sidebar-widget', $array['comment_context'] );
 	}
 
+	public function testRequestFieldsIncludedInToArray(): void {
+		$content = new Content(
+			userIp: '192.168.1.1',
+			blogLang: 'en, fr_ca',
+			blogCharset: 'UTF-8',
+			contextValues: [ 'contact-form', '', 'pricing-page', 123 ],
+			classify: true,
+		);
+
+		$array = $content->toArray();
+
+		$this->assertSame( 'en, fr_ca', $array['blog_lang'] );
+		$this->assertSame( 'UTF-8', $array['blog_charset'] );
+		$this->assertSame( [ 'contact-form', 'pricing-page' ], $array['comment_context'] );
+		$this->assertSame( '1', $array['classify'] );
+	}
+
+	public function testContextAndContextValuesCannotBothBeSet(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessage( 'context' );
+
+		new Content(
+			userIp: '192.168.1.1',
+			context: 'sidebar-widget',
+			contextValues: [ 'contact-form' ],
+		);
+	}
+
 	public function testContextNullOmittedFromToArray(): void {
 		$content = new Content( userIp: '192.168.1.1' );
 
 		$this->assertNull( $content->context );
 		$this->assertArrayNotHasKey( 'comment_context', $content->toArray() );
+	}
+
+	public function testClassifyFalseOmittedFromToArray(): void {
+		$content = new Content( userIp: '192.168.1.1' );
+
+		$this->assertFalse( $content->classify );
+		$this->assertArrayNotHasKey( 'classify', $content->toArray() );
 	}
 
 	public function testToArrayIncludesFeedbackFields(): void {
@@ -290,15 +325,28 @@ final class ContentTest extends TestCase {
 			userIp: '192.168.1.1',
 			userAgent: 'Mozilla/5.0',
 			body: 'Legit comment',
+			blogLang: 'en',
+			blogCharset: 'UTF-8',
+			contextValues: [ 'contact-form' ],
+			classify: true,
 			serverVariables: [
-				'user_ip'         => '10.0.0.1',
-				'user_agent'      => 'EvilBot',
-				'comment_content' => 'Buy cheap stuff',
-				'api_key'         => 'stolen-key',
-				'blog'            => 'https://evil.com',
-				'is_test'         => '0',
-				'HTTP_ACCEPT'     => 'text/html',
-				'REMOTE_ADDR'     => '172.16.0.1',
+				'user_ip'            => '10.0.0.1',
+				'user_agent'         => 'EvilBot',
+				'blog_lang'          => 'fr',
+				'blog_lang[]'        => 'fr',
+				'blog_charset'       => 'ISO-8859-1',
+				'blog_charset[0]'    => 'ISO-8859-1',
+				'comment_content'    => 'Buy cheap stuff',
+				'comment_context'    => 'bad-context',
+				'comment_context[]'  => 'bad-context',
+				'comment_context[0]' => 'bad-context',
+				'classify'           => '0',
+				'classify[]'         => '0',
+				'api_key'            => 'stolen-key',
+				'blog'               => 'https://evil.com',
+				'is_test'            => '0',
+				'HTTP_ACCEPT'        => 'text/html',
+				'REMOTE_ADDR'        => '172.16.0.1',
 			],
 		);
 
@@ -307,12 +355,21 @@ final class ContentTest extends TestCase {
 		// Reserved keys retain their original values.
 		$this->assertSame( '192.168.1.1', $array['user_ip'] );
 		$this->assertSame( 'Mozilla/5.0', $array['user_agent'] );
+		$this->assertSame( 'en', $array['blog_lang'] );
+		$this->assertSame( 'UTF-8', $array['blog_charset'] );
 		$this->assertSame( 'Legit comment', $array['comment_content'] );
+		$this->assertSame( [ 'contact-form' ], $array['comment_context'] );
+		$this->assertSame( '1', $array['classify'] );
 
 		// Injected reserved keys must not appear.
 		$this->assertArrayNotHasKey( 'api_key', $array );
 		$this->assertArrayNotHasKey( 'blog', $array );
 		$this->assertArrayNotHasKey( 'is_test', $array );
+		$this->assertArrayNotHasKey( 'blog_lang[]', $array );
+		$this->assertArrayNotHasKey( 'blog_charset[0]', $array );
+		$this->assertArrayNotHasKey( 'comment_context[]', $array );
+		$this->assertArrayNotHasKey( 'comment_context[0]', $array );
+		$this->assertArrayNotHasKey( 'classify[]', $array );
 
 		// Non-reserved server variables are included.
 		$this->assertSame( 'text/html', $array['HTTP_ACCEPT'] );
@@ -413,6 +470,21 @@ final class ContentTest extends TestCase {
 		);
 	}
 
+	public function testRejectsReservedHoneypotFieldName(): void {
+		foreach ( [ 'comment_context[0]', 'blog_lang[]', 'classify[]' ] as $fieldName ) {
+			try {
+				new Content(
+					userIp: '192.168.1.1',
+					honeypotFieldName: $fieldName,
+					honeypotFieldValue: 'bot-filled',
+				);
+				$this->fail( sprintf( 'Expected exception for %s', $fieldName ) );
+			} catch ( ValidationException $e ) {
+				$this->assertStringContainsString( 'honeypotFieldName', $e->getMessage() );
+			}
+		}
+	}
+
 	public function testServerVariablesFilteredAtConstruction(): void {
 		$content = new Content(
 			userIp: '192.168.1.1',
@@ -486,10 +558,19 @@ final class ContentTest extends TestCase {
 		$original = new Content(
 			userIp: '192.168.1.1',
 			callback: 'https://example.com/webhook',
+			blogLang: 'en',
+			blogCharset: 'UTF-8',
+			contextValues: [ 'contact-form' ],
+			classify: true,
 		);
 
 		$feedback = $original->withFeedback( 'admin', 'true' );
 
 		$this->assertNull( $feedback->callback );
+		$this->assertSame( 'en', $feedback->blogLang );
+		$this->assertSame( 'UTF-8', $feedback->blogCharset );
+		$this->assertSame( [ 'contact-form' ], $feedback->contextValues );
+		$this->assertFalse( $feedback->classify );
+		$this->assertArrayNotHasKey( 'classify', $feedback->toArray() );
 	}
 }

@@ -159,6 +159,26 @@ final class ContentFactoryTest extends TestCase {
 		$this->assertSame( 'sidebar-widget', $content->context );
 	}
 
+	public function testFromRequestPassesRequestFields(): void {
+		$request = $this->createMockRequest(
+			serverParams: [ 'REMOTE_ADDR' => '192.168.1.1' ],
+			headers: [],
+		);
+
+		$content = ContentFactory::fromRequest(
+			request: $request,
+			blogLang: 'en',
+			blogCharset: 'UTF-8',
+			contextValues: [ 'contact-form' ],
+			classify: true,
+		);
+
+		$this->assertSame( 'en', $content->blogLang );
+		$this->assertSame( 'UTF-8', $content->blogCharset );
+		$this->assertSame( [ 'contact-form' ], $content->contextValues );
+		$this->assertTrue( $content->classify );
+	}
+
 	public function testFromRequestAcceptsCallbackParameter(): void {
 		$request = $this->createMockRequest(
 			[ 'REMOTE_ADDR' => '203.0.113.1' ],
@@ -310,6 +330,40 @@ final class ContentFactoryTest extends TestCase {
 		$content = ContentFactory::fromArray( $data );
 
 		$this->assertSame( 'footer-form', $content->context );
+	}
+
+	public function testFromArrayReadsRequestFields(): void {
+		$content = ContentFactory::fromArray(
+			[
+				'user_ip'         => '192.168.1.1',
+				'blog_lang'       => 'en, fr_ca',
+				'blog_charset'    => 'UTF-8',
+				'comment_context' => [ 'contact-form', 'pricing-page' ],
+				'classify'        => '1',
+			]
+		);
+
+		$this->assertSame( 'en, fr_ca', $content->blogLang );
+		$this->assertSame( 'UTF-8', $content->blogCharset );
+		$this->assertSame( [ 'contact-form', 'pricing-page' ], $content->contextValues );
+		$this->assertTrue( $content->classify );
+	}
+
+	public function testFromArrayReadsCamelCaseRequestFields(): void {
+		$content = ContentFactory::fromArray(
+			[
+				'userIp'        => '192.168.1.1',
+				'blogLang'      => 'en',
+				'blogCharset'   => 'UTF-8',
+				'contextValues' => [ 'contact-form' ],
+				'classify'      => true,
+			]
+		);
+
+		$this->assertSame( 'en', $content->blogLang );
+		$this->assertSame( 'UTF-8', $content->blogCharset );
+		$this->assertSame( [ 'contact-form' ], $content->contextValues );
+		$this->assertTrue( $content->classify );
 	}
 
 	public function testFromArrayReadsFeedbackFields(): void {
