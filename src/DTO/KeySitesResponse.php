@@ -38,7 +38,7 @@ final class KeySitesResponse {
 	/**
 	 * Convert to an array matching the API response format.
 	 *
-	 * @return array{sites: array<int, array{site: string, api_calls: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool}>, limit: int, offset: int, total: int, month?: string}
+	 * @return array{sites: array<int, array{site: string, api_calls: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool, hash?: string|null, eligible_for_revoke?: bool|null}>, limit: int, offset: int, total: int, month?: string}
 	 */
 	public function toArray(): array {
 		$sites = [];
@@ -208,7 +208,7 @@ final class KeySitesResponse {
 				);
 			}
 
-			/** @var array{site: string, api_calls?: int, total?: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool} $siteData */
+			/** @var array{site: string, api_calls?: int, total?: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool, hash?: mixed, eligible_for_revoke?: mixed} $siteData */
 			$sites[] = SiteStats::fromResponse( $siteData );
 		}
 

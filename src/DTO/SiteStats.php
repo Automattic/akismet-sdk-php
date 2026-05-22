@@ -24,16 +24,18 @@ final class SiteStats {
 		public readonly int $missedSpam,
 		public readonly int $falsePositives,
 		public readonly bool $isRevoked,
+		public readonly ?string $hash = null,
+		public readonly ?bool $eligibleForRevoke = null,
 	) {
 	}
 
 	/**
 	 * Convert to an array matching the API response format.
 	 *
-	 * @return array{site: string, api_calls: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool}
+	 * @return array{site: string, api_calls: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool, hash?: string|null, eligible_for_revoke?: bool|null}
 	 */
 	public function toArray(): array {
-		return [
+		$data = [
 			'site'            => $this->site,
 			'api_calls'       => $this->totalCalls,
 			'spam'            => $this->spam,
@@ -42,6 +44,15 @@ final class SiteStats {
 			'false_positives' => $this->falsePositives,
 			'is_revoked'      => $this->isRevoked,
 		];
+
+		if ( $this->hash !== null ) {
+			$data['hash'] = $this->hash;
+		}
+		if ( $this->eligibleForRevoke !== null ) {
+			$data['eligible_for_revoke'] = $this->eligibleForRevoke;
+		}
+
+		return $data;
 	}
 
 	/**
@@ -64,7 +75,7 @@ final class SiteStats {
 	/**
 	 * Create from API response data.
 	 *
-	 * @param array{site: string, api_calls?: int, total?: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool} $data
+	 * @param array{site: string, api_calls?: int, total?: int, spam: int, ham: int, missed_spam: int, false_positives: int, is_revoked: bool, hash?: mixed, eligible_for_revoke?: mixed} $data
 	 * @throws ServerException If required keys are missing.
 	 */
 	public static function fromResponse( array $data ): self {
@@ -92,6 +103,36 @@ final class SiteStats {
 			(int) $data['missed_spam'],
 			(int) $data['false_positives'],
 			(bool) $data['is_revoked'],
+			self::parseOptionalString( $data['hash'] ?? null ),
+			self::parseOptionalBool( $data['eligible_for_revoke'] ?? null ),
 		);
+	}
+
+	private static function parseOptionalString( mixed $value ): ?string {
+		return is_string( $value ) ? $value : null;
+	}
+
+	private static function parseOptionalBool( mixed $value ): ?bool {
+		if ( $value === null ) {
+			return null;
+		}
+		if ( is_bool( $value ) ) {
+			return $value;
+		}
+		if ( is_int( $value ) ) {
+			return match ( $value ) {
+				1 => true,
+				0 => false,
+				default => null,
+			};
+		}
+		if ( is_string( $value ) ) {
+			return match ( strtolower( $value ) ) {
+				'1', 'true' => true,
+				'0', 'false' => false,
+				default => null,
+			};
+		}
+		return null;
 	}
 }

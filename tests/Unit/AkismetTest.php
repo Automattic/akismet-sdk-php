@@ -530,6 +530,31 @@ final class AkismetTest extends TestCase {
 		$this->assertStringContainsString( 'order=spam', (string) $capturedRequest->getUri() );
 	}
 
+	public function testGetExtendedKeySitesPassesExtendedParam(): void {
+		$capturedRequest = null;
+		$json            = json_encode(
+			[
+				'limit'  => 500,
+				'offset' => 0,
+				'total'  => 0,
+			]
+		);
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], $json ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->getExtendedKeySites();
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertStringContainsString( 'extended=true', (string) $capturedRequest->getUri() );
+	}
+
 	// =========================================================================
 	// getKeySites Validation Tests
 	// =========================================================================

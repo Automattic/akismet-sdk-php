@@ -90,6 +90,7 @@ flowchart LR
 | `getUsageLimit()` | Get API usage stats and limits |
 | `getExtendedUsageLimit()` | Get usage stats with notice level and upgrade recommendation |
 | `getKeySites()` | Get sites using your API key (JSON format only; CSV is not supported) |
+| `getExtendedKeySites()` | Get sites using your API key with optional extended per-site metadata when available |
 | `getAccessToken()` | Exchange API key for a scoped access token (stats pages only, not for API calls) |
 
 ## Integration Identification

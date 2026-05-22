@@ -28,6 +28,8 @@ final class SiteStatsTest extends TestCase {
 			missedSpam: 10,
 			falsePositives: 5,
 			isRevoked: false,
+			hash: 'site-hash',
+			eligibleForRevoke: true,
 		);
 
 		$this->assertSame( 'example.com', $stats->site );
@@ -37,6 +39,8 @@ final class SiteStatsTest extends TestCase {
 		$this->assertSame( 10, $stats->missedSpam );
 		$this->assertSame( 5, $stats->falsePositives );
 		$this->assertFalse( $stats->isRevoked );
+		$this->assertSame( 'site-hash', $stats->hash );
+		$this->assertTrue( $stats->eligibleForRevoke );
 	}
 
 	public function testGetAccuracyCalculatesCorrectly(): void {
@@ -64,17 +68,21 @@ final class SiteStatsTest extends TestCase {
 			missedSpam: 10,
 			falsePositives: 5,
 			isRevoked: false,
+			hash: 'site-hash',
+			eligibleForRevoke: true,
 		);
 
 		$this->assertSame(
 			[
-				'site'            => 'example.com',
-				'api_calls'       => 1000,
-				'spam'            => 400,
-				'ham'             => 580,
-				'missed_spam'     => 10,
-				'false_positives' => 5,
-				'is_revoked'      => false,
+				'site'                => 'example.com',
+				'api_calls'           => 1000,
+				'spam'                => 400,
+				'ham'                 => 580,
+				'missed_spam'         => 10,
+				'false_positives'     => 5,
+				'is_revoked'          => false,
+				'hash'                => 'site-hash',
+				'eligible_for_revoke' => true,
 			],
 			$stats->toArray()
 		);
@@ -88,13 +96,15 @@ final class SiteStatsTest extends TestCase {
 
 	public function testFromResponseWithApiCalls(): void {
 		$data = [
-			'site'            => 'test.example.com',
-			'api_calls'       => 5000,
-			'spam'            => 2000,
-			'ham'             => 2950,
-			'missed_spam'     => 30,
-			'false_positives' => 20,
-			'is_revoked'      => false,
+			'site'                => 'test.example.com',
+			'api_calls'           => 5000,
+			'spam'                => 2000,
+			'ham'                 => 2950,
+			'missed_spam'         => 30,
+			'false_positives'     => 20,
+			'is_revoked'          => false,
+			'hash'                => 'site-hash',
+			'eligible_for_revoke' => true,
 		];
 
 		$stats = SiteStats::fromResponse( $data );
@@ -106,6 +116,94 @@ final class SiteStatsTest extends TestCase {
 		$this->assertSame( 30, $stats->missedSpam );
 		$this->assertSame( 20, $stats->falsePositives );
 		$this->assertFalse( $stats->isRevoked );
+		$this->assertSame( 'site-hash', $stats->hash );
+		$this->assertTrue( $stats->eligibleForRevoke );
+	}
+
+	public function testFromResponseParsesEligibleForRevokeStrings(): void {
+		$true    = SiteStats::fromResponse(
+			[
+				'site'                => 'test.example.com',
+				'api_calls'           => 5000,
+				'spam'                => 2000,
+				'ham'                 => 2950,
+				'missed_spam'         => 30,
+				'false_positives'     => 20,
+				'is_revoked'          => false,
+				'eligible_for_revoke' => 'true',
+			]
+		);
+		$false   = SiteStats::fromResponse(
+			[
+				'site'                => 'test.example.com',
+				'api_calls'           => 5000,
+				'spam'                => 2000,
+				'ham'                 => 2950,
+				'missed_spam'         => 30,
+				'false_positives'     => 20,
+				'is_revoked'          => false,
+				'eligible_for_revoke' => 'false',
+			]
+		);
+		$unknown = SiteStats::fromResponse(
+			[
+				'site'                => 'test.example.com',
+				'api_calls'           => 5000,
+				'spam'                => 2000,
+				'ham'                 => 2950,
+				'missed_spam'         => 30,
+				'false_positives'     => 20,
+				'is_revoked'          => false,
+				'eligible_for_revoke' => 'unknown',
+			]
+		);
+
+		$this->assertTrue( $true->eligibleForRevoke );
+		$this->assertFalse( $false->eligibleForRevoke );
+		$this->assertNull( $unknown->eligibleForRevoke );
+	}
+
+	public function testFromResponseParsesEligibleForRevokeIntegers(): void {
+		$true    = SiteStats::fromResponse(
+			[
+				'site'                => 'test.example.com',
+				'api_calls'           => 5000,
+				'spam'                => 2000,
+				'ham'                 => 2950,
+				'missed_spam'         => 30,
+				'false_positives'     => 20,
+				'is_revoked'          => false,
+				'eligible_for_revoke' => 1,
+			]
+		);
+		$false   = SiteStats::fromResponse(
+			[
+				'site'                => 'test.example.com',
+				'api_calls'           => 5000,
+				'spam'                => 2000,
+				'ham'                 => 2950,
+				'missed_spam'         => 30,
+				'false_positives'     => 20,
+				'is_revoked'          => false,
+				'eligible_for_revoke' => 0,
+			]
+		);
+		$unknown = SiteStats::fromResponse(
+			[
+				'site'                => 'test.example.com',
+				'api_calls'           => 5000,
+				'spam'                => 2000,
+				'ham'                 => 2950,
+				'missed_spam'         => 30,
+				'false_positives'     => 20,
+				'is_revoked'          => false,
+				'eligible_for_revoke' => 2,
+			]
+		);
+
+		$this->assertTrue( $true->eligibleForRevoke );
+		$this->assertFalse( $false->eligibleForRevoke );
+		$this->assertNull( $unknown->eligibleForRevoke );
 	}
 
 	public function testFromResponseWithTotal(): void {

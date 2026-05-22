@@ -19,6 +19,7 @@ use Automattic\Akismet\DTO\Subscription;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Enum\StatsInterval;
+use Automattic\Akismet\Exception\AkismetException;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
 use Automattic\Akismet\Exception\ValidationException;
@@ -220,6 +221,41 @@ final class Akismet implements AkismetInterface {
 		int $offset = 0,
 		?KeySitesOrder $order = null,
 	): KeySitesResponse {
+		return $this->fetchKeySites( $month, $filter, $limit, $offset, $order );
+	}
+
+	/**
+	 * Get sites using this API key and request optional extended per-site metadata.
+	 *
+	 * @param string|null $month  Month to get stats for (YYYY-MM format, month 01-12). Defaults to current month.
+	 * @param string|null $filter Filter results by site URL or partial URL.
+	 * @param int         $limit  Maximum number of results (must be > 0, default 500).
+	 * @param int         $offset Pagination offset (must be >= 0, default 0).
+	 * @param KeySitesOrder|null $order Sort column for results.
+	 * @return KeySitesResponse List of sites with statistics and optional extended metadata.
+	 * @throws ValidationException If month format, limit, or offset is invalid.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns malformed JSON.
+	 * @throws AkismetException On network or API errors.
+	 */
+	public function getExtendedKeySites(
+		?string $month = null,
+		?string $filter = null,
+		int $limit = 500,
+		int $offset = 0,
+		?KeySitesOrder $order = null,
+	): KeySitesResponse {
+		return $this->fetchKeySites( $month, $filter, $limit, $offset, $order, true );
+	}
+
+	private function fetchKeySites(
+		?string $month = null,
+		?string $filter = null,
+		int $limit = 500,
+		int $offset = 0,
+		?KeySitesOrder $order = null,
+		bool $extended = false,
+	): KeySitesResponse {
 		if ( $month !== null && ! preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $month ) ) {
 			throw ValidationException::invalidValue( 'month', 'must be in YYYY-MM format (01-12)' );
 		}
@@ -247,6 +283,10 @@ final class Akismet implements AkismetInterface {
 
 		if ( $order !== null ) {
 			$params['order'] = $order->value;
+		}
+
+		if ( $extended ) {
+			$params['extended'] = 'true';
 		}
 
 		$response = $this->httpClient->get( '/1.2/key-sites', $params );
