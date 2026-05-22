@@ -77,10 +77,12 @@ final class CheckResultTest extends TestCase {
 		$result = CheckResult::fromResponse(
 			'true',
 			[
-				'X-Akismet-Debug-Help' => 'Some debug info',
-				'X-Akismet-Alert-Code' => '10001',
-				'X-Akismet-Alert-Msg'  => 'Usage limit warning',
-				'X-Akismet-Guid'       => 'abc123def456',
+				'X-Akismet-Debug-Help'     => 'Some debug info',
+				'X-Akismet-Alert-Code'     => '10001',
+				'X-Akismet-Alert-Msg'      => 'Usage limit warning',
+				'X-Akismet-Guid'           => 'abc123def456',
+				'X-Akismet-Error'          => 'missing-required-field',
+				'X-Akismet-Classification' => 'spam',
 			]
 		);
 
@@ -88,6 +90,8 @@ final class CheckResultTest extends TestCase {
 		$this->assertSame( '10001', $result->alertCode );
 		$this->assertSame( 'Usage limit warning', $result->alertMessage );
 		$this->assertSame( 'abc123def456', $result->guid );
+		$this->assertSame( 'missing-required-field', $result->error );
+		$this->assertSame( 'spam', $result->classification );
 	}
 
 	public function testFromResponseWithoutGuid(): void {
@@ -103,6 +107,32 @@ final class CheckResultTest extends TestCase {
 		);
 
 		$this->assertSame( 'lowercase-guid-value', $result->guid );
+	}
+
+	public function testFromResponseExtractsErrorMetadataCaseInsensitively(): void {
+		$result = CheckResult::fromResponse(
+			'true',
+			[
+				'x-akismet-error'          => 'missing-required-field',
+				'x-akismet-classification' => 'spam',
+			]
+		);
+
+		$this->assertSame( 'missing-required-field', $result->error );
+		$this->assertSame( 'spam', $result->classification );
+	}
+
+	public function testFromResponseTreatsEmptyErrorMetadataAsNull(): void {
+		$result = CheckResult::fromResponse(
+			'false',
+			[
+				'X-Akismet-Error'          => '',
+				'X-Akismet-Classification' => '',
+			]
+		);
+
+		$this->assertNull( $result->error );
+		$this->assertNull( $result->classification );
 	}
 
 	public function testFromResponseTreatsEmptyGuidAsNull(): void {
@@ -149,6 +179,26 @@ final class CheckResultTest extends TestCase {
 		$this->assertSame( $original->guid, $restored->guid );
 	}
 
+	public function testJsonRoundTripsErrorAndClassification(): void {
+		$original = new CheckResult(
+			SpamVerdict::Spam,
+			error: 'missing-required-field',
+			classification: 'spam',
+		);
+
+		$json = json_encode( $original );
+		$this->assertIsString( $json );
+
+		$decoded = json_decode( $json, true );
+		$this->assertSame( 'missing-required-field', $decoded['error'] );
+		$this->assertSame( 'spam', $decoded['classification'] );
+
+		$restored = CheckResult::fromJson( $decoded );
+
+		$this->assertSame( $original->error, $restored->error );
+		$this->assertSame( $original->classification, $restored->classification );
+	}
+
 	public function testFromJsonWithoutGuid(): void {
 		$data = [
 			'verdict' => 'ham',
@@ -178,10 +228,14 @@ final class CheckResultTest extends TestCase {
 		$this->assertArrayHasKey( 'alertMessage', $array );
 		$this->assertArrayHasKey( 'guid', $array );
 		$this->assertArrayHasKey( 'alertMetadata', $array );
+		$this->assertArrayHasKey( 'error', $array );
+		$this->assertArrayHasKey( 'classification', $array );
 
 		$this->assertSame( 'ham', $array['verdict'] );
 		$this->assertNull( $array['guid'] );
 		$this->assertNull( $array['alertMetadata'] );
+		$this->assertNull( $array['error'] );
+		$this->assertNull( $array['classification'] );
 	}
 
 	public function testToArrayIncludesAlertMetadata(): void {
