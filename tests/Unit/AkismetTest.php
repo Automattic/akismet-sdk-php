@@ -445,18 +445,20 @@ final class AkismetTest extends TestCase {
 	public function testGetKeySitesReturnsDto(): void {
 		$json    = json_encode(
 			[
-				'limit'  => 500,
-				'offset' => 0,
-				'total'  => 1,
-				'site1'  => [
-					'site'            => 'https://example.com',
-					'api_calls'       => 100,
-					'spam'            => 10,
-					'ham'             => 90,
-					'missed_spam'     => 1,
-					'false_positives' => 0,
-					'is_revoked'      => false,
+				'2024-01' => [
+					[
+						'site'            => 'https://example.com',
+						'api_calls'       => 100,
+						'spam'            => 10,
+						'ham'             => 90,
+						'missed_spam'     => 1,
+						'false_positives' => 0,
+						'is_revoked'      => false,
+					],
 				],
+				'limit'   => 500,
+				'offset'  => 0,
+				'total'   => 1,
 			]
 		);
 		$akismet = $this->createAkismetWithResponse(
@@ -467,6 +469,7 @@ final class AkismetTest extends TestCase {
 
 		$this->assertSame( 1, $result->total );
 		$this->assertCount( 1, $result->sites );
+		$this->assertSame( '2024-01', $result->month );
 	}
 
 	public function testGetKeySitesThrowsOnInvalidBody(): void {
