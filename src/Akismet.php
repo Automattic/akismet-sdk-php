@@ -220,6 +220,30 @@ final class Akismet implements AkismetInterface {
 		int $offset = 0,
 		?KeySitesOrder $order = null,
 	): KeySitesResponse {
+		return $this->fetchKeySites( $month, $filter, $limit, $offset, $order );
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getExtendedKeySites(
+		?string $month = null,
+		?string $filter = null,
+		int $limit = 500,
+		int $offset = 0,
+		?KeySitesOrder $order = null,
+	): KeySitesResponse {
+		return $this->fetchKeySites( $month, $filter, $limit, $offset, $order, true );
+	}
+
+	private function fetchKeySites(
+		?string $month = null,
+		?string $filter = null,
+		int $limit = 500,
+		int $offset = 0,
+		?KeySitesOrder $order = null,
+		bool $extended = false,
+	): KeySitesResponse {
 		if ( $month !== null && ! preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $month ) ) {
 			throw ValidationException::invalidValue( 'month', 'must be in YYYY-MM format (01-12)' );
 		}
@@ -247,6 +271,10 @@ final class Akismet implements AkismetInterface {
 
 		if ( $order !== null ) {
 			$params['order'] = $order->value;
+		}
+
+		if ( $extended ) {
+			$params['extended'] = 'true';
 		}
 
 		$response = $this->httpClient->get( '/1.2/key-sites', $params );

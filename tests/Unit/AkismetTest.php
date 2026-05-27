@@ -506,18 +506,20 @@ final class AkismetTest extends TestCase {
 	public function testGetKeySitesReturnsDto(): void {
 		$json    = json_encode(
 			[
-				'limit'  => 500,
-				'offset' => 0,
-				'total'  => 1,
-				'site1'  => [
-					'site'            => 'https://example.com',
-					'api_calls'       => 100,
-					'spam'            => 10,
-					'ham'             => 90,
-					'missed_spam'     => 1,
-					'false_positives' => 0,
-					'is_revoked'      => false,
+				'2024-01' => [
+					[
+						'site'            => 'https://example.com',
+						'api_calls'       => 100,
+						'spam'            => 10,
+						'ham'             => 90,
+						'missed_spam'     => 1,
+						'false_positives' => 0,
+						'is_revoked'      => false,
+					],
 				],
+				'limit'   => 500,
+				'offset'  => 0,
+				'total'   => 1,
 			]
 		);
 		$akismet = $this->createAkismetWithResponse(
@@ -528,6 +530,7 @@ final class AkismetTest extends TestCase {
 
 		$this->assertSame( 1, $result->total );
 		$this->assertCount( 1, $result->sites );
+		$this->assertSame( '2024-01', $result->month );
 	}
 
 	public function testGetKeySitesThrowsOnInvalidBody(): void {
@@ -586,6 +589,68 @@ final class AkismetTest extends TestCase {
 
 		$this->assertNotNull( $capturedRequest );
 		$this->assertStringContainsString( 'order=spam', (string) $capturedRequest->getUri() );
+	}
+
+	public function testGetExtendedKeySitesPassesExtendedParam(): void {
+		$capturedRequest = null;
+		$json            = json_encode(
+			[
+				'limit'  => 500,
+				'offset' => 0,
+				'total'  => 0,
+			]
+		);
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], $json ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->getExtendedKeySites();
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertStringContainsString( 'extended=true', (string) $capturedRequest->getUri() );
+	}
+
+	public function testGetExtendedKeySitesForwardsAllParams(): void {
+		$capturedRequest = null;
+		$json            = json_encode(
+			[
+				'limit'  => 50,
+				'offset' => 25,
+				'total'  => 0,
+			]
+		);
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], $json ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->getExtendedKeySites(
+			month: '2024-03',
+			filter: 'example.com',
+			limit: 50,
+			offset: 25,
+			order: KeySitesOrder::Spam,
+		);
+
+		$this->assertNotNull( $capturedRequest );
+		$uri = (string) $capturedRequest->getUri();
+		$this->assertStringContainsString( 'extended=true', $uri );
+		$this->assertStringContainsString( 'month=2024-03', $uri );
+		$this->assertStringContainsString( 'filter=example.com', $uri );
+		$this->assertStringContainsString( 'limit=50', $uri );
+		$this->assertStringContainsString( 'offset=25', $uri );
+		$this->assertStringContainsString( 'order=spam', $uri );
 	}
 
 	// =========================================================================

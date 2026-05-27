@@ -171,6 +171,31 @@ interface AkismetInterface {
 	): KeySitesResponse;
 
 	/**
+	 * Get sites using this API key and request optional extended per-site metadata.
+	 *
+	 * Adds `extended=true` to the request. When the backend supports it, each site in the
+	 * response includes optional `hash` and `eligible_for_revoke` fields.
+	 *
+	 * @param string|null $month  Month to get stats for (YYYY-MM format, month 01-12). Defaults to current month.
+	 * @param string|null $filter Filter results by site URL or partial URL.
+	 * @param int         $limit  Maximum number of results (must be > 0, default 500).
+	 * @param int         $offset Pagination offset (must be >= 0, default 0).
+	 * @param KeySitesOrder|null $order  Sort column for results.
+	 * @return KeySitesResponse List of sites with statistics and optional extended metadata.
+	 * @throws ValidationException If month format, limit, or offset is invalid.
+	 * @throws InvalidApiKeyException If the API key is invalid.
+	 * @throws ServerException If the API returns malformed JSON.
+	 * @throws AkismetException On network or API errors.
+	 */
+	public function getExtendedKeySites(
+		?string $month = null,
+		?string $filter = null,
+		int $limit = 500,
+		int $offset = 0,
+		?KeySitesOrder $order = null,
+	): KeySitesResponse;
+
+	/**
 	 * Exchange the API key for a scoped access token.
 	 *
 	 * The token can only be used to authenticate requests to
