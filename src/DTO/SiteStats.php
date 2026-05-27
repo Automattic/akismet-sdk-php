@@ -103,16 +103,24 @@ final class SiteStats {
 			(int) $data['missed_spam'],
 			(int) $data['false_positives'],
 			(bool) $data['is_revoked'],
-			self::parseOptionalString( $data['hash'] ?? null ),
-			self::parseOptionalBool( $data['eligible_for_revoke'] ?? null ),
+			self::parseOptionalString( $data['hash'] ?? null, 'hash' ),
+			self::parseOptionalBool( $data['eligible_for_revoke'] ?? null, 'eligible_for_revoke' ),
 		);
 	}
 
-	private static function parseOptionalString( mixed $value ): ?string {
-		return is_string( $value ) ? $value : null;
+	private static function parseOptionalString( mixed $value, string $field ): ?string {
+		if ( $value === null ) {
+			return null;
+		}
+		if ( is_string( $value ) ) {
+			return $value;
+		}
+		throw ServerException::unexpectedResponse(
+			sprintf( 'Expected string "%s" in key-sites response, got %s', $field, get_debug_type( $value ) )
+		);
 	}
 
-	private static function parseOptionalBool( mixed $value ): ?bool {
+	private static function parseOptionalBool( mixed $value, string $field ): ?bool {
 		if ( $value === null ) {
 			return null;
 		}
@@ -121,18 +129,24 @@ final class SiteStats {
 		}
 		if ( is_int( $value ) ) {
 			return match ( $value ) {
-				1 => true,
-				0 => false,
-				default => null,
+				1       => true,
+				0       => false,
+				default => throw ServerException::unexpectedResponse(
+					sprintf( 'Unrecognized integer "%s" value %d in key-sites response', $field, $value )
+				),
 			};
 		}
 		if ( is_string( $value ) ) {
 			return match ( strtolower( $value ) ) {
-				'1', 'true' => true,
+				'1', 'true'  => true,
 				'0', 'false' => false,
-				default => null,
+				default      => throw ServerException::unexpectedResponse(
+					sprintf( 'Unrecognized string "%s" value "%s" in key-sites response', $field, $value )
+				),
 			};
 		}
-		return null;
+		throw ServerException::unexpectedResponse(
+			sprintf( 'Expected bool/int/string "%s" in key-sites response, got %s', $field, get_debug_type( $value ) )
+		);
 	}
 }

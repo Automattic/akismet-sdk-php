@@ -19,7 +19,6 @@ use Automattic\Akismet\DTO\Subscription;
 use Automattic\Akismet\DTO\UsageLimit;
 use Automattic\Akismet\Enum\KeySitesOrder;
 use Automattic\Akismet\Enum\StatsInterval;
-use Automattic\Akismet\Exception\AkismetException;
 use Automattic\Akismet\Exception\InvalidApiKeyException;
 use Automattic\Akismet\Exception\ServerException;
 use Automattic\Akismet\Exception\ValidationException;
@@ -225,18 +224,7 @@ final class Akismet implements AkismetInterface {
 	}
 
 	/**
-	 * Get sites using this API key and request optional extended per-site metadata.
-	 *
-	 * @param string|null $month  Month to get stats for (YYYY-MM format, month 01-12). Defaults to current month.
-	 * @param string|null $filter Filter results by site URL or partial URL.
-	 * @param int         $limit  Maximum number of results (must be > 0, default 500).
-	 * @param int         $offset Pagination offset (must be >= 0, default 0).
-	 * @param KeySitesOrder|null $order Sort column for results.
-	 * @return KeySitesResponse List of sites with statistics and optional extended metadata.
-	 * @throws ValidationException If month format, limit, or offset is invalid.
-	 * @throws InvalidApiKeyException If the API key is invalid.
-	 * @throws ServerException If the API returns malformed JSON.
-	 * @throws AkismetException On network or API errors.
+	 * @inheritDoc
 	 */
 	public function getExtendedKeySites(
 		?string $month = null,

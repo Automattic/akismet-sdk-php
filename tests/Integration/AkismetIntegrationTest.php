@@ -371,11 +371,13 @@ final class AkismetIntegrationTest extends TestCase {
 		$this->assertSame( 0, $response->offset, 'Default offset should be 0' );
 		$this->assertSame( 10, $response->limit, 'Limit should match requested value' );
 
-		if ( $response->sites !== [] ) {
-			$first = $response->sites[0];
-			$this->assertNotNull( $first->hash, 'Extended response should include hash' );
-			$this->assertNotNull( $first->eligibleForRevoke, 'Extended response should include eligible_for_revoke' );
+		if ( $response->sites === [] ) {
+			$this->markTestSkipped( 'Test account has no sites; cannot validate extended fields' );
 		}
+
+		$first = $response->sites[0];
+		$this->assertNotNull( $first->hash, 'Extended response should include hash' );
+		$this->assertNotNull( $first->eligibleForRevoke, 'Extended response should include eligible_for_revoke' );
 	}
 
 	// =========================================================================
