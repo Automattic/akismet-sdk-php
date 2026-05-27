@@ -479,6 +479,35 @@ final class KeySitesResponseTest extends TestCase {
 		$this->assertSame( 'legacy.example.com', $response->sites[0]->site );
 	}
 
+	public function testFromResponsePreservesExtendedSiteMetadata(): void {
+		$response = KeySitesResponse::fromResponse(
+			[
+				'site-key' => [
+					'site'                => 'example.com',
+					'api_calls'           => 1000,
+					'spam'                => 400,
+					'ham'                 => 590,
+					'missed_spam'         => 5,
+					'false_positives'     => 5,
+					'is_revoked'          => false,
+					'hash'                => 'site-hash',
+					'eligible_for_revoke' => 'false',
+				],
+				'limit'    => 500,
+				'offset'   => 0,
+				'total'    => 1,
+			]
+		);
+
+		$this->assertCount( 1, $response->sites );
+		$this->assertSame( 'site-hash', $response->sites[0]->hash );
+		$this->assertFalse( $response->sites[0]->eligibleForRevoke );
+
+		$array = $response->toArray();
+		$this->assertSame( 'site-hash', $array['sites'][0]['hash'] );
+		$this->assertFalse( $array['sites'][0]['eligible_for_revoke'] );
+	}
+
 	public function testFromResponseThrowsWhenPaginationMissing(): void {
 		$this->expectException( ServerException::class );
 

@@ -364,6 +364,22 @@ final class AkismetIntegrationTest extends TestCase {
 		$this->assertSame( 5, $response->limit, 'Limit should match requested value' );
 	}
 
+	public function testGetExtendedKeySitesReturnsValidResponse(): void {
+		$response = $this->akismet->getExtendedKeySites( limit: 10 );
+
+		$this->assertLessThanOrEqual( 10, count( $response->sites ), 'Should respect limit' );
+		$this->assertSame( 0, $response->offset, 'Default offset should be 0' );
+		$this->assertSame( 10, $response->limit, 'Limit should match requested value' );
+
+		if ( $response->sites === [] ) {
+			$this->markTestSkipped( 'Test account has no sites; cannot validate extended fields' );
+		}
+
+		$first = $response->sites[0];
+		$this->assertNotNull( $first->hash, 'Extended response should include hash' );
+		$this->assertNotNull( $first->eligibleForRevoke, 'Extended response should include eligible_for_revoke' );
+	}
+
 	// =========================================================================
 	// Subscription Tests
 	// =========================================================================
