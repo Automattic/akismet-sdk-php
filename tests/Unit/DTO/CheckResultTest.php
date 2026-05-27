@@ -135,6 +135,26 @@ final class CheckResultTest extends TestCase {
 		$this->assertNull( $result->classification );
 	}
 
+	public function testFromResponseExtractsErrorWithoutClassification(): void {
+		$result = CheckResult::fromResponse(
+			'true',
+			[ 'X-Akismet-Error' => 'missing-required-field' ]
+		);
+
+		$this->assertSame( 'missing-required-field', $result->error );
+		$this->assertNull( $result->classification );
+	}
+
+	public function testFromResponseExtractsClassificationWithoutError(): void {
+		$result = CheckResult::fromResponse(
+			'true',
+			[ 'X-Akismet-Classification' => 'spam' ]
+		);
+
+		$this->assertNull( $result->error );
+		$this->assertSame( 'spam', $result->classification );
+	}
+
 	public function testFromResponseTreatsEmptyGuidAsNull(): void {
 		$result = CheckResult::fromResponse(
 			'false',
@@ -208,6 +228,13 @@ final class CheckResultTest extends TestCase {
 		$result = CheckResult::fromJson( $data );
 
 		$this->assertNull( $result->guid );
+	}
+
+	public function testFromJsonWithoutErrorAndClassification(): void {
+		$result = CheckResult::fromJson( [ 'verdict' => 'ham' ] );
+
+		$this->assertNull( $result->error );
+		$this->assertNull( $result->classification );
 	}
 
 	public function testFromJsonWithInvalidVerdict(): void {

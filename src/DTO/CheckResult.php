@@ -23,8 +23,9 @@ use JsonSerializable;
  * Akismet alert headers. `alertMetadata` is an optional superset that captures
  * additional undocumented alert headers (used by the WordPress plugin). When
  * present, `alertMetadata` includes the same code/message plus extended fields.
- * `error` and `classification` expose optional response-header metadata when
- * the API includes it.
+ * `error` exposes `X-Akismet-Error` (a short machine-readable error slug,
+ * distinct from the `alertCode`/`alertMessage` pair) and `classification`
+ * exposes `X-Akismet-Classification` when the API returns them.
  */
 final class CheckResult implements JsonSerializable {
 
