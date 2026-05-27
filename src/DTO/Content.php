@@ -139,7 +139,7 @@ final class Content {
 	 *                                                          RESERVED_KEYS and the honeypot field name are filtered
 	 *                                                          out at construction time.
 	 * @param string|null             $blogLang                Languages in use on the site (for example, "en, fr_ca").
-	 * @param array<int, string>      $contextValues           Context values to send as repeated comment_context[] fields. Empty strings and non-strings throw ValidationException.
+	 * @param array<int, mixed>       $contextValues           Context values to send as repeated comment_context[] fields. Must contain non-empty strings; anything else throws ValidationException.
 	 * @param bool                    $classify                Request extended classification metadata from the API.
 	 * @param string|null             $blogCharset             Character encoding for comment_* form values.
 	 * @throws ValidationException If userIp, authorEmail, authorUrl, permalink, callback, contextValues, honeypotFieldName, or serverVariables are invalid.

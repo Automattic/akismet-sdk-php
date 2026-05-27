@@ -151,9 +151,9 @@ final class ContentFactory {
 
 		$honeypotFieldName = self::getString( $data, 'honeypotFieldName', 'honeypot_field_name' );
 		$context           = self::getString( $data, 'context', 'comment_context' );
-		$contextValues     = self::getStringArray( $data, 'contextValues', 'comment_context' );
+		$contextValues     = self::getList( $data, 'contextValues', 'comment_context' );
 		if ( $contextValues === [] ) {
-			$contextValues = self::getStringArray( $data, 'comment_context[]' );
+			$contextValues = self::getList( $data, 'comment_context[]' );
 		}
 
 		return new Content(
@@ -209,20 +209,22 @@ final class ContentFactory {
 	}
 
 	/**
-	 * Get a list of string values from data array with fallback key.
+	 * Get a list value from data array with fallback key. Returns the raw list
+	 * unchanged so downstream validators (e.g. Content::normalizeContextValues)
+	 * remain the single source of truth for element-type rejection.
 	 *
 	 * @param array<string, mixed> $data        Source data.
 	 * @param string               $key         Primary key.
 	 * @param string|null          $fallbackKey Fallback key if primary not found.
-	 * @return array<int, string>
+	 * @return array<int, mixed>
 	 */
-	private static function getStringArray( array $data, string $key, ?string $fallbackKey = null ): array {
+	private static function getList( array $data, string $key, ?string $fallbackKey = null ): array {
 		$value = self::resolve( $data, $key, $fallbackKey );
 		if ( ! is_array( $value ) ) {
 			return [];
 		}
 
-		return array_values( array_filter( $value, 'is_string' ) );
+		return array_values( $value );
 	}
 
 	/**

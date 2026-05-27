@@ -644,6 +644,25 @@ final class ContentTest extends TestCase {
 		$this->assertArrayNotHasKey( 'classify', $feedback->toArray() );
 	}
 
+	public function testCommentCheckOnlyKeysAreAlsoReserved(): void {
+		// Locks the invariant that every comment-check-only key is also a reserved
+		// key, so callers cannot smuggle stripped fields back in via serverVariables.
+		$reflection = new \ReflectionClass( Content::class );
+		$reserved   = $reflection->getConstant( 'RESERVED_KEYS' );
+		$checkOnly  = $reflection->getConstant( 'COMMENT_CHECK_ONLY_KEYS' );
+
+		$this->assertIsArray( $reserved );
+		$this->assertIsArray( $checkOnly );
+
+		foreach ( array_keys( $checkOnly ) as $key ) {
+			$this->assertArrayHasKey(
+				$key,
+				$reserved,
+				sprintf( '"%s" is comment-check-only but missing from RESERVED_KEYS', $key )
+			);
+		}
+	}
+
 	public function testToFeedbackArrayStripsCommentCheckOnlyFields(): void {
 		$content = new Content(
 			userIp: '192.168.1.1',

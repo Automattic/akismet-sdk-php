@@ -423,6 +423,20 @@ final class ContentFactoryTest extends TestCase {
 		);
 	}
 
+	public function testFromArrayPropagatesContextValuesValidation(): void {
+		// Factory must not silently filter non-string entries; Content's validator
+		// is the single source of truth and should surface the bad input.
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessageMatches( '/contextValues/' );
+
+		ContentFactory::fromArray(
+			[
+				'user_ip'         => '192.168.1.1',
+				'comment_context' => [ 'contact-form', 123 ],
+			]
+		);
+	}
+
 	public function testFromArrayReadsFeedbackFields(): void {
 		$camelCase = ContentFactory::fromArray(
 			[
