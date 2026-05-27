@@ -16,6 +16,9 @@ use Automattic\Akismet\Exception\ServerException;
  */
 final class KeySitesResponse {
 
+	private const MONTH_PATTERN      = '/^\d{4}-(0[1-9]|1[0-2])$/';
+	private const MONTH_LIKE_PATTERN = '/^\d{4}-\d{1,2}$/';
+
 	/**
 	 * @param array<SiteStats> $sites  List of sites with their statistics.
 	 * @param int              $limit  Maximum number of results returned.
@@ -100,86 +103,102 @@ final class KeySitesResponse {
 		// Remove pagination keys to get site data.
 		unset( $data['limit'], $data['offset'], $data['total'] );
 
-		$month               = null;
-		$bucketSites         = null;
-		$hasMonthBucket      = false;
-		$hasTopLevelSitesKey = false;
-		$hasTopLevelMonthKey = false;
-		$legacySites         = [];
+		$topLevelMonth        = null;
+		$bucketMonth          = null;
+		$bucketSites          = null;
+		$hasTopLevelSitesKey  = false;
+		$hasLegacyFlatEntries = false;
+		$legacySites          = [];
 
 		if ( isset( $data['month'] ) && is_string( $data['month'] ) ) {
-			if ( ! preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $data['month'] ) ) {
+			if ( ! preg_match( self::MONTH_PATTERN, $data['month'] ) ) {
 				throw ServerException::unexpectedResponse(
 					sprintf( 'Invalid month "%s" in key-sites response', $data['month'] )
 				);
 			}
 
-			$month               = $data['month'];
-			$hasTopLevelMonthKey = true;
+			$topLevelMonth = $data['month'];
 			unset( $data['month'] );
 		}
 
 		foreach ( $data as $key => $value ) {
-			if ( ! is_array( $value ) ) {
-				continue;
-			}
-
-			if ( (string) $key === 'sites' ) {
-				$hasTopLevelSitesKey = true;
-				$legacySites         = $value;
-				continue;
-			}
-
 			$keyString = (string) $key;
 
-			if ( ! preg_match( '/^\d{4}-\d{2}$/', $keyString ) ) {
-				if ( preg_match( '/^\d{4}-\d+$/', $keyString ) ) {
+			if ( preg_match( self::MONTH_LIKE_PATTERN, $keyString ) ) {
+				if ( ! preg_match( self::MONTH_PATTERN, $keyString ) ) {
 					throw ServerException::unexpectedResponse(
 						sprintf( 'Invalid month bucket "%s" in key-sites response', $keyString )
 					);
 				}
 
-				if ( isset( $value['site'] ) ) {
-					$legacySites[] = $value;
+				if ( ! is_array( $value ) ) {
+					throw ServerException::unexpectedResponse(
+						sprintf( 'Month bucket "%s" is not an array in key-sites response', $keyString )
+					);
 				}
+
+				if ( $bucketMonth !== null ) {
+					throw ServerException::unexpectedResponse(
+						sprintf(
+							'Multiple site buckets found in key-sites response ("%s" and "%s")',
+							$bucketMonth,
+							$keyString
+						)
+					);
+				}
+
+				if ( $topLevelMonth !== null && $topLevelMonth !== $keyString ) {
+					throw ServerException::unexpectedResponse(
+						sprintf(
+							'Top-level month "%s" does not match bucket "%s" in key-sites response',
+							$topLevelMonth,
+							$keyString
+						)
+					);
+				}
+
+				$bucketMonth = $keyString;
+				$bucketSites = $value;
 				continue;
 			}
 
-			if ( ! preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $keyString ) ) {
-				throw ServerException::unexpectedResponse(
-					sprintf( 'Invalid month bucket "%s" in key-sites response', $keyString )
-				);
+			if ( ! is_array( $value ) ) {
+				continue;
 			}
 
-			if ( $bucketSites !== null ) {
-				throw ServerException::unexpectedResponse(
-					sprintf(
-						'Multiple site buckets found in key-sites response ("%s" and "%s")',
-						(string) $month,
-						$keyString
-					)
-				);
+			if ( $keyString === 'sites' ) {
+				$hasTopLevelSitesKey = true;
+				$legacySites         = array_merge( $legacySites, $value );
+				continue;
 			}
 
-			$hasMonthBucket = true;
-			$month          = $keyString;
-			$bucketSites    = $value;
-
-			foreach ( $bucketSites as $siteData ) {
-				if ( ! is_array( $siteData ) ) {
-					throw ServerException::unexpectedResponse(
-						'Expected site object in key-sites response'
-					);
-				}
+			// Legacy fallback: require enough stat fields to be confident this is a site entry,
+			// not a future top-level metadata block. The production backend no longer emits this shape.
+			if ( isset( $value['site'], $value['spam'], $value['ham'] ) ) {
+				$legacySites[]        = $value;
+				$hasLegacyFlatEntries = true;
 			}
 		}
 
-		$rawSites = ( $hasMonthBucket && $bucketSites !== null ) ? $bucketSites : $legacySites;
-		if ( $total > 0 && ! $hasMonthBucket && ! $hasTopLevelSitesKey && $legacySites === [] ) {
+		if ( $bucketSites !== null && $legacySites !== [] ) {
+			throw ServerException::unexpectedResponse(
+				'Mixed month bucket and legacy site entries in key-sites response'
+			);
+		}
+
+		if ( $hasTopLevelSitesKey && $hasLegacyFlatEntries ) {
+			throw ServerException::unexpectedResponse(
+				'Mixed "sites" key and legacy flat site entries in key-sites response'
+			);
+		}
+
+		if ( $total > 0 && $bucketSites === null && ! $hasTopLevelSitesKey && $legacySites === [] ) {
 			throw ServerException::unexpectedResponse(
 				'Missing site bucket in key-sites response'
 			);
 		}
+
+		$rawSites = $bucketSites ?? $legacySites;
 
 		$sites = [];
 		foreach ( $rawSites as $siteData ) {
@@ -193,6 +212,6 @@ final class KeySitesResponse {
 			$sites[] = SiteStats::fromResponse( $siteData );
 		}
 
-		return new self( $sites, $limit, $offset, $total, ( $hasMonthBucket || $hasTopLevelMonthKey ) ? $month : null );
+		return new self( $sites, $limit, $offset, $total, $bucketMonth ?? $topLevelMonth );
 	}
 }

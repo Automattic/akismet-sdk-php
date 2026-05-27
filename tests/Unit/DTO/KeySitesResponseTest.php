@@ -134,6 +134,7 @@ final class KeySitesResponseTest extends TestCase {
 		$this->assertSame( 500, $array['limit'] );
 		$this->assertSame( 0, $array['offset'] );
 		$this->assertSame( 0, $array['total'] );
+		$this->assertArrayNotHasKey( 'month', $array );
 	}
 
 	public function testFromResponseParsesCorrectly(): void {
@@ -204,6 +205,7 @@ final class KeySitesResponseTest extends TestCase {
 
 	public function testFromResponseThrowsWhenPositiveTotalHasNoSiteBucket(): void {
 		$this->expectException( ServerException::class );
+		$this->expectExceptionMessageMatches( '/Missing site bucket/' );
 
 		KeySitesResponse::fromResponse(
 			[
@@ -216,6 +218,7 @@ final class KeySitesResponseTest extends TestCase {
 
 	public function testFromResponseThrowsWhenMonthBucketIsFlatSiteObject(): void {
 		$this->expectException( ServerException::class );
+		$this->expectExceptionMessageMatches( '/Expected site object/' );
 
 		KeySitesResponse::fromResponse(
 			[
@@ -237,6 +240,7 @@ final class KeySitesResponseTest extends TestCase {
 
 	public function testFromResponseThrowsWhenMonthBucketHasInvalidMonth(): void {
 		$this->expectException( ServerException::class );
+		$this->expectExceptionMessageMatches( '/Invalid month bucket "2024-13"/' );
 
 		KeySitesResponse::fromResponse(
 			[
@@ -258,6 +262,7 @@ final class KeySitesResponseTest extends TestCase {
 
 	public function testFromResponseThrowsWhenMonthBucketHasLooseMonthFormat(): void {
 		$this->expectException( ServerException::class );
+		$this->expectExceptionMessageMatches( '/Invalid month bucket "2024-1"/' );
 
 		KeySitesResponse::fromResponse(
 			[
@@ -279,6 +284,7 @@ final class KeySitesResponseTest extends TestCase {
 
 	public function testFromResponseThrowsWhenMultipleMonthBucketsPresent(): void {
 		$this->expectException( ServerException::class );
+		$this->expectExceptionMessageMatches( '/Multiple site buckets.*2024-01.*2024-02/' );
 
 		KeySitesResponse::fromResponse(
 			[
@@ -289,6 +295,165 @@ final class KeySitesResponseTest extends TestCase {
 				'total'   => 0,
 			]
 		);
+	}
+
+	public function testFromResponseThrowsWhenMonthBucketValueIsNotArray(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessageMatches( '/Month bucket "2024-01" is not an array/' );
+
+		KeySitesResponse::fromResponse(
+			[
+				'2024-01' => 'not-an-array',
+				'limit'   => 500,
+				'offset'  => 0,
+				'total'   => 1,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsWhenTopLevelMonthDoesNotMatchBucket(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessageMatches( '/Top-level month "2024-02" does not match bucket "2024-01"/' );
+
+		KeySitesResponse::fromResponse(
+			[
+				'month'   => '2024-02',
+				'2024-01' => [],
+				'limit'   => 500,
+				'offset'  => 0,
+				'total'   => 0,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsWhenTopLevelMonthIsInvalid(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessageMatches( '/Invalid month "2024-13"/' );
+
+		KeySitesResponse::fromResponse(
+			[
+				'month'  => '2024-13',
+				'limit'  => 500,
+				'offset' => 0,
+				'total'  => 0,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsWhenSitesKeyAndLegacyFlatEntriesBothPresent(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessageMatches( '/Mixed "sites" key and legacy flat site entries/' );
+
+		KeySitesResponse::fromResponse(
+			[
+				'sites'    => [
+					[
+						'site'            => 'example.com',
+						'api_calls'       => 100,
+						'spam'            => 50,
+						'ham'             => 50,
+						'missed_spam'     => 0,
+						'false_positives' => 0,
+						'is_revoked'      => false,
+					],
+				],
+				'site-key' => [
+					'site'            => 'legacy.example.com',
+					'api_calls'       => 100,
+					'spam'            => 50,
+					'ham'             => 50,
+					'missed_spam'     => 0,
+					'false_positives' => 0,
+					'is_revoked'      => false,
+				],
+				'limit'    => 500,
+				'offset'   => 0,
+				'total'    => 2,
+			]
+		);
+	}
+
+	public function testFromResponseThrowsWhenLegacyAndMonthBucketBothPresent(): void {
+		$this->expectException( ServerException::class );
+		$this->expectExceptionMessageMatches( '/Mixed month bucket and legacy site entries/' );
+
+		KeySitesResponse::fromResponse(
+			[
+				'2024-01'  => [
+					[
+						'site'            => 'example.com',
+						'api_calls'       => 100,
+						'spam'            => 50,
+						'ham'             => 50,
+						'missed_spam'     => 0,
+						'false_positives' => 0,
+						'is_revoked'      => false,
+					],
+				],
+				'site-key' => [
+					'site'            => 'legacy.example.com',
+					'api_calls'       => 100,
+					'spam'            => 50,
+					'ham'             => 50,
+					'missed_spam'     => 0,
+					'false_positives' => 0,
+					'is_revoked'      => false,
+				],
+				'limit'    => 500,
+				'offset'   => 0,
+				'total'    => 1,
+			]
+		);
+	}
+
+	public function testFromResponseAcceptsTopLevelMonthMatchingBucket(): void {
+		$response = KeySitesResponse::fromResponse(
+			[
+				'month'   => '2024-01',
+				'2024-01' => [
+					[
+						'site'            => 'example.com',
+						'api_calls'       => 100,
+						'spam'            => 50,
+						'ham'             => 50,
+						'missed_spam'     => 0,
+						'false_positives' => 0,
+						'is_revoked'      => false,
+					],
+				],
+				'limit'   => 500,
+				'offset'  => 0,
+				'total'   => 1,
+			]
+		);
+
+		$this->assertSame( '2024-01', $response->month );
+		$this->assertCount( 1, $response->sites );
+	}
+
+	public function testFromResponseAcceptsTopLevelMonthWithSitesKey(): void {
+		$response = KeySitesResponse::fromResponse(
+			[
+				'month'  => '2024-01',
+				'sites'  => [
+					[
+						'site'            => 'example.com',
+						'api_calls'       => 100,
+						'spam'            => 50,
+						'ham'             => 50,
+						'missed_spam'     => 0,
+						'false_positives' => 0,
+						'is_revoked'      => false,
+					],
+				],
+				'limit'  => 500,
+				'offset' => 0,
+				'total'  => 1,
+			]
+		);
+
+		$this->assertSame( '2024-01', $response->month );
+		$this->assertCount( 1, $response->sites );
 	}
 
 	public function testFromResponseParsesLegacyFlatSiteObjects(): void {
