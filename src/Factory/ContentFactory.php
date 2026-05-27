@@ -66,6 +66,10 @@ final class ContentFactory {
 	 * @param string|null              $context            The context or location of the content.
 	 * @param string|null              $callback            Webhook URL for verdict update callbacks.
 	 * @param array<string>           $trustedProxies     List of trusted proxy IPs. Use ['*'] to trust all proxies.
+	 * @param string|null              $blogLang           Languages in use on the site.
+	 * @param array<int, string>       $contextValues      Context values to send as repeated comment_context[] fields.
+	 * @param bool                     $classify           Request extended classification metadata from the API.
+	 * @param string|null              $blogCharset        Character encoding for comment_* form values.
 	 */
 	public static function fromRequest(
 		ServerRequestInterface $request,
@@ -83,6 +87,10 @@ final class ContentFactory {
 		?string $context = null,
 		?string $callback = null,
 		array $trustedProxies = [],
+		?string $blogLang = null,
+		array $contextValues = [],
+		bool $classify = false,
+		?string $blogCharset = null,
 	): Content {
 		/** @var array<string, mixed> $serverParams */
 		$serverParams = $request->getServerParams();
@@ -119,6 +127,10 @@ final class ContentFactory {
 			context: $context,
 			callback: $callback,
 			serverVariables: $serverVariables,
+			blogLang: $blogLang,
+			contextValues: $contextValues,
+			classify: $classify,
+			blogCharset: $blogCharset,
 		);
 	}
 
@@ -138,6 +150,11 @@ final class ContentFactory {
 		$serverVariables = is_array( $serverVars ) ? $serverVars : [];
 
 		$honeypotFieldName = self::getString( $data, 'honeypotFieldName', 'honeypot_field_name' );
+		$context           = self::getString( $data, 'context', 'comment_context' );
+		$contextValues     = self::getList( $data, 'contextValues', 'comment_context' );
+		if ( $contextValues === [] ) {
+			$contextValues = self::getList( $data, 'comment_context[]' );
+		}
 
 		return new Content(
 			userIp: self::getString( $data, 'userIp', 'user_ip' ) ?? '',
@@ -156,11 +173,15 @@ final class ContentFactory {
 			recheckReason: self::getString( $data, 'recheckReason', 'recheck_reason' ),
 			honeypotFieldName: $honeypotFieldName,
 			honeypotFieldValue: self::getHoneypotValue( $data, $honeypotFieldName ),
-			context: self::getString( $data, 'context', 'comment_context' ),
+			context: $context,
 			reporter: self::getString( $data, 'reporter' ),
 			commentCheckResponse: self::getString( $data, 'commentCheckResponse', 'comment_check_response' ),
 			callback: self::getString( $data, 'callback' ),
 			serverVariables: $serverVariables,
+			blogLang: self::getString( $data, 'blogLang', 'blog_lang' ),
+			contextValues: $contextValues,
+			classify: self::getBool( $data, 'classify' ),
+			blogCharset: self::getString( $data, 'blogCharset', 'blog_charset' ),
 		);
 	}
 
@@ -185,6 +206,67 @@ final class ContentFactory {
 	private static function getString( array $data, string $key, ?string $fallbackKey = null ): ?string {
 		$value = self::resolve( $data, $key, $fallbackKey );
 		return is_string( $value ) ? $value : null;
+	}
+
+	/**
+	 * Get a list value from data array with fallback key. Returns the raw list
+	 * unchanged so downstream validators (e.g. Content::normalizeContextValues)
+	 * remain the single source of truth for element-type rejection.
+	 *
+	 * @param array<string, mixed> $data        Source data.
+	 * @param string               $key         Primary key.
+	 * @param string|null          $fallbackKey Fallback key if primary not found.
+	 * @return array<int, mixed>
+	 */
+	private static function getList( array $data, string $key, ?string $fallbackKey = null ): array {
+		$value = self::resolve( $data, $key, $fallbackKey );
+		if ( ! is_array( $value ) ) {
+			return [];
+		}
+
+		return array_values( $value );
+	}
+
+	/**
+	 * Get a boolean value from data array. Throws on values that don't unambiguously
+	 * resolve to true or false, to surface caller bugs rather than silently defaulting.
+	 *
+	 * @param array<string, mixed> $data Source data.
+	 * @param string               $key  Key to read.
+	 * @throws ValidationException If the value isn't a bool, 0/1, or "0"/"1"/"true"/"false".
+	 */
+	private static function getBool( array $data, string $key ): bool {
+		$value = $data[ $key ] ?? null;
+		if ( $value === null ) {
+			return false;
+		}
+		if ( is_bool( $value ) ) {
+			return $value;
+		}
+		if ( is_int( $value ) ) {
+			return match ( $value ) {
+				0       => false,
+				1       => true,
+				default => throw ValidationException::invalidValue(
+					$key,
+					sprintf( 'unrecognized integer %d (expected 0 or 1)', $value )
+				),
+			};
+		}
+		if ( is_string( $value ) ) {
+			return match ( strtolower( $value ) ) {
+				'0', 'false' => false,
+				'1', 'true'  => true,
+				default      => throw ValidationException::invalidValue(
+					$key,
+					sprintf( 'unrecognized string "%s" (expected "0", "1", "true", or "false")', $value )
+				),
+			};
+		}
+		throw ValidationException::invalidValue(
+			$key,
+			sprintf( 'expected bool/int/string, got %s', get_debug_type( $value ) )
+		);
 	}
 
 	/**

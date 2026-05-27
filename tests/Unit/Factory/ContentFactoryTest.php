@@ -17,6 +17,7 @@ use Automattic\Akismet\Factory\ContentFactory;
 use Automattic\Akismet\Validator\InputValidator;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
@@ -157,6 +158,26 @@ final class ContentFactoryTest extends TestCase {
 		);
 
 		$this->assertSame( 'sidebar-widget', $content->context );
+	}
+
+	public function testFromRequestPassesRequestFields(): void {
+		$request = $this->createMockRequest(
+			serverParams: [ 'REMOTE_ADDR' => '192.168.1.1' ],
+			headers: [],
+		);
+
+		$content = ContentFactory::fromRequest(
+			request: $request,
+			blogLang: 'en',
+			blogCharset: 'UTF-8',
+			contextValues: [ 'contact-form' ],
+			classify: true,
+		);
+
+		$this->assertSame( 'en', $content->blogLang );
+		$this->assertSame( 'UTF-8', $content->blogCharset );
+		$this->assertSame( [ 'contact-form' ], $content->contextValues );
+		$this->assertTrue( $content->classify );
 	}
 
 	public function testFromRequestAcceptsCallbackParameter(): void {
@@ -310,6 +331,110 @@ final class ContentFactoryTest extends TestCase {
 		$content = ContentFactory::fromArray( $data );
 
 		$this->assertSame( 'footer-form', $content->context );
+	}
+
+	public function testFromArrayReadsRequestFields(): void {
+		$content = ContentFactory::fromArray(
+			[
+				'user_ip'         => '192.168.1.1',
+				'blog_lang'       => 'en, fr_ca',
+				'blog_charset'    => 'UTF-8',
+				'comment_context' => [ 'contact-form', 'pricing-page' ],
+				'classify'        => '1',
+			]
+		);
+
+		$this->assertSame( 'en, fr_ca', $content->blogLang );
+		$this->assertSame( 'UTF-8', $content->blogCharset );
+		$this->assertSame( [ 'contact-form', 'pricing-page' ], $content->contextValues );
+		$this->assertTrue( $content->classify );
+	}
+
+	public function testFromArrayReadsCamelCaseRequestFields(): void {
+		$content = ContentFactory::fromArray(
+			[
+				'userIp'        => '192.168.1.1',
+				'blogLang'      => 'en',
+				'blogCharset'   => 'UTF-8',
+				'contextValues' => [ 'contact-form' ],
+				'classify'      => true,
+			]
+		);
+
+		$this->assertSame( 'en', $content->blogLang );
+		$this->assertSame( 'UTF-8', $content->blogCharset );
+		$this->assertSame( [ 'contact-form' ], $content->contextValues );
+		$this->assertTrue( $content->classify );
+	}
+
+	/**
+	 * @return array<string, array{0: mixed, 1: bool}>
+	 */
+	public static function classifyAcceptedValues(): array {
+		return [
+			'bool true'      => [ true, true ],
+			'bool false'     => [ false, false ],
+			'int 1'          => [ 1, true ],
+			'int 0'          => [ 0, false ],
+			'string "1"'     => [ '1', true ],
+			'string "0"'     => [ '0', false ],
+			'string "true"'  => [ 'true', true ],
+			'string "false"' => [ 'false', false ],
+			'string "TRUE"'  => [ 'TRUE', true ],
+			'string "False"' => [ 'False', false ],
+			'missing key'    => [ '__MISSING__', false ],
+		];
+	}
+
+	#[DataProvider( 'classifyAcceptedValues' )]
+	public function testFromArrayAcceptsClassifyValues( mixed $input, bool $expected ): void {
+		$data = [ 'user_ip' => '192.168.1.1' ];
+		if ( $input !== '__MISSING__' ) {
+			$data['classify'] = $input;
+		}
+
+		$content = ContentFactory::fromArray( $data );
+
+		$this->assertSame( $expected, $content->classify );
+	}
+
+	/**
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function classifyRejectedValues(): array {
+		return [
+			'unknown int'    => [ 2 ],
+			'unknown string' => [ 'yes' ],
+			'whitespace'     => [ 'true ' ],
+			'float'          => [ 1.0 ],
+			'array'          => [ [ 'enabled' ] ],
+		];
+	}
+
+	#[DataProvider( 'classifyRejectedValues' )]
+	public function testFromArrayRejectsBogusClassify( mixed $input ): void {
+		$this->expectException( ValidationException::class );
+
+		ContentFactory::fromArray(
+			[
+				'user_ip'  => '192.168.1.1',
+				'classify' => $input,
+			]
+		);
+	}
+
+	public function testFromArrayPropagatesContextValuesValidation(): void {
+		// Factory must not silently filter non-string entries; Content's validator
+		// is the single source of truth and should surface the bad input.
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessageMatches( '/contextValues/' );
+
+		ContentFactory::fromArray(
+			[
+				'user_ip'         => '192.168.1.1',
+				'comment_context' => [ 'contact-form', 123 ],
+			]
+		);
 	}
 
 	public function testFromArrayReadsFeedbackFields(): void {

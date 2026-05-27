@@ -247,6 +247,97 @@ final class AkismetTest extends TestCase {
 		$this->assertStringContainsString( rawurlencode( 'https://example.com/webhook' ), $body );
 	}
 
+	public function testCheckSendsRequestFieldsInPostBody(): void {
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], 'false' ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$content = new Content(
+			userIp: '127.0.0.1',
+			blogLang: 'en',
+			blogCharset: 'UTF-8',
+			contextValues: [ 'contact form', 'pricing page' ],
+			classify: true,
+		);
+
+		$akismet->check( $content );
+
+		$this->assertNotNull( $capturedRequest );
+		$body   = (string) $capturedRequest->getBody();
+		$parsed = [];
+		parse_str( $body, $parsed );
+
+		$this->assertSame( 'en', $parsed['blog_lang'] );
+		$this->assertSame( 'UTF-8', $parsed['blog_charset'] );
+		$this->assertSame( [ 'contact form', 'pricing page' ], $parsed['comment_context'] );
+		$this->assertSame( '1', $parsed['classify'] );
+		$this->assertStringContainsString( 'comment_context%5B%5D=contact+form', $body );
+		$this->assertStringNotContainsString( 'comment_context%5B0%5D', $body );
+	}
+
+	public function testCheckEncodesSpecialCharactersInArrayValues(): void {
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], 'false' ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$content = new Content(
+			userIp: '127.0.0.1',
+			contextValues: [ 'a&b=c', 'one+two', '[bracketed]', 'café 🎉' ],
+		);
+
+		$akismet->check( $content );
+
+		$this->assertNotNull( $capturedRequest );
+		$body   = (string) $capturedRequest->getBody();
+		$parsed = [];
+		parse_str( $body, $parsed );
+
+		$this->assertSame(
+			[ 'a&b=c', 'one+two', '[bracketed]', 'café 🎉' ],
+			$parsed['comment_context']
+		);
+	}
+
+	public function testSubmitFeedbackOmitsCommentCheckOnlyFieldsFromPostBody(): void {
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], 'Thanks for making the web a better place.' ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$content = new Content(
+			userIp: '127.0.0.1',
+			classify: true,
+			callback: 'https://example.com/webhook',
+		);
+
+		$akismet->submitSpam( $content );
+
+		$this->assertNotNull( $capturedRequest );
+		$body = (string) $capturedRequest->getBody();
+		$this->assertStringNotContainsString( 'classify=', $body );
+		$this->assertStringNotContainsString( 'callback=', $body );
+	}
+
 	// =========================================================================
 	// submitSpam / submitHam Tests
 	// =========================================================================
