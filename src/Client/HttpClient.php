@@ -121,16 +121,40 @@ final class HttpClient {
 	 * List values are encoded as repeated PHP-style array fields such as
 	 * comment_context[]=contact-form&comment_context[]=pricing-page.
 	 *
-	 * @param array<string, string|array<int, string>> $data Form data.
+	 * Input is declared `mixed` because this helper validates at the wire boundary:
+	 * PHP does not enforce generic array types at runtime, so callers that bypass
+	 * static analysis can still pass through untrusted shapes.
+	 *
+	 * @param array<string, mixed> $data Form data.
+	 * @throws \InvalidArgumentException If any value is not a string or list of strings.
 	 */
 	private static function buildFormBody( array $data ): string {
 		$pairs = [];
 		foreach ( $data as $key => $value ) {
 			if ( is_array( $value ) ) {
-				foreach ( $value as $item ) {
+				foreach ( $value as $index => $item ) {
+					if ( ! is_string( $item ) ) {
+						throw new \InvalidArgumentException(
+							sprintf(
+								'Form field "%s[%d]" must be string, got %s',
+								$key,
+								$index,
+								get_debug_type( $item )
+							)
+						);
+					}
 					$pairs[] = http_build_query( [ $key . '[]' => $item ], '', '&' );
 				}
 				continue;
+			}
+			if ( ! is_string( $value ) ) {
+				throw new \InvalidArgumentException(
+					sprintf(
+						'Form field "%s" must be string or list of strings, got %s',
+						$key,
+						get_debug_type( $value )
+					)
+				);
 			}
 			$pairs[] = http_build_query( [ $key => $value ], '', '&' );
 		}

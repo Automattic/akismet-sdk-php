@@ -226,23 +226,45 @@ final class ContentFactory {
 	}
 
 	/**
-	 * Get a boolean value from data array.
+	 * Get a boolean value from data array. Throws on values that don't unambiguously
+	 * resolve to true or false, to surface caller bugs rather than silently defaulting.
 	 *
 	 * @param array<string, mixed> $data Source data.
 	 * @param string               $key  Key to read.
+	 * @throws ValidationException If the value isn't a bool, 0/1, or "0"/"1"/"true"/"false".
 	 */
 	private static function getBool( array $data, string $key ): bool {
 		$value = $data[ $key ] ?? null;
+		if ( $value === null ) {
+			return false;
+		}
 		if ( is_bool( $value ) ) {
 			return $value;
 		}
 		if ( is_int( $value ) ) {
-			return $value === 1;
+			return match ( $value ) {
+				0       => false,
+				1       => true,
+				default => throw ValidationException::invalidValue(
+					$key,
+					sprintf( 'unrecognized integer %d (expected 0 or 1)', $value )
+				),
+			};
 		}
 		if ( is_string( $value ) ) {
-			return in_array( strtolower( $value ), [ '1', 'true' ], true );
+			return match ( strtolower( $value ) ) {
+				'0', 'false' => false,
+				'1', 'true'  => true,
+				default      => throw ValidationException::invalidValue(
+					$key,
+					sprintf( 'unrecognized string "%s" (expected "0", "1", "true", or "false")', $value )
+				),
+			};
 		}
-		return false;
+		throw ValidationException::invalidValue(
+			$key,
+			sprintf( 'expected bool/int/string, got %s', get_debug_type( $value ) )
+		);
 	}
 
 	/**

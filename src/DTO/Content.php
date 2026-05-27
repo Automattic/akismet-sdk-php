@@ -44,7 +44,6 @@ final class Content {
 		'recheck_reason'            => true,
 		'honeypot_field_name'       => true,
 		'comment_context'           => true,
-		'comment_context[]'         => true,
 		'api_key'                   => true,
 		'blog'                      => true,
 		'is_test'                   => true,
@@ -52,6 +51,17 @@ final class Content {
 		'comment_check_response'    => true,
 		'callback'                  => true,
 		'classify'                  => true,
+	];
+
+	/**
+	 * Wire keys valid only on /comment-check. Stripped from feedback submissions
+	 * by toFeedbackArray().
+	 *
+	 * @var array<string, true>
+	 */
+	private const COMMENT_CHECK_ONLY_KEYS = [
+		'callback' => true,
+		'classify' => true,
 	];
 
 	/**
@@ -78,6 +88,11 @@ final class Content {
 	 * The original comment-check result, coerced to an enum.
 	 */
 	public readonly ?CheckResponse $commentCheckResponse;
+
+	/**
+	 * Honeypot field name, trimmed and validated against reserved keys.
+	 */
+	public readonly ?string $honeypotFieldName;
 
 	/**
 	 * Context values to send as repeated comment_context[] fields.
@@ -124,10 +139,10 @@ final class Content {
 	 *                                                          RESERVED_KEYS and the honeypot field name are filtered
 	 *                                                          out at construction time.
 	 * @param string|null             $blogLang                Languages in use on the site (for example, "en, fr_ca").
-	 * @param array<int, mixed>       $contextValues           Context values to send as repeated comment_context[] fields.
+	 * @param array<int, string>      $contextValues           Context values to send as repeated comment_context[] fields. Empty strings and non-strings throw ValidationException.
 	 * @param bool                    $classify                Request extended classification metadata from the API.
 	 * @param string|null             $blogCharset             Character encoding for comment_* form values.
-	 * @throws ValidationException If userIp, authorEmail, authorUrl, permalink, or callback is invalid.
+	 * @throws ValidationException If userIp, authorEmail, authorUrl, permalink, callback, contextValues, honeypotFieldName, or serverVariables are invalid.
 	 */
 	public function __construct(
 		public readonly string $userIp,
@@ -144,7 +159,7 @@ final class Content {
 		public readonly ?string $parentId = null,
 		public readonly ?string $userRole = null,
 		public readonly ?string $recheckReason = null,
-		public readonly ?string $honeypotFieldName = null,
+		?string $honeypotFieldName = null,
 		public readonly ?string $honeypotFieldValue = null,
 		public readonly ?string $context = null,
 		public readonly ?string $reporter = null,
@@ -183,11 +198,11 @@ final class Content {
 		if ( $this->callback !== null ) {
 			InputValidator::validateUrl( $this->callback, 'callback' );
 		}
-		if ( $this->honeypotFieldValue !== null && $this->honeypotFieldName === null ) {
+		if ( $this->honeypotFieldValue !== null && $honeypotFieldName === null ) {
 			throw ValidationException::invalidValue( 'honeypotFieldValue', 'requires honeypotFieldName to be set' );
 		}
-		if ( $this->honeypotFieldName !== null ) {
-			$honeypotFieldName = trim( $this->honeypotFieldName );
+		if ( $honeypotFieldName !== null ) {
+			$honeypotFieldName = trim( $honeypotFieldName );
 			if ( $honeypotFieldName === '' ) {
 				throw ValidationException::invalidValue( 'honeypotFieldName', 'cannot be empty' );
 			}
@@ -195,6 +210,8 @@ final class Content {
 				throw ValidationException::invalidValue( 'honeypotFieldName', 'cannot use reserved Akismet field name' );
 			}
 		}
+		$this->honeypotFieldName = $honeypotFieldName;
+
 		$this->contextValues = self::normalizeContextValues( $contextValues );
 		if ( $this->context !== null && $this->contextValues !== [] ) {
 			throw ValidationException::invalidValue( 'context', 'cannot set both context and contextValues' );
@@ -358,6 +375,17 @@ final class Content {
 	}
 
 	/**
+	 * Wire payload for submit-spam / submit-ham / deactivate, with comment-check-only
+	 * fields stripped. Keeps the DTO authoritative over which keys belong on which
+	 * endpoint, so the facade never has to guess.
+	 *
+	 * @return array<string, string|array<int, string>>
+	 */
+	public function toFeedbackArray(): array {
+		return array_diff_key( $this->toArray(), self::COMMENT_CHECK_ONLY_KEYS );
+	}
+
+	/**
 	 * Normalize an empty string to null.
 	 */
 	private static function nullIfEmpty( ?string $value ): ?string {
@@ -383,23 +411,40 @@ final class Content {
 	}
 
 	/**
-	 * Normalize context values by removing empty strings and reindexing.
+	 * Normalize context values by reindexing as a list. Empty strings and non-string
+	 * entries throw ValidationException so caller mistakes surface loudly.
+	 *
+	 * Input is declared `mixed` because this helper validates at the public-API
+	 * boundary: PHP does not enforce generic array types at runtime.
 	 *
 	 * @param array<int, mixed> $values Context values.
 	 * @return array<int, string>
+	 * @throws ValidationException
 	 */
 	private static function normalizeContextValues( array $values ): array {
 		$normalized = [];
-		foreach ( $values as $value ) {
-			if ( is_string( $value ) && $value !== '' ) {
-				$normalized[] = $value;
+		foreach ( $values as $index => $value ) {
+			if ( ! is_string( $value ) ) {
+				throw ValidationException::invalidValue(
+					sprintf( 'contextValues[%d]', $index ),
+					sprintf( 'expected string, got %s', get_debug_type( $value ) )
+				);
 			}
+			if ( $value === '' ) {
+				throw ValidationException::invalidValue(
+					sprintf( 'contextValues[%d]', $index ),
+					'cannot be empty string'
+				);
+			}
+			$normalized[] = $value;
 		}
 		return $normalized;
 	}
 
 	/**
-	 * Check whether a form key is reserved by Akismet request fields.
+	 * Check whether a form key is reserved by Akismet request fields. Also matches
+	 * PHP-style array-suffix collisions (e.g. `comment_context[0]` resolves to
+	 * the reserved canonical `comment_context`).
 	 */
 	private static function isReservedKey( string $key ): bool {
 		if ( isset( self::RESERVED_KEYS[ $key ] ) ) {
@@ -407,15 +452,21 @@ final class Content {
 		}
 
 		$baseKey = strstr( $key, '[', true );
-		return is_string( $baseKey ) && isset( self::RESERVED_KEYS[ $baseKey ] );
+		return is_string( $baseKey ) && $baseKey !== '' && isset( self::RESERVED_KEYS[ $baseKey ] );
 	}
 
 	/**
 	 * Filter server variables that would collide with SDK-managed request fields.
+	 * Non-string values throw ValidationException — the wire form encoding only
+	 * accepts strings.
 	 *
-	 * @param array<string, string> $serverVariables  Server variables to filter.
-	 * @param string|null           $honeypotFieldName Honeypot field name to reserve.
+	 * Input is declared `mixed` because this helper validates at the public-API
+	 * boundary: PHP does not enforce generic array types at runtime.
+	 *
+	 * @param array<string, mixed> $serverVariables   Server variables to filter.
+	 * @param string|null          $honeypotFieldName Honeypot field name to reserve.
 	 * @return array<string, string>
+	 * @throws ValidationException
 	 */
 	private static function filterServerVariables( array $serverVariables, ?string $honeypotFieldName ): array {
 		$filtered = [];
@@ -425,6 +476,12 @@ final class Content {
 			}
 			if ( $honeypotFieldName !== null && $key === $honeypotFieldName ) {
 				continue;
+			}
+			if ( ! is_string( $value ) ) {
+				throw ValidationException::invalidValue(
+					sprintf( 'serverVariables[%s]', $key ),
+					sprintf( 'expected string, got %s', get_debug_type( $value ) )
+				);
 			}
 			$filtered[ $key ] = $value;
 		}

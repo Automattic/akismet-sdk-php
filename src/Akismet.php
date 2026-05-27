@@ -328,10 +328,7 @@ final class Akismet implements AkismetInterface {
 	 * @throws ServerException If the response is unexpected.
 	 */
 	private function submitFeedback( string $endpoint, Content $content ): void {
-		$data = $content->toArray();
-		unset( $data['callback'], $data['classify'] );
-
-		$response = $this->httpClient->post( $endpoint, $data );
+		$response = $this->httpClient->post( $endpoint, $content->toFeedbackArray() );
 		$body     = HttpClient::getBody( $response );
 
 		if ( $body === 'invalid' ) {

@@ -244,7 +244,7 @@ final class ContentTest extends TestCase {
 			userIp: '192.168.1.1',
 			blogLang: 'en, fr_ca',
 			blogCharset: 'UTF-8',
-			contextValues: [ 'contact-form', '', 'pricing-page', 123 ],
+			contextValues: [ 'contact-form', 'pricing-page' ],
 			classify: true,
 		);
 
@@ -256,6 +256,27 @@ final class ContentTest extends TestCase {
 		$this->assertSame( '1', $array['classify'] );
 	}
 
+	public function testContextValuesRejectsEmptyString(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessageMatches( '/contextValues\[1\].*cannot be empty/' );
+
+		new Content(
+			userIp: '192.168.1.1',
+			contextValues: [ 'contact-form', '' ],
+		);
+	}
+
+	public function testContextValuesRejectsNonString(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessageMatches( '/contextValues\[1\].*expected string, got int/' );
+
+		/** @phpstan-ignore-next-line — deliberately bad input to verify the throw */
+		new Content(
+			userIp: '192.168.1.1',
+			contextValues: [ 'contact-form', 123 ],
+		);
+	}
+
 	public function testContextAndContextValuesCannotBothBeSet(): void {
 		$this->expectException( ValidationException::class );
 		$this->expectExceptionMessage( 'context' );
@@ -265,6 +286,46 @@ final class ContentTest extends TestCase {
 			context: 'sidebar-widget',
 			contextValues: [ 'contact-form' ],
 		);
+	}
+
+	public function testContextValuesAloneSucceeds(): void {
+		$content = new Content(
+			userIp: '192.168.1.1',
+			contextValues: [ 'contact-form' ],
+		);
+
+		$this->assertNull( $content->context );
+		$this->assertSame( [ 'contact-form' ], $content->toArray()['comment_context'] );
+	}
+
+	public function testContextAloneSucceeds(): void {
+		$content = new Content(
+			userIp: '192.168.1.1',
+			context: 'sidebar-widget',
+		);
+
+		$this->assertSame( [], $content->contextValues );
+		$this->assertSame( 'sidebar-widget', $content->toArray()['comment_context'] );
+	}
+
+	public function testServerVariablesRejectsNonStringValue(): void {
+		$this->expectException( ValidationException::class );
+		$this->expectExceptionMessageMatches( '/serverVariables\[HTTP_X_FOO\].*expected string, got null/' );
+
+		/** @phpstan-ignore-next-line — deliberately bad input to verify the throw */
+		new Content(
+			userIp: '192.168.1.1',
+			serverVariables: [ 'HTTP_X_FOO' => null ],
+		);
+	}
+
+	public function testHoneypotFieldNameStoredTrimmed(): void {
+		$content = new Content(
+			userIp: '192.168.1.1',
+			honeypotFieldName: '  my_honeypot  ',
+		);
+
+		$this->assertSame( 'my_honeypot', $content->honeypotFieldName );
 	}
 
 	public function testContextNullOmittedFromToArray(): void {
@@ -471,16 +532,25 @@ final class ContentTest extends TestCase {
 	}
 
 	public function testRejectsReservedHoneypotFieldName(): void {
-		foreach ( [ 'comment_context[0]', 'blog_lang[]', 'classify[]' ] as $fieldName ) {
+		$cases = [
+			'plain reserved key' => 'user_ip',
+			'bracketed indexed'  => 'comment_context[0]',
+			'bracketed empty'    => 'blog_lang[]',
+			'classify suffix'    => 'classify[]',
+			'whitespace only'    => '   ',
+			'empty string'       => '',
+		];
+
+		foreach ( $cases as $label => $fieldName ) {
 			try {
 				new Content(
 					userIp: '192.168.1.1',
 					honeypotFieldName: $fieldName,
 					honeypotFieldValue: 'bot-filled',
 				);
-				$this->fail( sprintf( 'Expected exception for %s', $fieldName ) );
+				$this->fail( sprintf( 'Expected exception for %s (%s)', $label, $fieldName ) );
 			} catch ( ValidationException $e ) {
-				$this->assertStringContainsString( 'honeypotFieldName', $e->getMessage() );
+				$this->assertStringContainsString( 'honeypotFieldName', $e->getMessage(), $label );
 			}
 		}
 	}
@@ -572,5 +642,24 @@ final class ContentTest extends TestCase {
 		$this->assertSame( [ 'contact-form' ], $feedback->contextValues );
 		$this->assertFalse( $feedback->classify );
 		$this->assertArrayNotHasKey( 'classify', $feedback->toArray() );
+	}
+
+	public function testToFeedbackArrayStripsCommentCheckOnlyFields(): void {
+		$content = new Content(
+			userIp: '192.168.1.1',
+			callback: 'https://example.com/webhook',
+			classify: true,
+			contextValues: [ 'contact-form' ],
+		);
+
+		$feedback = $content->toFeedbackArray();
+		$check    = $content->toArray();
+
+		$this->assertArrayHasKey( 'callback', $check );
+		$this->assertArrayHasKey( 'classify', $check );
+		$this->assertArrayNotHasKey( 'callback', $feedback );
+		$this->assertArrayNotHasKey( 'classify', $feedback );
+		$this->assertSame( [ 'contact-form' ], $feedback['comment_context'] );
+		$this->assertSame( '192.168.1.1', $feedback['user_ip'] );
 	}
 }
