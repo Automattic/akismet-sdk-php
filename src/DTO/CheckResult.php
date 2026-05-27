@@ -23,6 +23,9 @@ use JsonSerializable;
  * Akismet alert headers. `alertMetadata` is an optional superset that captures
  * additional undocumented alert headers (used by the WordPress plugin). When
  * present, `alertMetadata` includes the same code/message plus extended fields.
+ * `error` exposes `X-Akismet-Error` (a short machine-readable error slug,
+ * distinct from the `alertCode`/`alertMessage` pair) and `classification`
+ * exposes `X-Akismet-Classification` when the API returns them.
  */
 final class CheckResult implements JsonSerializable {
 
@@ -35,6 +38,8 @@ final class CheckResult implements JsonSerializable {
 		public readonly ?string $guid = null,
 		public readonly ?AlertMetadata $alertMetadata = null,
 		public readonly ?int $recheckAfter = null,
+		public readonly ?string $error = null,
+		public readonly ?string $classification = null,
 	) {
 	}
 
@@ -75,11 +80,13 @@ final class CheckResult implements JsonSerializable {
 		$headers     = array_change_key_case( $headers, CASE_LOWER );
 		$nullIfEmpty = static fn( ?string $value ): ?string => ( $value !== null && $value !== '' ) ? $value : null;
 
-		$proTip       = $nullIfEmpty( $headers['x-akismet-pro-tip'] ?? null );
-		$debugHelp    = $nullIfEmpty( $headers['x-akismet-debug-help'] ?? null );
-		$alertCode    = $nullIfEmpty( $headers['x-akismet-alert-code'] ?? null );
-		$alertMessage = $nullIfEmpty( $headers['x-akismet-alert-msg'] ?? null );
-		$guid         = $nullIfEmpty( $headers['x-akismet-guid'] ?? null );
+		$proTip         = $nullIfEmpty( $headers['x-akismet-pro-tip'] ?? null );
+		$debugHelp      = $nullIfEmpty( $headers['x-akismet-debug-help'] ?? null );
+		$alertCode      = $nullIfEmpty( $headers['x-akismet-alert-code'] ?? null );
+		$alertMessage   = $nullIfEmpty( $headers['x-akismet-alert-msg'] ?? null );
+		$guid           = $nullIfEmpty( $headers['x-akismet-guid'] ?? null );
+		$error          = $nullIfEmpty( $headers['x-akismet-error'] ?? null );
+		$classification = $nullIfEmpty( $headers['x-akismet-classification'] ?? null );
 
 		$recheckAfterRaw = $nullIfEmpty( $headers['x-akismet-recheck-after'] ?? null );
 		$recheckAfter    = self::parseRecheckAfter( $recheckAfterRaw );
@@ -93,13 +100,24 @@ final class CheckResult implements JsonSerializable {
 
 		$alertMetadata = AlertMetadata::fromHeaders( $headers );
 
-		return new self( $verdict, $proTip, $debugHelp, $alertCode, $alertMessage, $guid, $alertMetadata, $recheckAfter );
+		return new self(
+			$verdict,
+			$proTip,
+			$debugHelp,
+			$alertCode,
+			$alertMessage,
+			$guid,
+			$alertMetadata,
+			$recheckAfter,
+			$error,
+			$classification
+		);
 	}
 
 	/**
 	 * Create result from JSON data.
 	 *
-	 * @param array{verdict?: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null, alertMetadata?: mixed, recheckAfter?: mixed} $data
+	 * @param array{verdict?: string, proTip?: string|null, debugHelp?: string|null, alertCode?: string|null, alertMessage?: string|null, guid?: string|null, alertMetadata?: mixed, recheckAfter?: mixed, error?: string|null, classification?: string|null} $data
 	 */
 	public static function fromJson( array $data ): self {
 		$verdict = SpamVerdict::tryFrom( $data['verdict'] ?? '' );
@@ -125,29 +143,33 @@ final class CheckResult implements JsonSerializable {
 			$data['guid'] ?? null,
 			$alertMetadata,
 			$recheckAfter,
+			$data['error'] ?? null,
+			$data['classification'] ?? null,
 		);
 	}
 
 	/**
 	 * Convert to an array.
 	 *
-	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null, recheckAfter: int|null}
+	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null, recheckAfter: int|null, error: string|null, classification: string|null}
 	 */
 	public function toArray(): array {
 		return [
-			'verdict'       => $this->verdict->value,
-			'proTip'        => $this->proTip,
-			'debugHelp'     => $this->debugHelp,
-			'alertCode'     => $this->alertCode,
-			'alertMessage'  => $this->alertMessage,
-			'guid'          => $this->guid,
-			'alertMetadata' => $this->alertMetadata?->toArray(),
-			'recheckAfter'  => $this->recheckAfter,
+			'verdict'        => $this->verdict->value,
+			'proTip'         => $this->proTip,
+			'debugHelp'      => $this->debugHelp,
+			'alertCode'      => $this->alertCode,
+			'alertMessage'   => $this->alertMessage,
+			'guid'           => $this->guid,
+			'alertMetadata'  => $this->alertMetadata?->toArray(),
+			'recheckAfter'   => $this->recheckAfter,
+			'error'          => $this->error,
+			'classification' => $this->classification,
 		];
 	}
 
 	/**
-	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null, recheckAfter: int|null}
+	 * @return array{verdict: string, proTip: string|null, debugHelp: string|null, alertCode: string|null, alertMessage: string|null, guid: string|null, alertMetadata: array{apiCalls: int|null, usageLimit: int|null, upgradePlan: string|null, upgradeUrl: string|null, upgradeType: string|null, upgradeViaSupport: bool, recommendedPlanName: string|null}|null, recheckAfter: int|null, error: string|null, classification: string|null}
 	 */
 	public function jsonSerialize(): array {
 		return $this->toArray();
