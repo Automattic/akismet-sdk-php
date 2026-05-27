@@ -36,11 +36,11 @@ Base: `https://rest.akismet.com/`
 | `/1.2/usage-limit` | GET | API usage/limits (returns: `limit`, `usage`, `percentage`, `throttled`) |
 | `/1.1/get-subscription` | POST | Account plan info (returns: `account_id`, `account_type`, `account_name`, `status`, `next_billing_date`, `limit_reached`) |
 | `/1.2/get-key-stats` | POST | Historical stats (params: `from`; returns: `spam`, `ham`, `missed_spam`, `false_positives`, `accuracy`, `time_saved`, `breakdown`) |
-| `/1.2/key-sites` | GET | Sites using this key (params: `month`, `filter`, `format`, `order`, `limit`, `offset`) |
+| `/1.2/key-sites` | GET | Sites using this key (params: `month`, `filter`, `format`, `order`, `limit`, `offset`, `extended`). Documented response is a `YYYY-MM`-bucketed object with `limit`, `offset`, `total`; legacy flat shape supported as a fallback. |
 
 **Recommended params** for comment-check: `user_agent`, `comment_content`, `comment_author`, `comment_author_email`, `comment_type`, `referrer`, `permalink`
 
-**Response headers**: `X-akismet-pro-tip: discard` (blatant spam), `X-akismet-alert-code`/`X-akismet-alert-msg` (errors), `X-akismet-debug-help` (debugging)
+**Response headers**: `X-akismet-pro-tip: discard` (blatant spam), `X-akismet-alert-code`/`X-akismet-alert-msg` (errors), `X-akismet-debug-help` (debugging), `X-Akismet-Error` (machine-readable error slug, distinct from the alert pair), `X-Akismet-Classification` (verdict classification)
 
 **Test mode**: Set `is_test=1`. Use `akismet-guaranteed-spam@example.com` (email) or `akismet-guaranteed-spam` (author name) for spam, normal content for ham.
 
