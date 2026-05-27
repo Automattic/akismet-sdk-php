@@ -28,6 +28,8 @@ final class Content {
 	private const RESERVED_KEYS = [
 		'user_ip'                   => true,
 		'user_agent'                => true,
+		'blog_lang'                 => true,
+		'blog_charset'              => true,
 		'comment_content'           => true,
 		'comment_author'            => true,
 		'comment_author_email'      => true,
@@ -48,6 +50,18 @@ final class Content {
 		'reporter'                  => true,
 		'comment_check_response'    => true,
 		'callback'                  => true,
+		'classify'                  => true,
+	];
+
+	/**
+	 * Wire keys valid only on /comment-check. Stripped from feedback submissions
+	 * by toFeedbackArray().
+	 *
+	 * @var array<string, true>
+	 */
+	private const COMMENT_CHECK_ONLY_KEYS = [
+		'callback' => true,
+		'classify' => true,
 	];
 
 	/**
@@ -74,6 +88,18 @@ final class Content {
 	 * The original comment-check result, coerced to an enum.
 	 */
 	public readonly ?CheckResponse $commentCheckResponse;
+
+	/**
+	 * Honeypot field name, trimmed and validated against reserved keys.
+	 */
+	public readonly ?string $honeypotFieldName;
+
+	/**
+	 * Context values to send as repeated comment_context[] fields.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $contextValues;
 
 	/**
 	 * Additional server variables with reserved keys and honeypot collisions filtered out.
@@ -106,13 +132,17 @@ final class Content {
 	 * @param string|null             $honeypotFieldName       Name of a honeypot field if one was used.
 	 * @param string|null             $honeypotFieldValue      Value of the honeypot field (should be empty for humans).
 	 * @param string|null             $context                 The context or location of the content within the website.
-	 * @param string|null               $reporter                Who reported the content (e.g., current user name).
-	 * @param CheckResponse|string|null $commentCheckResponse    The original comment-check result ('true' or 'false').
-	 * @param string|null               $callback                Webhook URL for verdict update callbacks.
-	 * @param array<string, string>     $serverVariables         Additional server variables to include. Keys matching
-	 *                                                            RESERVED_KEYS and the honeypot field name are filtered
-	 *                                                            out at construction time.
-	 * @throws ValidationException If userIp, authorEmail, authorUrl, permalink, or callback is invalid.
+	 * @param string|null             $reporter                Who reported the content (e.g., current user name).
+	 * @param CheckResponse|string|null $commentCheckResponse  The original comment-check result ('true' or 'false').
+	 * @param string|null             $callback                Webhook URL for verdict update callbacks.
+	 * @param array<string, string>   $serverVariables         Additional server variables to include. Keys matching
+	 *                                                          RESERVED_KEYS and the honeypot field name are filtered
+	 *                                                          out at construction time.
+	 * @param string|null             $blogLang                Languages in use on the site (for example, "en, fr_ca").
+	 * @param array<int, mixed>       $contextValues           Context values to send as repeated comment_context[] fields. Must contain non-empty strings; anything else throws ValidationException.
+	 * @param bool                    $classify                Request extended classification metadata from the API.
+	 * @param string|null             $blogCharset             Character encoding for comment_* form values.
+	 * @throws ValidationException If userIp, authorEmail, authorUrl, permalink, callback, contextValues, honeypotFieldName, or serverVariables are invalid.
 	 */
 	public function __construct(
 		public readonly string $userIp,
@@ -129,13 +159,17 @@ final class Content {
 		public readonly ?string $parentId = null,
 		public readonly ?string $userRole = null,
 		public readonly ?string $recheckReason = null,
-		public readonly ?string $honeypotFieldName = null,
+		?string $honeypotFieldName = null,
 		public readonly ?string $honeypotFieldValue = null,
 		public readonly ?string $context = null,
 		public readonly ?string $reporter = null,
 		CheckResponse|string|null $commentCheckResponse = null,
 		?string $callback = null,
 		array $serverVariables = [],
+		public readonly ?string $blogLang = null,
+		array $contextValues = [],
+		public readonly bool $classify = false,
+		public readonly ?string $blogCharset = null,
 	) {
 		// Normalize empty strings to null for fields with URL/email validation.
 		// Other string fields intentionally skip this: empty strings are valid
@@ -164,16 +198,27 @@ final class Content {
 		if ( $this->callback !== null ) {
 			InputValidator::validateUrl( $this->callback, 'callback' );
 		}
-		if ( $this->honeypotFieldValue !== null && $this->honeypotFieldName === null ) {
+		if ( $this->honeypotFieldValue !== null && $honeypotFieldName === null ) {
 			throw ValidationException::invalidValue( 'honeypotFieldValue', 'requires honeypotFieldName to be set' );
+		}
+		if ( $honeypotFieldName !== null ) {
+			$honeypotFieldName = trim( $honeypotFieldName );
+			if ( $honeypotFieldName === '' ) {
+				throw ValidationException::invalidValue( 'honeypotFieldName', 'cannot be empty' );
+			}
+			if ( self::isReservedKey( $honeypotFieldName ) ) {
+				throw ValidationException::invalidValue( 'honeypotFieldName', 'cannot use reserved Akismet field name' );
+			}
+		}
+		$this->honeypotFieldName = $honeypotFieldName;
+
+		$this->contextValues = self::normalizeContextValues( $contextValues );
+		if ( $this->context !== null && $this->contextValues !== [] ) {
+			throw ValidationException::invalidValue( 'context', 'cannot set both context and contextValues' );
 		}
 
 		// Filter reserved keys and honeypot field name collisions at construction time.
-		$excludeKeys = self::RESERVED_KEYS;
-		if ( $this->honeypotFieldName !== null ) {
-			$excludeKeys[ $this->honeypotFieldName ] = true;
-		}
-		$this->serverVariables = array_diff_key( $serverVariables, $excludeKeys );
+		$this->serverVariables = self::filterServerVariables( $serverVariables, $this->honeypotFieldName );
 	}
 
 	/**
@@ -211,6 +256,9 @@ final class Content {
 			reporter: $reporter,
 			commentCheckResponse: $commentCheckResponse,
 			serverVariables: $this->serverVariables,
+			blogLang: $this->blogLang,
+			contextValues: $this->contextValues,
+			blogCharset: $this->blogCharset,
 		);
 	}
 
@@ -220,7 +268,7 @@ final class Content {
 	 * Server variables have already been filtered at construction time
 	 * to exclude RESERVED_KEYS and honeypot field name collisions.
 	 *
-	 * @return array<string, string>
+	 * @return array<string, string|array<int, string>>
 	 */
 	public function toArray(): array {
 		$data = [
@@ -229,6 +277,14 @@ final class Content {
 
 		if ( $this->userAgent !== null ) {
 			$data['user_agent'] = $this->userAgent;
+		}
+
+		if ( $this->blogLang !== null ) {
+			$data['blog_lang'] = $this->blogLang;
+		}
+
+		if ( $this->blogCharset !== null ) {
+			$data['blog_charset'] = $this->blogCharset;
 		}
 
 		if ( $this->body !== null ) {
@@ -290,6 +346,8 @@ final class Content {
 
 		if ( $this->context !== null ) {
 			$data['comment_context'] = $this->context;
+		} elseif ( $this->contextValues !== [] ) {
+			$data['comment_context'] = $this->contextValues;
 		}
 
 		if ( $this->reporter !== null ) {
@@ -304,12 +362,27 @@ final class Content {
 			$data['callback'] = $this->callback;
 		}
 
+		if ( $this->classify ) {
+			$data['classify'] = '1';
+		}
+
 		// Server variables are pre-filtered at construction time.
 		foreach ( $this->serverVariables as $key => $value ) {
 			$data[ $key ] = $value;
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Wire payload for submit-spam / submit-ham / deactivate, with comment-check-only
+	 * fields stripped. Keeps the DTO authoritative over which keys belong on which
+	 * endpoint, so the facade never has to guess.
+	 *
+	 * @return array<string, string|array<int, string>>
+	 */
+	public function toFeedbackArray(): array {
+		return array_diff_key( $this->toArray(), self::COMMENT_CHECK_ONLY_KEYS );
 	}
 
 	/**
@@ -335,5 +408,83 @@ final class Content {
 		}
 
 		return $resolved;
+	}
+
+	/**
+	 * Normalize context values by reindexing as a list. Empty strings and non-string
+	 * entries throw ValidationException so caller mistakes surface loudly.
+	 *
+	 * Input is declared `mixed` because this helper validates at the public-API
+	 * boundary: PHP does not enforce generic array types at runtime.
+	 *
+	 * @param array<int, mixed> $values Context values.
+	 * @return array<int, string>
+	 * @throws ValidationException
+	 */
+	private static function normalizeContextValues( array $values ): array {
+		$normalized = [];
+		foreach ( $values as $index => $value ) {
+			if ( ! is_string( $value ) ) {
+				throw ValidationException::invalidValue(
+					sprintf( 'contextValues[%d]', $index ),
+					sprintf( 'expected string, got %s', get_debug_type( $value ) )
+				);
+			}
+			if ( $value === '' ) {
+				throw ValidationException::invalidValue(
+					sprintf( 'contextValues[%d]', $index ),
+					'cannot be empty string'
+				);
+			}
+			$normalized[] = $value;
+		}
+		return $normalized;
+	}
+
+	/**
+	 * Check whether a form key is reserved by Akismet request fields. Also matches
+	 * PHP-style array-suffix collisions (e.g. `comment_context[0]` resolves to
+	 * the reserved canonical `comment_context`).
+	 */
+	private static function isReservedKey( string $key ): bool {
+		if ( isset( self::RESERVED_KEYS[ $key ] ) ) {
+			return true;
+		}
+
+		$baseKey = strstr( $key, '[', true );
+		return is_string( $baseKey ) && $baseKey !== '' && isset( self::RESERVED_KEYS[ $baseKey ] );
+	}
+
+	/**
+	 * Filter server variables that would collide with SDK-managed request fields.
+	 * Non-string values throw ValidationException — the wire form encoding only
+	 * accepts strings.
+	 *
+	 * Input is declared `mixed` because this helper validates at the public-API
+	 * boundary: PHP does not enforce generic array types at runtime.
+	 *
+	 * @param array<string, mixed> $serverVariables   Server variables to filter.
+	 * @param string|null          $honeypotFieldName Honeypot field name to reserve.
+	 * @return array<string, string>
+	 * @throws ValidationException
+	 */
+	private static function filterServerVariables( array $serverVariables, ?string $honeypotFieldName ): array {
+		$filtered = [];
+		foreach ( $serverVariables as $key => $value ) {
+			if ( self::isReservedKey( $key ) ) {
+				continue;
+			}
+			if ( $honeypotFieldName !== null && $key === $honeypotFieldName ) {
+				continue;
+			}
+			if ( ! is_string( $value ) ) {
+				throw ValidationException::invalidValue(
+					sprintf( 'serverVariables[%s]', $key ),
+					sprintf( 'expected string, got %s', get_debug_type( $value ) )
+				);
+			}
+			$filtered[ $key ] = $value;
+		}
+		return $filtered;
 	}
 }

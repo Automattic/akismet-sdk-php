@@ -247,6 +247,97 @@ final class AkismetTest extends TestCase {
 		$this->assertStringContainsString( rawurlencode( 'https://example.com/webhook' ), $body );
 	}
 
+	public function testCheckSendsRequestFieldsInPostBody(): void {
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], 'false' ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$content = new Content(
+			userIp: '127.0.0.1',
+			blogLang: 'en',
+			blogCharset: 'UTF-8',
+			contextValues: [ 'contact form', 'pricing page' ],
+			classify: true,
+		);
+
+		$akismet->check( $content );
+
+		$this->assertNotNull( $capturedRequest );
+		$body   = (string) $capturedRequest->getBody();
+		$parsed = [];
+		parse_str( $body, $parsed );
+
+		$this->assertSame( 'en', $parsed['blog_lang'] );
+		$this->assertSame( 'UTF-8', $parsed['blog_charset'] );
+		$this->assertSame( [ 'contact form', 'pricing page' ], $parsed['comment_context'] );
+		$this->assertSame( '1', $parsed['classify'] );
+		$this->assertStringContainsString( 'comment_context%5B%5D=contact+form', $body );
+		$this->assertStringNotContainsString( 'comment_context%5B0%5D', $body );
+	}
+
+	public function testCheckEncodesSpecialCharactersInArrayValues(): void {
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], 'false' ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$content = new Content(
+			userIp: '127.0.0.1',
+			contextValues: [ 'a&b=c', 'one+two', '[bracketed]', 'café 🎉' ],
+		);
+
+		$akismet->check( $content );
+
+		$this->assertNotNull( $capturedRequest );
+		$body   = (string) $capturedRequest->getBody();
+		$parsed = [];
+		parse_str( $body, $parsed );
+
+		$this->assertSame(
+			[ 'a&b=c', 'one+two', '[bracketed]', 'café 🎉' ],
+			$parsed['comment_context']
+		);
+	}
+
+	public function testSubmitFeedbackOmitsCommentCheckOnlyFieldsFromPostBody(): void {
+		$capturedRequest = null;
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], 'Thanks for making the web a better place.' ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$content = new Content(
+			userIp: '127.0.0.1',
+			classify: true,
+			callback: 'https://example.com/webhook',
+		);
+
+		$akismet->submitSpam( $content );
+
+		$this->assertNotNull( $capturedRequest );
+		$body = (string) $capturedRequest->getBody();
+		$this->assertStringNotContainsString( 'classify=', $body );
+		$this->assertStringNotContainsString( 'callback=', $body );
+	}
+
 	// =========================================================================
 	// submitSpam / submitHam Tests
 	// =========================================================================
@@ -445,18 +536,20 @@ final class AkismetTest extends TestCase {
 	public function testGetKeySitesReturnsDto(): void {
 		$json    = json_encode(
 			[
-				'limit'  => 500,
-				'offset' => 0,
-				'total'  => 1,
-				'site1'  => [
-					'site'            => 'https://example.com',
-					'api_calls'       => 100,
-					'spam'            => 10,
-					'ham'             => 90,
-					'missed_spam'     => 1,
-					'false_positives' => 0,
-					'is_revoked'      => false,
+				'2024-01' => [
+					[
+						'site'            => 'https://example.com',
+						'api_calls'       => 100,
+						'spam'            => 10,
+						'ham'             => 90,
+						'missed_spam'     => 1,
+						'false_positives' => 0,
+						'is_revoked'      => false,
+					],
 				],
+				'limit'   => 500,
+				'offset'  => 0,
+				'total'   => 1,
 			]
 		);
 		$akismet = $this->createAkismetWithResponse(
@@ -467,6 +560,7 @@ final class AkismetTest extends TestCase {
 
 		$this->assertSame( 1, $result->total );
 		$this->assertCount( 1, $result->sites );
+		$this->assertSame( '2024-01', $result->month );
 	}
 
 	public function testGetKeySitesThrowsOnInvalidBody(): void {
@@ -525,6 +619,68 @@ final class AkismetTest extends TestCase {
 
 		$this->assertNotNull( $capturedRequest );
 		$this->assertStringContainsString( 'order=spam', (string) $capturedRequest->getUri() );
+	}
+
+	public function testGetExtendedKeySitesPassesExtendedParam(): void {
+		$capturedRequest = null;
+		$json            = json_encode(
+			[
+				'limit'  => 500,
+				'offset' => 0,
+				'total'  => 0,
+			]
+		);
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], $json ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->getExtendedKeySites();
+
+		$this->assertNotNull( $capturedRequest );
+		$this->assertStringContainsString( 'extended=true', (string) $capturedRequest->getUri() );
+	}
+
+	public function testGetExtendedKeySitesForwardsAllParams(): void {
+		$capturedRequest = null;
+		$json            = json_encode(
+			[
+				'limit'  => 50,
+				'offset' => 25,
+				'total'  => 0,
+			]
+		);
+		$mockClient      = $this->createMockClientCapturingRequest(
+			new Response( 200, [], $json ),
+			$capturedRequest
+		);
+
+		$akismet = new Akismet(
+			new Configuration( apiKey: 'test-key', site: 'https://example.com' ),
+			httpClient: $mockClient,
+		);
+
+		$akismet->getExtendedKeySites(
+			month: '2024-03',
+			filter: 'example.com',
+			limit: 50,
+			offset: 25,
+			order: KeySitesOrder::Spam,
+		);
+
+		$this->assertNotNull( $capturedRequest );
+		$uri = (string) $capturedRequest->getUri();
+		$this->assertStringContainsString( 'extended=true', $uri );
+		$this->assertStringContainsString( 'month=2024-03', $uri );
+		$this->assertStringContainsString( 'filter=example.com', $uri );
+		$this->assertStringContainsString( 'limit=50', $uri );
+		$this->assertStringContainsString( 'offset=25', $uri );
+		$this->assertStringContainsString( 'order=spam', $uri );
 	}
 
 	// =========================================================================

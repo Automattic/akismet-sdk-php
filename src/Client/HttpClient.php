@@ -63,8 +63,8 @@ final class HttpClient {
 	/**
 	 * Send a POST request with form data.
 	 *
-	 * @param string               $endpoint API endpoint path.
-	 * @param array<string, string> $data    Form data to send.
+	 * @param string                              $endpoint API endpoint path.
+	 * @param array<string, string|array<int, string>> $data Form data to send.
 	 * @return ResponseInterface
 	 * @throws ClientErrorException
 	 * @throws NetworkException
@@ -81,7 +81,7 @@ final class HttpClient {
 			$data['is_test'] = '1';
 		}
 
-		$body = http_build_query( $data, '', '&' );
+		$body = self::buildFormBody( $data );
 
 		$request = $this->requestFactory
 			->createRequest( 'POST', $url )
@@ -113,6 +113,53 @@ final class HttpClient {
 			->withHeader( 'User-Agent', $this->userAgent );
 
 		return $this->send( $request );
+	}
+
+	/**
+	 * Build an application/x-www-form-urlencoded body.
+	 *
+	 * List values are encoded as repeated PHP-style array fields such as
+	 * comment_context[]=contact-form&comment_context[]=pricing-page.
+	 *
+	 * Input is declared `mixed` because this helper validates at the wire boundary:
+	 * PHP does not enforce generic array types at runtime, so callers that bypass
+	 * static analysis can still pass through untrusted shapes.
+	 *
+	 * @param array<string, mixed> $data Form data.
+	 * @throws \InvalidArgumentException If any value is not a string or list of strings.
+	 */
+	private static function buildFormBody( array $data ): string {
+		$pairs = [];
+		foreach ( $data as $key => $value ) {
+			if ( is_array( $value ) ) {
+				foreach ( $value as $index => $item ) {
+					if ( ! is_string( $item ) ) {
+						throw new \InvalidArgumentException(
+							sprintf(
+								'Form field "%s[%d]" must be string, got %s',
+								$key,
+								$index,
+								get_debug_type( $item )
+							)
+						);
+					}
+					$pairs[] = http_build_query( [ $key . '[]' => $item ], '', '&' );
+				}
+				continue;
+			}
+			if ( ! is_string( $value ) ) {
+				throw new \InvalidArgumentException(
+					sprintf(
+						'Form field "%s" must be string or list of strings, got %s',
+						$key,
+						get_debug_type( $value )
+					)
+				);
+			}
+			$pairs[] = http_build_query( [ $key => $value ], '', '&' );
+		}
+
+		return implode( '&', $pairs );
 	}
 
 	/**
