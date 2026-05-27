@@ -1,3 +1,14 @@
+## 1.5.0 - 2026-05-27
+### Added
+- `blogLang`, `blogCharset`, `contextValues`, and `classify` properties on `Content` for richer comment-check submissions, with matching support in `ContentFactory::fromRequest()` and `ContentFactory::fromArray()`. `comment_context[]` is encoded as repeated form parameters.
+- `error` and `classification` properties on `CheckResult`, parsed from the `X-Akismet-Error` and `X-Akismet-Classification` response headers and preserved through `toArray()`, `jsonSerialize()`, and `fromJson()`.
+- `getExtendedKeySites()` method on `AkismetInterface` and `Akismet` for requesting optional per-site extended metadata via `extended=true`.
+- `hash` and `eligibleForRevoke` properties on `SiteStats`, populated from the extended key-sites response with conservative bool parsing.
+- Optional `month` property on `KeySitesResponse` capturing the `YYYY-MM` bucket key from the documented response shape.
+
+### Fixed
+- `KeySitesResponse::fromResponse()` now parses the documented `/1.2/key-sites` response shape (`YYYY-MM` bucket with `limit`, `offset`, `total`) while keeping the legacy flat shape as a fallback. Adds coverage for empty buckets and malformed month keys.
+
 ## 1.4.0 - 2026-04-06
 ### Added
 - Add deactivate() method to notify API when a site stops using its API key.
