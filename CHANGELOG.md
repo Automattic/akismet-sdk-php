@@ -8,6 +8,7 @@
 
 ### Fixed
 - `KeySitesResponse::fromResponse()` now parses the documented `/1.2/key-sites` response shape (`YYYY-MM` bucket with `limit`, `offset`, `total`) while keeping the legacy flat shape as a fallback. Adds coverage for empty buckets and malformed month keys.
+- `submitSpam()` and `submitHam()` now send `Content::toFeedbackArray()`, stripping comment-check-only fields (`callback`, `classify`) from feedback payloads even when `Content` is constructed directly rather than via `withFeedback()`.
 
 ## 1.4.0 - 2026-04-06
 ### Added

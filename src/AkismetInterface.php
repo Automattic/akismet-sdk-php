@@ -27,6 +27,11 @@ use Automattic\Akismet\Exception\ValidationException;
  * Interface for the Akismet client.
  *
  * Allows for mocking in tests and implementing alternative clients.
+ *
+ * Stability: this interface may gain methods in minor releases as the Akismet API
+ * surface grows (as it has since 1.0). Code that must survive minor upgrades without
+ * changes should extend the concrete {@see Akismet} client rather than implement this
+ * interface directly.
  */
 interface AkismetInterface {
 
