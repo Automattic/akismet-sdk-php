@@ -500,6 +500,36 @@ final class HttpClientErrorTest extends TestCase {
 	}
 
 	// =========================================================================
+	// Form Body Encoding Tests
+	// =========================================================================
+
+	public function testPostThrowsOnNonStringListElement(): void {
+		$httpClient = $this->createHttpClient(
+			$this->createMockClient( new Response( 200, [], 'true' ) )
+		);
+
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'must be string, got int' );
+
+		// Intentionally malformed input to exercise the wire-boundary guard.
+		// @phpstan-ignore-next-line
+		$httpClient->post( '/1.1/comment-check', [ 'comment_context' => [ 'ok', 123 ] ] );
+	}
+
+	public function testPostThrowsOnNonStringScalarValue(): void {
+		$httpClient = $this->createHttpClient(
+			$this->createMockClient( new Response( 200, [], 'true' ) )
+		);
+
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'must be string or list of strings, got int' );
+
+		// Intentionally malformed input to exercise the wire-boundary guard.
+		// @phpstan-ignore-next-line
+		$httpClient->post( '/1.1/comment-check', [ 'foo' => 42 ] );
+	}
+
+	// =========================================================================
 	// Helper Methods
 	// =========================================================================
 

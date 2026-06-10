@@ -375,7 +375,7 @@ final class Content {
 	}
 
 	/**
-	 * Wire payload for submit-spam / submit-ham / deactivate, with comment-check-only
+	 * Wire payload for submit-spam / submit-ham, with comment-check-only
 	 * fields stripped. Keeps the DTO authoritative over which keys belong on which
 	 * endpoint, so the facade never has to guess.
 	 *

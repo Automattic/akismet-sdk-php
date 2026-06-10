@@ -96,7 +96,7 @@ final class SiteStats {
 		$totalCalls = $data['api_calls'] ?? $data['total'] ?? 0;
 
 		return new self(
-			$data['site'],
+			self::parseRequiredString( $data['site'], 'site' ),
 			(int) $totalCalls,
 			(int) $data['spam'],
 			(int) $data['ham'],
@@ -105,6 +105,15 @@ final class SiteStats {
 			(bool) $data['is_revoked'],
 			self::parseOptionalString( $data['hash'] ?? null, 'hash' ),
 			self::parseOptionalBool( $data['eligible_for_revoke'] ?? null, 'eligible_for_revoke' ),
+		);
+	}
+
+	private static function parseRequiredString( mixed $value, string $field ): string {
+		if ( is_string( $value ) ) {
+			return $value;
+		}
+		throw ServerException::unexpectedResponse(
+			sprintf( 'Expected string "%s" in site stats response, got %s', $field, get_debug_type( $value ) )
 		);
 	}
 

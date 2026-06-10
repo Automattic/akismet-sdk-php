@@ -1,4 +1,4 @@
-## 1.5.0 - 2026-05-27
+## 1.5.0 - 2026-06-10
 ### Added
 - `blogLang`, `blogCharset`, `contextValues`, and `classify` properties on `Content` for richer comment-check submissions, with matching support in `ContentFactory::fromRequest()` and `ContentFactory::fromArray()`. `comment_context[]` is encoded as repeated form parameters.
 - `error` and `classification` properties on `CheckResult`, parsed from the `X-Akismet-Error` and `X-Akismet-Classification` response headers and preserved through `toArray()`, `jsonSerialize()`, and `fromJson()`.
@@ -8,6 +8,7 @@
 
 ### Fixed
 - `KeySitesResponse::fromResponse()` now parses the documented `/1.2/key-sites` response shape (`YYYY-MM` bucket with `limit`, `offset`, `total`) while keeping the legacy flat shape as a fallback. Adds coverage for empty buckets and malformed month keys.
+- `submitSpam()` and `submitHam()` now send `Content::toFeedbackArray()`, stripping comment-check-only fields (`callback`, `classify`) from feedback payloads even when `Content` is constructed directly rather than via `withFeedback()`.
 
 ## 1.4.0 - 2026-04-06
 ### Added
